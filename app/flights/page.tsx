@@ -14,7 +14,7 @@ import { getFlight } from "@/lib/flights";
 const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
 const TABS = new Set<BoardTab>(["all", "arrival", "turnaround", "departure", "done"]);
 
-export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string }> }) {
+export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; q?: string; day?: string }> }) {
   const sp = await searchParams;
   const d = await getCommandData();
 
@@ -67,11 +67,12 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
 
   // Flight Board — الشاشة الرئيسية
   const tab: BoardTab = TABS.has(sp.tab as BoardTab) ? (sp.tab as BoardTab) : "all";
-  const board = await getBoard(tab);
+  const q = (sp.q ?? "").slice(0, 40); const day = /^\d{4}-\d{2}-\d{2}$/.test(sp.day ?? "") ? (sp.day as string) : "";
+  const board = await getBoard(tab, { q, day });
   return (
     <Shell data={d}>
       <main className="page">
-        <FlightBoard board={board} tab={tab} stationLabel={`${d.company.name} · LIVE OPERATIONS`} />
+        <FlightBoard board={board} tab={tab} stationLabel={`${d.company.name} · LIVE OPERATIONS`} q={q} day={day} />
       </main>
     </Shell>
   );

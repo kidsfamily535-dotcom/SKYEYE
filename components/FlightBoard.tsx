@@ -38,9 +38,20 @@ function Row({ r }: { r: BoardRow }) {
   );
 }
 
-export default function FlightBoard({ board, tab, stationLabel }: { board: Board; tab: BoardTab; stationLabel: string }) {
+const isoDay = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+
+export default function FlightBoard({ board, tab, stationLabel, q, day }: { board: Board; tab: BoardTab; stationLabel: string; q: string; day: string }) {
   const c = board.counts;
   const hasToday = board.rows.some((r) => !r.stale);
+  const href = (t: BoardTab, over: { q?: string; day?: string } = {}) => {
+    const p = new URLSearchParams();
+    if (t !== "all") p.set("tab", t);
+    const nq = over.q ?? q; const nd = over.day ?? day;
+    if (nq) p.set("q", nq);
+    if (nd) p.set("day", nd);
+    const s = p.toString();
+    return s ? `/flights?${s}` : "/flights";
+  };
   return (
     <>
       <section className="fb-head" aria-label="ملخص اليوم">
@@ -59,9 +70,18 @@ export default function FlightBoard({ board, tab, stationLabel }: { board: Board
 
       <div className="fb-grid">
         <section className="card fb" aria-label="جدول الرحلات">
+          <form className="fb-search" method="get" action="/flights" role="search" aria-label="بحث في الرحلات">
+            {tab !== "all" && <input type="hidden" name="tab" value={tab} />}
+            <label><span className="sr">رقم الرحلة أو التسجيل</span><input className="ltr" type="search" name="q" defaultValue={q} placeholder="رقم الرحلة أو التسجيل: NE231 · 232 · SU-GDA" autoComplete="off" /></label>
+            <label><span className="sr">اليوم</span><input type="date" name="day" defaultValue={day} /></label>
+            <button className="btn gold sm" type="submit">بحث</button>
+            <Link className={`btn sm ${day === isoDay(0) ? "on" : ""}`} href={href(tab, { day: isoDay(0) })}>اليوم</Link>
+            <Link className={`btn sm ${day === isoDay(1) ? "on" : ""}`} href={href(tab, { day: isoDay(1) })}>غداً</Link>
+            {board.filtered && <Link className="btn sm" href={href(tab, { q: "", day: "" })}>مسح البحث</Link>}
+          </form>
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
-              <Link key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "on" : ""} href={t.key === "all" ? "/flights" : `/flights?tab=${t.key}`}>
+              <Link key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "on" : ""} href={href(t.key)}>
                 {t.label}{t.count ? <em className="cnt">{c[t.count]}</em> : null}
               </Link>
             ))}
@@ -69,7 +89,7 @@ export default function FlightBoard({ board, tab, stationLabel }: { board: Board
           </div>
 
           {board.rows.length === 0 ? (
-            <p className="muted">{tab === "done" ? "لا توجد رحلات منتهية." : tab === "all" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات في هذه المرحلة الآن."}</p>
+            <p className="muted">{board.filtered ? "لا توجد رحلات تطابق البحث. جرّب رقماً أقصر (مثل 231) أو يوماً آخر، أو امسح البحث." : tab === "done" ? "لا توجد رحلات منتهية." : tab === "all" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات في هذه المرحلة الآن."}</p>
           ) : (
             <div className="fb-scroll">
               <table>
@@ -88,7 +108,7 @@ export default function FlightBoard({ board, tab, stationLabel }: { board: Board
                 <tbody>
                   {board.rows.map((r, i) => (
                     <Fragment key={r.rotationId}>
-                      {tab !== "done" && ((i === 0 && !r.stale && hasToday) || (r.stale && (i === 0 || !board.rows[i - 1].stale))) && (
+                      {tab !== "done" && !board.filtered && ((i === 0 && !r.stale && hasToday) || (r.stale && (i === 0 || !board.rows[i - 1].stale))) && (
                         <tr className="grp"><th colSpan={8} scope="colgroup">{r.stale ? "متأخر إغلاقها (تاريخها قبل اليوم)" : "اليوم وما بعده"}</th></tr>
                       )}
                       <Row r={r} />

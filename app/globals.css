@@ -119,3 +119,7 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .fb-monitor h2{margin:0 0 4px}
 .fb-monitor .list li{align-items:flex-start}.fb-monitor .list li>span{display:flex;flex-direction:column;gap:2px}.fb-monitor .dot{margin-top:6px}
 @media(max-width:1100px){.fb-grid{grid-template-columns:1fr}}
+.fb-search{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.fb-search label{display:block}.fb-search input[type=search]{min-width:260px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);padding:0 14px}
+.fb-search input[type=date]{min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);padding:0 12px;color-scheme:dark}
+.fb-search .btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}.fb-search .btn.gold{color:#1B2436}.fb-search .btn.on{border-color:var(--gold);color:var(--gold)}
