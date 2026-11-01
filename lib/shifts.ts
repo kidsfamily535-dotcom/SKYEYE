@@ -103,6 +103,32 @@ export async function getShiftPage(selectedId?: string): Promise<ShiftPage | nul
   return { companyId: m.company_id, role: m.role, hasEmployee: !!emp.data, canAdmin: m.role === "owner" || m.role === "admin", canWrite: m.role !== "viewer", defs, nextReports: nextReportTimes(defs), reports, sel, live };
 }
 
+export type ShiftPeek = {
+  pending: number;
+  canWrite: boolean;
+  canAck: boolean;
+  report: { id: string; shiftName: string; start: string; end: string; generatedAt: string; counts: { requests: number; alerts: number; questions: number; flights: number; emailsNew: number | null; emailsUrgent: number | null; drafts: number | null } } | null;
+};
+
+/** For the header button: the newest report still waiting for acknowledgement, with a short summary. Everything comes from the stored snapshot. */
+export async function getShiftPeek(): Promise<ShiftPeek | null> {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data: m } = await sb.from("memberships").select("id, role, company_id").eq("user_id", user.id).maybeSingle();
+  if (!m) return null;
+  const [emp, pend] = await Promise.all([
+    sb.from("employees").select("id").eq("company_id", m.company_id).eq("membership_id", m.id).maybeSingle(),
+    sb.from("shift_reports").select(SEL, { count: "exact" }).eq("status", "generated").order("shift_end", { ascending: false }).limit(1),
+  ]);
+  const canWrite = m.role !== "viewer";
+  const r = ((pend.data ?? []) as unknown as RawReport[]).map(toReport)[0];
+  return {
+    pending: pend.count ?? 0, canWrite, canAck: canWrite && !!emp.data,
+    report: r ? { id: r.id, shiftName: r.shiftName, start: r.start, end: r.end, generatedAt: r.generatedAt, counts: { requests: r.content.requests.length, alerts: r.content.alerts.length, questions: r.content.questions.length, flights: r.content.flights.length, emailsNew: r.content.emails.new, emailsUrgent: r.content.emails.urgentNew, drafts: r.content.emails.draftsWaiting } } : null,
+  };
+}
+
 export async function countPendingReports(): Promise<number> {
   const sb = await createClient();
   const { count } = await sb.from("shift_reports").select("id", { count: "exact", head: true }).eq("status", "generated");

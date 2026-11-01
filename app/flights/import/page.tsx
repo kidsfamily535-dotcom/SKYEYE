@@ -7,7 +7,7 @@ import { getImportContext } from "@/lib/program";
 export default async function ImportPage() {
   const [d, c] = await Promise.all([getCommandData(), getImportContext()]);
   return (
-    <Shell data={d}>
+    <Shell data={d} scope="flights">
       <main className="page">
         <section className="card" aria-label="رفع برنامج الرحلات">
           <div className="row"><h2 className="grow">رفع برنامج الرحلات</h2><Link className="btn sm" href="/flights">رجوع للرحلات</Link></div>

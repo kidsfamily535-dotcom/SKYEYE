@@ -15,6 +15,55 @@ export function answerText(result: unknown): string | null {
   return null;
 }
 
+export type AgentTargets = { email: Opt[]; draft: Opt[]; request: Opt[]; flight: Opt[] };
+export type ThreadItem = { id: string; type: string; targetType: string; targetLabel: string | null; instruction: string | null; status: string; answer: string | null; error: string | null; createdAt: string };
+
+/** Lazy lists for the always-visible command bar when the page itself has no subject. Read through RLS. */
+export async function getAgentTargets(): Promise<AgentTargets> {
+  const sb = await createClient();
+  const [triage, drafts, reqs, flights] = await Promise.all([
+    sb.from("email_triage").select("message_id, summary").order("created_at", { ascending: false }).limit(30),
+    sb.from("email_reply_drafts").select("id, subject").eq("status", "draft").order("created_at", { ascending: false }).limit(30),
+    sb.from("request_files").select("id, title, flight_ref").eq("status", "open").order("created_at", { ascending: false }).limit(30),
+    sb.from("flights").select("id, flight_number, flight_date").order("flight_date", { ascending: false }).limit(30),
+  ]);
+  const msgIds = (triage.data ?? []).map((t) => t.message_id as string);
+  const mails = msgIds.length ? (await sb.from("email_messages").select("id, subject").in("id", msgIds)).data ?? [] : [];
+  const subj = new Map(mails.map((x) => [x.id as string, x.subject as string | null]));
+  return {
+    email: (triage.data ?? []).map((t) => ({ id: t.message_id as string, label: subj.get(t.message_id as string) ?? t.summary ?? "(بدون عنوان)" })),
+    draft: (drafts.data ?? []).map((d) => ({ id: d.id, label: d.subject ?? "(بدون عنوان)" })),
+    request: (reqs.data ?? []).map((r) => ({ id: r.id, label: `${r.title}${r.flight_ref ? ` · ${r.flight_ref}` : ""}` })),
+    flight: (flights.data ?? []).map((f) => ({ id: f.id, label: `${f.flight_number ?? "—"} · ${f.flight_date ?? "—"}` })),
+  };
+}
+
+/** The latest commands for one subject (or the latest overall when the page has none), with the agent's reply only where it wrote one. */
+export async function getAgentThread(targetType: string | null, targetId: string | null): Promise<ThreadItem[]> {
+  const sb = await createClient();
+  let q = sb.from("agent_commands").select("id, command_type, target_type, target_id, instruction, status, result, error, created_at").order("created_at", { ascending: false }).limit(6);
+  if (targetType && targetId) q = q.eq("target_type", targetType).eq("target_id", targetId);
+  const { data } = await q;
+  const rows = data ?? [];
+  const labelOf = new Map<string, string | null>();
+  const idsOf = (t: string) => [...new Set(rows.filter((c) => c.target_type === t).map((c) => c.target_id as string))];
+  const [mails, drs, rfs, fls] = [idsOf("email_message"), idsOf("reply_draft"), idsOf("request_file"), idsOf("flight")];
+  const [m, d, r, f] = await Promise.all([
+    mails.length ? sb.from("email_messages").select("id, subject").in("id", mails) : Promise.resolve({ data: [] as { id: string; subject: string | null }[] }),
+    drs.length ? sb.from("email_reply_drafts").select("id, subject").in("id", drs) : Promise.resolve({ data: [] as { id: string; subject: string | null }[] }),
+    rfs.length ? sb.from("request_files").select("id, title").in("id", rfs) : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+    fls.length ? sb.from("flights").select("id, flight_number").in("id", fls) : Promise.resolve({ data: [] as { id: string; flight_number: string | null }[] }),
+  ]);
+  for (const x of m.data ?? []) labelOf.set(x.id, x.subject);
+  for (const x of d.data ?? []) labelOf.set(x.id, x.subject);
+  for (const x of r.data ?? []) labelOf.set(x.id, x.title);
+  for (const x of f.data ?? []) labelOf.set(x.id, x.flight_number);
+  return rows.map((c) => ({
+    id: c.id, type: c.command_type, targetType: c.target_type, targetLabel: labelOf.get(c.target_id) ?? null, instruction: c.instruction, status: c.status,
+    answer: c.status === "done" ? answerText(c.result) : null, error: c.error, createdAt: c.created_at,
+  }));
+}
+
 export async function getAgentPage(): Promise<AgentPage | null> {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();

@@ -78,3 +78,32 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .stack small.err{display:block;font-size:12px;margin-top:2px}
 .stack label.inline{display:flex;align-items:center;gap:8px;margin-top:8px}
 .stack label.btn{display:inline-flex;align-items:center;cursor:pointer}
+
+/* ---- shell: header buttons, shift-report drawer, bell, command bar ---- */
+.iconbtn{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:14px}
+.iconbtn:hover{background:rgba(227,185,100,.14)}
+.pip{position:absolute;top:5px;inset-inline-start:7px;width:12px;height:12px;border-radius:50%;background:var(--late);box-shadow:0 0 0 2px var(--bg)}
+.count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--late);color:#1B2436;font-size:12px}
+.bell{position:relative}
+.pop{position:absolute;top:calc(100% + 8px);inset-inline-end:0;width:min(420px,86vw);max-height:60vh;overflow:auto;background:rgba(9,24,52,.98);border:1px solid var(--line);border-radius:var(--r);padding:16px;z-index:30;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.pop h2{margin:0 0 4px;font-size:16px;color:var(--gold)}.pop .list{margin-top:8px}.pop .list li{padding:10px 0}.pop small{display:block}
+.drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
+.drawer{position:fixed;top:0;bottom:0;inset-inline-end:0;width:min(440px,100vw);overflow:auto;z-index:41;background:rgba(7,18,40,.98);border-inline-start:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:12px}
+.drawer h2{margin:0;font-size:18px;color:var(--gold)}.drawer h3{margin:14px 0 0;font-size:14px;color:var(--gold)}.drawer p{margin:0;line-height:1.8}
+.row.between{justify-content:space-between}
+.main.has-bar{padding-bottom:170px}
+.agentbar{position:fixed;bottom:0;inset-inline-start:260px;inset-inline-end:0;z-index:20;padding:10px 28px 14px;background:rgba(5,14,32,.95);border-top:1px solid var(--line);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:8px}
+.agentbar p{margin:0}
+.agentform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.agentform input,.agentform select{min-height:44px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:0 16px;font:inherit}
+.agentform input{flex:1;min-width:220px}.agentform select{max-width:260px}
+.agentform option,.agentform optgroup{background:#0B1B3A;color:var(--ink)}
+.agent-label{color:var(--gold);font-weight:700;font-size:14px;white-space:nowrap}
+.chip.ctx{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-color:var(--gold)}
+.agentpanel{max-height:38vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--panel)}
+.chat.compact{gap:12px;margin-top:8px}.chat.compact .bubble{max-width:100%}
+@media (max-width:760px){.agentbar{inset-inline-start:0;padding:8px 12px 12px}.main.has-bar{padding-bottom:230px}.iconbtn .lbl{display:none}}
+
+/* ---- today's flights ---- */
+.flightrow .item b{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.flightrow .next{color:#D5DFEE;font-size:13px}
+.tabs.wrap{flex-wrap:wrap}

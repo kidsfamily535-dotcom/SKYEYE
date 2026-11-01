@@ -11,7 +11,7 @@ const TONE: Record<string, string> = { queued: "warn", running: "info", done: "o
 export default async function AgentPage() {
   const [d, p] = await Promise.all([getCommandData(), getAgentPage()]);
   return (
-    <Shell data={d}>
+    <Shell data={d} scope="agent">
       <main className="page">
         {!p && <section className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></section>}
         {p && (

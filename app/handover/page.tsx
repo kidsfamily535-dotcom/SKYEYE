@@ -16,7 +16,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   const [d, p] = await Promise.all([getCommandData(), getShiftPage(sp.id)]);
 
   return (
-    <Shell data={d}>
+    <Shell data={d} scope="handover">
       <main className="page">
         {!p && <section className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></section>}
         {p && (

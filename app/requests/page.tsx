@@ -30,7 +30,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
   const moves = sel ? transitions.filter((t) => t.type === sel.row.type && t.from === sel.row.stage).map((t) => ({ to: t.to, label: stages.find((s) => s.type === t.type && s.code === t.to)?.labelAr ?? t.to })) : [];
 
   return (
-    <Shell data={d}>
+    <Shell data={d} scope="requests" agent={sel ? { targetType: "request_file", targetId: sel.row.id, label: sel.row.title } : null}>
       <main className="page">
         {alerts.length > 0 && (
           <section className="card" aria-label="التنبيهات">

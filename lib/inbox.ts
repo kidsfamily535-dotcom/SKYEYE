@@ -14,6 +14,12 @@ export type InboxItem = {
   draft: { id: string; subject: string | null; body: string; to: string | null; status: string; warnings: string[] } | null;
 };
 
+/** What the employee sees on each email: new, has a draft waiting for review, replied. Derived from the stored status and the draft, nothing guessed. */
+export type InboxState = "new" | "drafted" | "replied" | "other";
+export const stateOf = (i: InboxItem): InboxState => (i.status === "replied" ? "replied" : i.status === "new" ? (i.draft?.status === "draft" ? "drafted" : "new") : "other");
+export const stateLabel = (i: InboxItem) => ({ new: "جديد", drafted: "عليه مسودة", replied: "تم الرد", other: STATUS_AR[i.status] ?? i.status } as const)[stateOf(i)];
+export const stateTone = (i: InboxItem) => ({ new: "warn", drafted: "info", replied: "ok", other: "info" } as const)[stateOf(i)];
+
 export async function getInbox(): Promise<InboxItem[]> {
   const sb = await createClient();
   const { data: tri } = await sb.from("email_triage").select("id, category, summary, requested_action, reply_reason, reply_kind, urgency, confidence, status, created_at, message_id").order("created_at", { ascending: false }).limit(100);

@@ -7,7 +7,10 @@ export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;
   sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string;
   stepsTotal: number | null; stepsRecorded: number | null; criticalOpen: number | null; airline: Airline | null;
+  nextStep?: NextStep | null;
 };
+/** The earliest step of the rotation that is not recorded yet and has a planned time (or one the agent is waiting on). Never guessed. */
+export type NextStep = { nameAr: string; plannedAt: string | null; waitingForAnswer: boolean; isCritical: boolean };
 export type StepRow = {
   track: string; seq: number; code: string; nameAr: string; nameEn: string; kind: string; isCritical: boolean; templateStatus: string;
   plannedAt: string | null; actualAt: string | null; state: "recorded" | "open" | "not_recorded"; variance: number | null; eventId: string | null; wasCorrected: boolean; by: string | null;
@@ -19,13 +22,7 @@ export type MessageType = { type: string; title: string | null; composable: bool
 
 type Raw = Record<string, any>;
 
-export async function getFlightList(tab: "active" | "done"): Promise<FlightRow[]> {
-  const sb = await createClient();
-  const q = sb.from("v_flight_file").select("*");
-  const { data } = tab === "active"
-    ? await q.is("atd", null).neq("status", "cancelled").order("sta", { ascending: true, nullsFirst: false }).limit(200)
-    : await q.or("atd.not.is.null,status.eq.cancelled").order("std", { ascending: false, nullsFirst: false }).limit(50);
-  const rows = (data ?? []) as Raw[];
+async function shapeRows(rows: Raw[]): Promise<FlightRow[]> {
   const airlines = await resolveAirlines(rows.map((r) => r.flight_in ?? r.flight_out));
   return rows.map((r) => {
     const p = airlinePrefix(r.flight_in ?? r.flight_out); const key = p.iata ?? p.icao;
@@ -36,6 +33,50 @@ export async function getFlightList(tab: "active" | "done"): Promise<FlightRow[]
       criticalOpen: r.sop_critical_open === null ? null : Number(r.sop_critical_open), airline: key ? airlines.get(key) ?? { code: key, name: null, logoUrl: null } : null,
     };
   });
+}
+
+export async function getFlightList(tab: "active" | "done"): Promise<FlightRow[]> {
+  const sb = await createClient();
+  const q = sb.from("v_flight_file").select("*");
+  const { data } = tab === "active"
+    ? await q.is("atd", null).neq("status", "cancelled").order("sta", { ascending: true, nullsFirst: false }).limit(200)
+    : await q.or("atd.not.is.null,status.eq.cancelled").order("std", { ascending: false, nullsFirst: false }).limit(50);
+  return shapeRows((data ?? []) as Raw[]);
+}
+
+const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
+/** The time a rotation is "about": the departure if known, otherwise the arrival. Used to order the day. */
+const keyTime = (r: FlightRow) => r.atd ?? r.std ?? r.eta ?? r.ata ?? r.sta ?? "";
+const isDone = (r: FlightRow) => !!r.atd || r.status === "cancelled";
+
+/**
+ * Today's rotations (UTC day, like every time in the app), nearest first: flights that have not departed in time order, then the ones already done.
+ * Each carries its next step: the unrecorded step with the earliest planned time, or the one the agent is waiting on.
+ */
+export async function getTodayFlights(): Promise<FlightRow[]> {
+  const sb = await createClient();
+  const n = new Date();
+  const a = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate())); const b = new Date(+a + 86400000);
+  const iso = (d: Date) => d.toISOString().slice(0, 19) + "Z";
+  const win = (c: string) => `and(${c}.gte.${iso(a)},${c}.lt.${iso(b)})`;
+  const { data } = await sb.from("v_flight_file").select("*").or(["sta", "std", "eta", "ata", "atd"].map(win).join(",")).limit(120);
+  const rows = await shapeRows((data ?? []) as Raw[]);
+  if (!rows.length) return [];
+
+  const { data: clock } = await sb.from("v_ground_clock").select("rotation_id, arrival_leg_id, departure_leg_id").in("rotation_id", rows.map((r) => r.rotationId));
+  const legOf = new Map<string, string>();
+  for (const c of clock ?? []) { legOf.set(c.arrival_leg_id, c.rotation_id); legOf.set(c.departure_leg_id, c.rotation_id); }
+  const steps: Raw[] = [];
+  for (const part of chunk([...legOf.keys()], 20)) {
+    const { data: tl } = await sb.from("v_flight_timeline").select("flight_id, name_ar, is_critical, planned_at, state").in("flight_id", part).neq("state", "recorded").or("state.eq.open,planned_at.not.is.null");
+    steps.push(...((tl ?? []) as Raw[]));
+  }
+  const best = new Map<string, Raw>();
+  const score = (t: Raw) => `${t.state === "open" ? 0 : 1}|${t.planned_at ?? "9999"}`;
+  for (const t of steps) { const rot = legOf.get(t.flight_id); if (!rot) continue; const cur = best.get(rot); if (!cur || score(t) < score(cur)) best.set(rot, t); }
+  for (const r of rows) { const t = best.get(r.rotationId); r.nextStep = t ? { nameAr: t.name_ar, plannedAt: t.planned_at, waitingForAnswer: t.state === "open", isCritical: !!t.is_critical } : null; }
+
+  return rows.sort((x, y) => Number(isDone(x)) - Number(isDone(y)) || keyTime(x).localeCompare(keyTime(y)));
 }
 
 export async function getFlight(rotationId: string) {

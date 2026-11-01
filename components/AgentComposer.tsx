@@ -1,16 +1,15 @@
 "use client";
 import { useState, useTransition } from "react";
 import { sendToAgent } from "@/app/agent/actions";
-import { CMD_AR, type Opt } from "@/lib/agent-labels";
+import { CMD_AR, CMDS_BY_TARGET, NEEDS_TEXT, type Opt } from "@/lib/agent-labels";
 
 type Kind = "email" | "draft" | "request" | "flight";
 const KINDS: { kind: Kind; label: string; targetType: string; cmds: string[] }[] = [
-  { kind: "email", label: "إيميل", targetType: "email_message", cmds: ["answer_question", "retriage_email", "open_permit_files", "link_email_to_request", "rebuild_history", "employee_info"] },
-  { kind: "draft", label: "مسودة رد", targetType: "reply_draft", cmds: ["redraft_reply", "answer_question"] },
-  { kind: "request", label: "ملف طلب", targetType: "request_file", cmds: ["answer_question", "prepare_followup", "employee_info"] },
-  { kind: "flight", label: "رحلة", targetType: "flight", cmds: ["answer_question", "prepare_followup", "employee_info"] },
+  { kind: "email", label: "إيميل", targetType: "email_message", cmds: CMDS_BY_TARGET.email_message },
+  { kind: "draft", label: "مسودة رد", targetType: "reply_draft", cmds: CMDS_BY_TARGET.reply_draft },
+  { kind: "request", label: "ملف طلب", targetType: "request_file", cmds: CMDS_BY_TARGET.request_file },
+  { kind: "flight", label: "رحلة", targetType: "flight", cmds: CMDS_BY_TARGET.flight },
 ];
-const NEEDS_TEXT = new Set(["answer_question", "employee_info"]);
 const HINT: Record<string, string> = {
   answer_question: "اكتب سؤالك للوكيل…", employee_info: "اكتب المعلومة التي تريد أن يعرفها الوكيل…", redraft_reply: "كيف تريد تعديل المسودة؟ (اختياري، والمسودة تبقى بالإنجليزية)",
 };

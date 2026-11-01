@@ -4,32 +4,41 @@ import DraftPanel from "@/components/DraftPanel";
 import OpenRequestForm from "@/components/OpenRequestForm";
 import { getFilesForMessage } from "@/lib/requests";
 import { getCommandData } from "@/lib/data";
-import { getInbox, CATEGORY_AR, URGENCY_AR, STATUS_AR } from "@/lib/inbox";
+import { getInbox, stateLabel, stateOf, stateTone, CATEGORY_AR, URGENCY_AR } from "@/lib/inbox";
 
 const tone = (u: string) => (u === "urgent" ? "late" : u === "important" ? "warn" : "info");
+const FILTERS = [{ key: "all", label: "الكل" }, { key: "new", label: "جديد" }, { key: "drafted", label: "عليه مسودة" }, { key: "replied", label: "تم الرد" }] as const;
 const when = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(5, 16).replace("T", " ") + " UTC" : "");
 
-export default async function InboxPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+export default async function InboxPage({ searchParams }: { searchParams: Promise<{ id?: string; f?: string }> }) {
   const [d, items, sp] = await Promise.all([getCommandData(), getInbox(), searchParams]);
-  const sel = items.find((i) => i.id === sp.id) ?? items.find((i) => i.status === "new") ?? items[0];
+  const f = FILTERS.some((x) => x.key === sp.f) ? sp.f! : "all";
+  // Already ordered: new first, then by urgency (urgent, important, normal), then newest.
+  const shown = f === "all" ? items : items.filter((i) => stateOf(i) === f);
+  const count = (k: string) => (k === "all" ? items.length : items.filter((i) => stateOf(i) === k).length);
+  const sel = items.find((i) => i.id === sp.id) ?? shown.find((i) => i.status === "new") ?? shown[0];
   const files = sel ? await getFilesForMessage(sel.messageId) : { linked: [], linkable: [] };
 
   return (
-    <Shell data={d}>
+    <Shell data={d} scope="inbox" agent={sel ? { targetType: "email_message", targetId: sel.messageId, label: sel.message?.subject ?? sel.summary ?? "إيميل" } : null}>
       <main className="inbox">
         <section className="card" aria-label="قائمة الإيميلات">
           <h2>الوارد</h2>
+          <div className="tabs wrap" role="tablist" aria-label="تصفية الإيميلات">
+            {FILTERS.map((x) => <Link key={x.key} role="tab" aria-selected={f === x.key} className={f === x.key ? "on" : ""} href={x.key === "all" ? "/inbox" : `/inbox?f=${x.key}`}>{x.label} <span className="ltr">{count(x.key)}</span></Link>)}
+          </div>
           {items.length === 0 && <p className="muted">لا توجد إيميلات بعد. ستظهر هنا فور وصولها وتحليلها.</p>}
+          {items.length > 0 && shown.length === 0 && <p className="muted">لا إيميلات في هذه التصفية.</p>}
           <ul className="list">
-            {items.map((i) => (
+            {shown.map((i) => (
               <li key={i.id} className={i.id === sel?.id ? "cur" : ""}>
                 <i className={`dot ${tone(i.urgency)}`} />
-                <Link href={`/inbox?id=${i.id}`} className="item" aria-current={i.id === sel?.id ? "true" : undefined}>
+                <Link href={`/inbox?id=${i.id}${f === "all" ? "" : `&f=${f}`}`} className="item" aria-current={i.id === sel?.id ? "true" : undefined}>
                   <b>{CATEGORY_AR[i.category] ?? i.category}</b>
                   <span>{i.summary}</span>
                   <small className="muted">{i.message?.from ?? ""} · {when(i.message?.at ?? i.createdAt)}</small>
                 </Link>
-                <em className={`tag ${i.status === "new" ? "warn" : "ok"}`}>{STATUS_AR[i.status] ?? i.status}</em>
+                <em className={`tag ${stateTone(i)}`}>{stateLabel(i)}</em>
               </li>
             ))}
           </ul>

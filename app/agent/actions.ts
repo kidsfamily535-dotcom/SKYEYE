@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getAgentTargets, getAgentThread, type AgentTargets, type ThreadItem } from "@/lib/agent";
 
 type Result = { ok: true } | { ok: false; message: string };
 function explain(msg: string): string {
@@ -19,6 +20,15 @@ export async function sendToAgent(companyId: string, commandType: string, target
   const { error } = await (await createClient()).rpc("send_agent_command", { p_company_id: companyId, p_command_type: commandType, p_target_type: targetType, p_target_id: targetId, p_instruction: text || null, p_payload: {} });
   if (error) return { ok: false, message: explain(error.message) };
   refresh(); return { ok: true };
+}
+
+/** The command bar loads these on demand, so no page pays for them unless the employee opens the subject list. */
+export async function loadAgentTargets(): Promise<AgentTargets> {
+  return getAgentTargets();
+}
+
+export async function loadAgentThread(targetType: string | null, targetId: string | null): Promise<ThreadItem[]> {
+  return getAgentThread(targetType, targetId);
 }
 
 export async function cancelAgentCommand(companyId: string, commandId: string): Promise<Result> {
