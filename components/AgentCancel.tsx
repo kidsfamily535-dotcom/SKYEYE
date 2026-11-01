@@ -7,7 +7,7 @@ export default function AgentCancel({ companyId, commandId }: { companyId: strin
   const [pending, start] = useTransition();
   return (
     <span className="row">
-      <button type="button" className="btn ghost sm" disabled={pending} onClick={() => start(async () => { const r = await cancelAgentCommand(companyId, commandId); setMsg(r.ok ? null : r.message); })}>إلغاء الأمر</button>
+      <button type="button" className="btn danger sm" disabled={pending} onClick={() => start(async () => { const r = await cancelAgentCommand(companyId, commandId); setMsg(r.ok ? null : r.message); })}>إلغاء الأمر</button>
       {msg && <span role="alert" className="err">{msg}</span>}
     </span>
   );

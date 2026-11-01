@@ -1,12 +1,13 @@
 "use client";
 import { useState, useTransition } from "react";
 import { markDraftSent, saveDraftEdit } from "@/app/inbox/actions";
+import Menu from "@/components/Menu";
 
 type Draft = { id: string; subject: string | null; body: string; to: string | null; status: string; warnings: string[] };
 
-function Copy({ text, label }: { text: string; label: string }) {
+function Copy({ text, label, wide }: { text: string; label: string; wide?: boolean }) {
   const [done, setDone] = useState(false);
-  return <button type="button" className="btn ghost sm" onClick={async () => { await navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); }}>{done ? "تم النسخ" : label}</button>;
+  return <button type="button" className={`btn sm ${wide ? "" : "ghost"}`} onClick={async () => { await navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); }}>{done ? "تم النسخ" : label}</button>;
 }
 
 export default function DraftPanel({ draft }: { draft: Draft }) {
@@ -31,15 +32,16 @@ export default function DraftPanel({ draft }: { draft: Draft }) {
       {msg && <p role="alert" className="err">{msg}</p>}
       {closed ? <p className="muted">{draft.status === "approved" ? "سُجّل أنك أرسلتَ هذا الرد." : "هذه المسودة أُغلقت."}</p> : (
         <div className="row">
-          <Copy text={draft.to ?? ""} label="نسخ العنوان" /><Copy text={draft.subject ?? ""} label="نسخ الموضوع" /><Copy text={body} label="نسخ النص" />
+          <Copy text={body} label="نسخ النص" wide />
+          <Menu label="نسخ آخر"><Copy text={draft.to ?? ""} label="نسخ العنوان" /><Copy text={draft.subject ?? ""} label="نسخ الموضوع" /></Menu>
           <span className="grow" />
-          <button type="button" className="btn ghost" disabled={!changed || pending} onClick={() => run(() => saveDraftEdit(draft.id, body))}>حفظ تعديلي</button>
+          {changed && <button type="button" className="btn gold" disabled={pending} onClick={() => run(() => saveDraftEdit(draft.id, body))}>حفظ تعديلي</button>}
           {!confirm
-            ? <button type="button" className="btn gold" disabled={pending || changed} onClick={() => setConfirm(true)}>أرسلتُه من بريدي</button>
+            ? <button type="button" className={`btn ${changed ? "" : "gold"}`} disabled={pending || changed} onClick={() => setConfirm(true)}>أرسلتُه من بريدي</button>
             : <button type="button" className="btn gold" disabled={pending} onClick={() => run(() => markDraftSent(draft.id))}>تأكيد: أرسلتُه فعلاً</button>}
         </div>
       )}
-      {!closed && changed && <p className="muted">احفظ تعديلك أولاً. التعديلات تُسجَّل ليتعلم الوكيل منها بعد موافقة المسؤول.</p>}
+      {!closed && changed && <p className="muted">احفظ تعديلك أولاً. يُسجَّل الفرق بين الصياغة الأصلية وتعديلك.</p>}
       {!closed && <p className="muted">SKYEYE لا يرسل شيئاً. أرسل الرد من بريد الشركة، ثم سجّل ذلك هنا.</p>}
     </div>
   );

@@ -45,7 +45,7 @@ export default function FlightTimeline({ steps, arrivalLeg, canAct }: { steps: S
                         <button type="button" className="btn ghost sm" onClick={() => setEdit(null)}>رجوع</button>
                       </div>
                     )}
-                    {canAct && edit !== key(s) && <button type="button" className="btn ghost sm" onClick={() => { setEdit(key(s)); setAt(""); setWhy(""); }}>{s.state === "recorded" ? "صحّح الوقت" : "سجّل الوقت"}</button>}
+                    {canAct && edit !== key(s) && <button type="button" className={`btn sm ${s.state === "open" ? "gold" : "ghost"}`} onClick={() => { setEdit(key(s)); setAt(""); setWhy(""); }}>{s.state === "recorded" ? "صحّح الوقت" : "سجّل الوقت"}</button>}
                   </div>
                 </li>
               ))}

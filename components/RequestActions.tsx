@@ -26,11 +26,11 @@ export default function RequestActions({ fileId, moves, canClose }: { fileId: st
       </div>
       {canClose && <p className="muted">الإغلاق لا يتم بزر: يُغلق الطلب تلقائياً عندما تضغط «أرسلتُه من بريدي» على الرد الأخير داخل الوارد.</p>}
       {cancelMove && (!cancel
-        ? <button type="button" className="btn ghost sm" onClick={() => setCancel(true)}>إلغاء الطلب</button>
+        ? <button type="button" className="btn danger sm" onClick={() => setCancel(true)}>إلغاء الطلب</button>
         : <div className="cancel-box">
             <label htmlFor="cancel-reason">سبب الإلغاء</label>
             <textarea id="cancel-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
-            <div className="row"><button type="button" className="btn sm gold" disabled={pending || !reason.trim()} onClick={() => run("cancelled", reason)}>تأكيد الإلغاء</button><button type="button" className="btn ghost sm" onClick={() => setCancel(false)}>رجوع</button></div>
+            <div className="row"><button type="button" className="btn sm danger solid" disabled={pending || !reason.trim()} onClick={() => run("cancelled", reason)}>تأكيد الإلغاء</button><button type="button" className="btn ghost sm" onClick={() => setCancel(false)}>رجوع</button></div>
           </div>)}
     </div>
   );

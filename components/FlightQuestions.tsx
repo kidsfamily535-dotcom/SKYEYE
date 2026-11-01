@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { answerCheckin } from "@/app/flights/actions";
 import { fmtUtc } from "@/lib/format";
+import Menu from "@/components/Menu";
 import type { Question } from "@/lib/flights";
 
 /** The agent's questions. "Yes" needs the real time typed by the employee: no time is ever guessed. */
@@ -24,7 +25,7 @@ export default function FlightQuestions({ questions, canAct }: { questions: Ques
           {canAct && (openId === q.id
             ? <div className="row"><label className="muted" htmlFor={`t-${q.id}`}>الوقت الفعلي (UTC)</label><input id={`t-${q.id}`} className="ltr" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
                 <button type="button" className="btn sm gold" disabled={pending || !at} onClick={() => send(q.id, "yes")}>سجّل</button><button type="button" className="btn ghost sm" onClick={() => setOpenId(null)}>رجوع</button></div>
-            : <div className="row"><button type="button" className="btn sm" onClick={() => { setOpenId(q.id); setAt(""); }}>تم</button><button type="button" className="btn ghost sm" disabled={pending} onClick={() => send(q.id, "not_yet")}>لسه</button><button type="button" className="btn ghost sm" disabled={pending} onClick={() => send(q.id, "not_applicable")}>لا ينطبق</button></div>)}
+            : <div className="row"><button type="button" className="btn sm gold" onClick={() => { setOpenId(q.id); setAt(""); }}>تم</button><Menu><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_yet")}>لسه</button><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_applicable")}>لا ينطبق</button></Menu></div>)}
         </li>
       ))}
     </ul>

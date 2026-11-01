@@ -5,19 +5,25 @@ import type { MessageType } from "@/lib/flights";
 
 /** Actions: every message type the system can build. It fills what it knows; the employee completes the actual times. Drafts only: nothing is sent. */
 export default function FlightActions({ companyId, types, legs, canAct }: { companyId: string; types: MessageType[]; legs: { id: string; label: string }[]; canAct: boolean }) {
-  const [open, setOpen] = useState(false); const [type, setType] = useState<string | null>(null); const [leg, setLeg] = useState(legs[legs.length - 1]?.id ?? "");
+  const [type, setType] = useState<string | null>(null); const [leg, setLeg] = useState(legs[legs.length - 1]?.id ?? "");
   const [vals, setVals] = useState<Record<string, string>>({}); const [res, setRes] = useState<Composed | null>(null); const [copied, setCopied] = useState(false); const [pending, start] = useTransition();
   const run = (t: string, v: Record<string, string>) => start(async () => { setCopied(false); setRes(await composeFlightMessage(companyId, t, leg, v)); });
   if (!canAct) return null;
+  const ready = types.filter((m) => m.composable);
   return (
     <div className="card">
-      <div className="row"><h2>Actions</h2><button type="button" className="btn sm" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "إغلاق" : "قائمة الرسائل"}</button></div>
-      {open && <>
-        <p className="muted">النظام يبني الرسالة مما يعرفه، وأنت تكمل الأوقات الفعلية. هذه مسودة فقط: انسخها وأرسلها من بريد الشركة.</p>
+      <h2>رسائل جاهزة</h2>
+      <span className="muted">النظام يبني المسودة مما يعرفه وأنت تكمل الأوقات الفعلية. لا يُرسَل شيء: انسخها وأرسلها من بريد الشركة.</span>
+      {ready.length === 0 ? <p className="muted">لا توجد صيغ رسائل قابلة للبناء.</p> : <>
         <fieldset className="row"><legend className="muted">الرسالة تخص</legend>{legs.map((l) => <label key={l.id}><input type="radio" name="leg" checked={leg === l.id} onChange={() => { setLeg(l.id); setRes(null); }} /> <span className="ltr">{l.label}</span></label>)}</fieldset>
-        <div className="chips">{types.map((m) => <button key={m.type} type="button" disabled={!m.composable} title={m.composable ? (m.title ?? "") : "الصيغة موجودة لكنها لم تُفعَّل للبناء الآلي بعد"} className={`btn sm ${type === m.type ? "gold" : "ghost"}`} onClick={() => { setType(m.type); setVals({}); setRes(null); run(m.type, {}); }}><span className="ltr">{m.type}</span></button>)}</div>
-        <p className="muted">الرسائل الباهتة صيغتها محفوظة لكن بناؤها الآلي غير مفعّل بعد.</p>
-        {types.length === 0 && <p className="muted">لا توجد صيغ رسائل قابلة للبناء.</p>}
+        <div className="row">
+          <label className="sr" htmlFor="msg-type">نوع الرسالة</label>
+          <select id="msg-type" className="pick ltr" value={type ?? ""} onChange={(e) => { const t = e.target.value; if (!t) return; setType(t); setVals({}); setRes(null); run(t, {}); }}>
+            <option value="">اختر نوع الرسالة</option>
+            {ready.map((m) => <option key={m.type} value={m.type}>{m.title ? `${m.type} — ${m.title}` : m.type}</option>)}
+          </select>
+        </div>
+      </>}
         {pending && <p className="muted">جارٍ البناء…</p>}
         {res?.status === "error" && <p role="alert" className="err">{res.message}</p>}
         {res?.status === "missing" && (
@@ -35,7 +41,6 @@ export default function FlightActions({ companyId, types, legs, canAct }: { comp
             <button type="button" className="btn sm gold" onClick={async () => { await navigator.clipboard.writeText(res.draft); setCopied(true); }}>{copied ? "تم النسخ" : "نسخ الرسالة"}</button>
           </div>
         )}
-      </>}
     </div>
   );
 }
