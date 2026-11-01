@@ -34,7 +34,7 @@ export default async function CommandPage() {
               <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span><Link href={`/requests?id=${r.id}`}>{r.title}</Link><small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
           </section>
           <section className="card"><h2>إجراءات سريعة</h2>
-            <div className="stack"><Link className="btn gold" href="/inbox">+ طلب جديد من إيميل</Link><Link className="btn ghost" href="/inbox">افتح الوارد</Link><Link className="btn ghost" href="/requests">ملفات الطلبات</Link><Link className="btn ghost" href="/handover">تقرير الوردية</Link><button className="btn ghost" disabled>كلّم الوكيل</button></div>
+            <div className="stack"><Link className="btn gold" href="/inbox">+ طلب جديد من إيميل</Link><Link className="btn ghost" href="/inbox">افتح الوارد</Link><Link className="btn ghost" href="/requests">ملفات الطلبات</Link><Link className="btn ghost" href="/handover">تقرير الوردية</Link><Link className="btn ghost" href="/agent">كلّم الوكيل</Link></div>
           </section>
         </div>
       </main>
