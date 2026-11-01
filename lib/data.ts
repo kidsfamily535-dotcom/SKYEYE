@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type Tone = "late" | "warn" | "info" | "ok";
-export type Decision = { id: string; tone: Tone; text: string; action: string };
+export type Decision = { id: string; tone: Tone; text: string; action: string; href?: string };
 export type ActiveRequest = { id: string; airline: string; title: string; status: string; tone: Tone; next: string };
 export type RadarCounts = { onGround: number | null; inbound: number | null; delayed: number | null; awaitingMsg: number | null };
 export type CommandData = {
@@ -33,23 +33,28 @@ export async function getCommandData(): Promise<CommandData> {
   const co = m && (Array.isArray(m.companies) ? m.companies[0] : m.companies);
   if (!m || !co) return empty;
 
-  const [emp, inbox, drafts, urgent, triage, reqs] = await Promise.all([
+  const [emp, inbox, drafts, urgent, triage, reqs, alerts] = await Promise.all([
     sb.from("employees").select("full_name, role_title").eq("company_id", m.company_id).eq("membership_id", (await sb.from("memberships").select("id").eq("user_id", user.id).single()).data?.id ?? "").maybeSingle(),
     sb.from("email_triage").select("id", { count: "exact", head: true }).eq("status", "new"),
     sb.from("email_reply_drafts").select("id", { count: "exact", head: true }).eq("status", "draft"),
     sb.from("email_triage").select("id", { count: "exact", head: true }).eq("status", "new").eq("urgency", "urgent"),
     sb.from("email_triage").select("id, summary, urgency, needs_reply").eq("status", "new").order("created_at", { ascending: false }).limit(3),
     sb.from("request_files").select("id, title, flight_ref, current_stage, urgent, next_action, status").is("closed_at", null).order("due_at", { ascending: true, nullsFirst: false }).limit(4),
+    sb.from("exceptions").select("id, severity, title, source_id, source_type").in("source_type", ["request_due", "request_stalled"]).in("status", ["open"]).order("severity", { ascending: true }).limit(5),
   ]);
+  const alertDecisions: Decision[] = (alerts.data ?? []).map((a) => ({
+    id: a.id, tone: a.severity === "high" ? "late" : "warn", href: `/requests?id=${a.source_id}`, action: "افتح الطلب",
+    text: a.source_type === "request_stalled" ? "طلب راكد بلا حركة" : String(a.title).startsWith("Request overdue") ? "طلب تجاوز موعده" : "طلب يقترب موعده",
+  }));
 
   return {
     noMembership: false,
     company: { id: co.id, name: co.name, kind: "مناولة أرضية", logoPath: co.logo_path },
     user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? ROLE_AR[m.role] ?? "" },
     shadowMode: true, // the agent sends nothing yet; becomes a per-company setting in session 7
-    counts: { inboxToReview: inbox.count ?? 0, draftsWaiting: drafts.count ?? 0, urgentAlerts: urgent.count ?? 0 },
+    counts: { inboxToReview: inbox.count ?? 0, draftsWaiting: drafts.count ?? 0, urgentAlerts: (urgent.count ?? 0) + (alerts.data ?? []).filter((a) => a.severity === "high").length },
     radar: empty.radar, // flights/radar are wired in session 5
-    decisions: (triage.data ?? []).map((t) => ({ id: t.id, tone: urgencyTone(t.urgency), text: t.summary ?? "إيميل جديد", action: t.needs_reply ? "راجع المسودة" : "افتح الإيميل" })),
+    decisions: [...alertDecisions, ...(triage.data ?? []).map((t) => ({ id: t.id, tone: urgencyTone(t.urgency), text: t.summary ?? "إيميل جديد", action: t.needs_reply ? "راجع المسودة" : "افتح الإيميل", href: `/inbox?id=${t.id}` }))],
     requests: (reqs.data ?? []).map((r) => ({ id: r.id, airline: (r.flight_ref ?? "").slice(0, 2) || "•", title: r.title, status: r.current_stage, tone: r.urgent ? "late" : "info", next: r.next_action ?? "" })),
   };
 }

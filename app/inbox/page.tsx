@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import DraftPanel from "@/components/DraftPanel";
+import OpenRequestForm from "@/components/OpenRequestForm";
+import { getFilesForMessage } from "@/lib/requests";
 import { getCommandData } from "@/lib/data";
 import { getInbox, CATEGORY_AR, URGENCY_AR, STATUS_AR } from "@/lib/inbox";
 
@@ -10,6 +12,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(5,
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const [d, items, sp] = await Promise.all([getCommandData(), getInbox(), searchParams]);
   const sel = items.find((i) => i.id === sp.id) ?? items.find((i) => i.status === "new") ?? items[0];
+  const files = sel ? await getFilesForMessage(sel.messageId) : { linked: [], linkable: [] };
 
   return (
     <Shell data={d}>
@@ -45,6 +48,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                 {sel.message?.hasAttachments && <p className="muted">فيه مرفقات تُقرأ في جلسة لاحقة.</p>}
               </details>
             </div>
+            {sel && <div className="card"><h3>ملفات الطلبات</h3><OpenRequestForm key={sel.id} companyId={d.company.id} triageId={sel.id} messageId={sel.messageId} linked={files.linked} linkable={files.linkable} /></div>}
             <div className="card"><h3>المسودة (بالإنجليزية)</h3>
               {sel.draft ? <DraftPanel key={sel.draft.id} draft={sel.draft} /> : <p className="muted">لم يجهّز الوكيل مسودة لهذا الإيميل بعد.</p>}
             </div>

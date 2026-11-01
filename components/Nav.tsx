@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 const items: { href?: string; label: string; session: number }[] = [
   { href: "/", label: "قيادتي", session: 1 }, { href: "/inbox", label: "الوارد والمسودات", session: 3 },
-  { label: "الطلبات", session: 4 }, { label: "الرحلات", session: 5 }, { label: "تقرير الوردية", session: 6 }, { label: "كلّم الوكيل", session: 7 }, { label: "الإعدادات", session: 7 },
+  { href: "/requests", label: "الطلبات", session: 4 }, { label: "الرحلات", session: 5 }, { label: "تقرير الوردية", session: 6 }, { label: "كلّم الوكيل", session: 7 }, { label: "الإعدادات", session: 7 },
 ];
 
 export default function Nav() {
