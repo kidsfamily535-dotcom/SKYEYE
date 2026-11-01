@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { previewProgram, commitProgram } from "@/app/flights/import/actions";
 import type { ProgramResult } from "@/lib/program";
+import { sheetToCsv } from "@/lib/sheet";
 
 const TEMPLATE = "fn,stn,origin,dest,date,sta,std,dep,block_min,reg\nMS777/8,CAI,DXB,DXB,2026-11-01,14:00,15:30,,240,SU-GDM\n";
 const ERR_AR: Record<string, string> = {
@@ -20,7 +21,20 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   const [pending, start] = useTransition();
 
   const reset = (t: string) => { setText(t); setRes(null); setMsg(null); };
-  const onFile = async (f: File | undefined) => { if (!f) return; if (/\.xlsx?$/i.test(f.name)) { setMsg("ملفات Excel: افتحه وانسخ الجدول كله (مع العناوين) والصقه هنا، أو احفظه CSV."); return; } reset(await f.text()); };
+  const onFile = async (input: HTMLInputElement) => {
+    const f = input.files?.[0]; if (!f) return;
+    try {
+      if (/\.xls$/i.test(f.name)) { setMsg("صيغة Excel القديمة (xls) غير مدعومة. افتح الملف واحفظه باسم جديد بصيغة xlsx أو CSV."); return; }
+      if (/\.xlsx$/i.test(f.name)) {
+        const { readSheet } = await import("read-excel-file/browser");
+        const csv = sheetToCsv(await readSheet(f));
+        if (csv.split("\n").length < 2) { setMsg("الملف فارغ أو لا يحتوي سطر العناوين وتحته بيانات."); return; }
+        reset(csv); setMsg(null); return;
+      }
+      reset(await f.text());
+    } catch { setMsg("تعذّرت قراءة الملف. افتحه في Excel واحفظه xlsx أو CSV، أو الصق الجدول في الخانة."); }
+    finally { input.value = ""; }
+  };
   const preview = () => start(async () => { const r = await previewProgram(text); if (!r.ok) { setMsg(r.message); setRes(null); } else { setMsg(null); setRes(r.data); } });
   const commit = () => start(async () => { const r = await commitProgram(text, addMissing); if (!r.ok) { setMsg(r.message); return; } setRes(r.data); setMsg(null); });
   const download = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([TEMPLATE], { type: "text/csv" })); a.download = "flight-program-template.csv"; a.click(); };
@@ -32,11 +46,11 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   return (
     <div className="stack">
       {!done && (<>
-        <p className="muted">الصق الجدول من Excel (مع سطر العناوين)، أو ارفع ملف CSV. كل سطر يعمل دوراناً كاملاً: رحلة وصول ورحلة مغادرة لنفس الطائرة. الأوقات بتوقيت <span className="ltr">UTC</span>. التاريخ بشكل <span className="ltr">2026-11-01</span> أو يوم/شهر/سنة.</p>
+        <p className="muted">الصق الجدول من Excel (مع سطر العناوين)، أو ارفع ملف Excel (xlsx) أو CSV. كل سطر يعمل دوراناً كاملاً: رحلة وصول ورحلة مغادرة لنفس الطائرة. الأوقات بتوقيت <span className="ltr">UTC</span>. التاريخ بشكل <span className="ltr">2026-11-01</span> أو يوم/شهر/سنة.</p>
         <div className="row">
           <button type="button" className="btn sm" onClick={download}>تحميل القالب</button>
-          <label className="btn sm" htmlFor="pf">رفع ملف CSV</label>
-          <input id="pf" type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" className="sr" onChange={(e) => onFile(e.target.files?.[0])} />
+          <label className="btn sm" htmlFor="pf">رفع ملف Excel أو CSV</label>
+          <input id="pf" type="file" accept=".csv,.txt,.tsv,.xlsx" className="sr" onChange={(e) => onFile(e.target)} />
         </div>
         <label htmlFor="pt">برنامج الرحلات</label>
         <textarea id="pt" className="ltr" rows={9} dir="ltr" value={text} onChange={(e) => reset(e.target.value)} placeholder={TEMPLATE} />
