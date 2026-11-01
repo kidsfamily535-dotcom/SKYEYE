@@ -34,7 +34,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               <Link role="tab" aria-selected={tab === "active"} className={tab === "active" ? "on" : ""} href="/flights">الحالية</Link>
               <Link role="tab" aria-selected={tab === "done"} className={tab === "done" ? "on" : ""} href="/flights?tab=done">المنتهية</Link>
             </div>
-            {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. لم يُدخَل برنامج رحلات بعد." : "لا توجد رحلات منتهية."}</p>}
+            <div className="row"><Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link></div>
+            {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p>}
             <ul className="list">
               {list.map((r) => (
                 <li key={r.rotationId} className={r.rotationId === f?.rotation_id ? "cur" : ""}>
