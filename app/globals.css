@@ -61,3 +61,10 @@ nav{display:flex;flex-direction:column;gap:6px}.nav{display:flex;justify-content
 .open-form{display:flex;flex-direction:column;gap:10px;margin-top:10px}.open-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}.open-form .inline{flex-direction:row;align-items:center;gap:8px}.open-form .inline input{width:auto}
 a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}a.btn.gold{color:#1B2436}
 .list a{color:var(--ink)}
+
+/* Session 5: flights */
+.qrow { display: grid; grid-template-columns: auto 1fr; gap: .5rem .75rem; align-items: start; }
+.qrow .row { grid-column: 1 / -1; }
+.track { margin: .5rem 0; }
+.track > summary { cursor: pointer; padding: .4rem 0; }
+.mono { white-space: pre-wrap; font-family: ui-monospace, Menlo, Consolas, monospace; }

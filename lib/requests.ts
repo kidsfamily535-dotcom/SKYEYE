@@ -18,7 +18,7 @@ export type Policy = { kind: string; stage: string | null; hours: number | null;
 export type OpenFileOption = { id: string; title: string; flightRef: string | null; stageLabelAr: string };
 
 /** IATA (2 chars, then a digit) or ICAO (3 letters, then a digit) airline prefix of a flight reference. */
-function airlinePrefix(ref: string | null): { iata?: string; icao?: string } {
+export function airlinePrefix(ref: string | null): { iata?: string; icao?: string } {
   if (!ref) return {};
   const s = ref.trim().toUpperCase().replace(/\s+/g, "");
   if (/^[A-Z]{3}\d/.test(s)) return { icao: s.slice(0, 3) };
@@ -26,7 +26,7 @@ function airlinePrefix(ref: string | null): { iata?: string; icao?: string } {
   return {};
 }
 
-async function resolveAirlines(refs: (string | null)[]): Promise<Map<string, Airline>> {
+export async function resolveAirlines(refs: (string | null)[]): Promise<Map<string, Airline>> {
   const sb = await createClient();
   const pre = refs.map(airlinePrefix);
   const iata = [...new Set(pre.map((p) => p.iata).filter(Boolean))] as string[];
