@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { previewProgram, commitProgram } from "@/app/flights/import/actions";
 import type { ProgramResult } from "@/lib/program";
-import { sheetToCsv } from "@/lib/sheet";
+import { workbookToCsv } from "@/lib/sheet";
 
 const TEMPLATE = "fn,stn,origin,dest,date,sta,std,dep,block_min,reg\nMS777/8,CAI,DXB,DXB,2026-11-01,14:00,15:30,,240,SU-GDM\n";
 const ERR_AR: Record<string, string> = {
@@ -24,14 +24,20 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   const onFile = async (input: HTMLInputElement) => {
     const f = input.files?.[0]; if (!f) return;
     try {
-      if (/\.xls$/i.test(f.name)) { setMsg("صيغة Excel القديمة (xls) غير مدعومة. افتح الملف واحفظه باسم جديد بصيغة xlsx أو CSV."); return; }
-      if (/\.xlsx$/i.test(f.name)) {
-        const { readSheet } = await import("read-excel-file/browser");
-        const csv = sheetToCsv(await readSheet(f));
+      const buf = await f.arrayBuffer();
+      const head = new Uint8Array(buf.slice(0, 4));
+      const isZip = head[0] === 0x50 && head[1] === 0x4b; // xlsx / ods
+      const isOle = head[0] === 0xd0 && head[1] === 0xcf; // old xls
+      if (isZip || isOle) {
+        const csv = workbookToCsv(buf);
         if (csv.split("\n").length < 2) { setMsg("الملف فارغ أو لا يحتوي سطر العناوين وتحته بيانات."); return; }
-        reset(csv); setMsg(null); return;
+        reset(csv); return;
       }
-      reset(await f.text());
+      // Text files (csv/txt/tsv, or anything else that is plain text). Arabic Excel often saves CSV as Windows-1256.
+      let t = new TextDecoder("utf-8").decode(buf);
+      if (t.includes("\uFFFD")) t = new TextDecoder("windows-1256").decode(buf);
+      if (t.includes("\u0000") || t.trim().length < 5) { setMsg("لم أستطع قراءة هذا الملف. استخدم Excel أو CSV أو الصق الجدول في الخانة."); return; }
+      reset(t);
     } catch { setMsg("تعذّرت قراءة الملف. افتحه في Excel واحفظه xlsx أو CSV، أو الصق الجدول في الخانة."); }
     finally { input.value = ""; }
   };
@@ -46,11 +52,11 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   return (
     <div className="stack">
       {!done && (<>
-        <p className="muted">الصق الجدول من Excel (مع سطر العناوين)، أو ارفع ملف Excel (xlsx) أو CSV. كل سطر يعمل دوراناً كاملاً: رحلة وصول ورحلة مغادرة لنفس الطائرة. الأوقات بتوقيت <span className="ltr">UTC</span>. التاريخ بشكل <span className="ltr">2026-11-01</span> أو يوم/شهر/سنة.</p>
+        <p className="muted">الصق الجدول من Excel (مع سطر العناوين)، أو ارفع ملفاً (Excel بأي صيغة، CSV، نص). كل سطر يعمل دوراناً كاملاً: رحلة وصول ورحلة مغادرة لنفس الطائرة. الأوقات بتوقيت <span className="ltr">UTC</span>. التاريخ بشكل <span className="ltr">2026-11-01</span> أو يوم/شهر/سنة.</p>
         <div className="row">
           <button type="button" className="btn sm" onClick={download}>تحميل القالب</button>
-          <label className="btn sm" htmlFor="pf">رفع ملف Excel أو CSV</label>
-          <input id="pf" type="file" accept=".csv,.txt,.tsv,.xlsx" className="sr" onChange={(e) => onFile(e.target)} />
+          <label className="btn sm" htmlFor="pf">رفع ملف</label>
+          <input id="pf" type="file" className="sr" onChange={(e) => onFile(e.target)} />
         </div>
         <label htmlFor="pt">برنامج الرحلات</label>
         <textarea id="pt" className="ltr" rows={9} dir="ltr" value={text} onChange={(e) => reset(e.target.value)} placeholder={TEMPLATE} />
