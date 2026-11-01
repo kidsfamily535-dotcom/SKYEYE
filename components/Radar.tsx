@@ -1,7 +1,7 @@
 import type { RadarCounts } from "@/lib/data";
 
 const rows: [keyof RadarCounts, string][] = [
-  ["onGround", "على الأرض"], ["inbound", "وصول متوقع"], ["delayed", "متأخرة"], ["awaitingMsg", "بانتظار رسالة"],
+  ["onGround", "على الأرض"], ["inbound", "وصول متوقع"], ["delayed", "تجاوزت موعدها"], ["awaitingMsg", "بانتظار رسالة"],
 ];
 
 export default function Radar({ counts }: { counts: RadarCounts }) {

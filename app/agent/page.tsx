@@ -4,7 +4,7 @@ import AgentCancel from "@/components/AgentCancel";
 import AgentRefresh from "@/components/AgentRefresh";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
-import { answerText, getAgentPage, CMD_AR, STATUS_AR, TARGET_AR } from "@/lib/agent";
+import { answerText, getAgentPage, sourcesOf, missingOf, CMD_AR, STATUS_AR, TARGET_AR } from "@/lib/agent";
 
 const TONE: Record<string, string> = { queued: "warn", running: "info", done: "ok", failed: "late", cancelled: "info" };
 
@@ -42,6 +42,8 @@ export default async function AgentPage() {
                             <span className={`tag ${TONE[c.status] ?? "info"}`}>{STATUS_AR[c.status] ?? c.status}</span>
                             {c.status === "queued" && <small className="muted">لم يأخذه الوكيل بعد.</small>}
                             {c.status === "done" && (ans ? <p><bdi>{ans}</bdi></p> : <small className="muted">نفّذه الوكيل{c.result ? " ولم يكتب نصاً للرد." : "."}</small>)}
+                            {c.status === "done" && missingOf(c.result).length > 0 && <small className="muted">ينقص: <bdi className="ltr">{missingOf(c.result).join("، ")}</bdi></small>}
+                            {c.status === "done" && sourcesOf(c.result).length > 0 && <small className="muted">المصادر: <bdi className="ltr">{sourcesOf(c.result).join(" · ")}</bdi></small>}
                             {c.status === "done" && !ans && c.result ? <details><summary className="muted">تفاصيل النتيجة</summary><pre className="ltr raw">{JSON.stringify(c.result, null, 2)}</pre></details> : null}
                             {c.status === "failed" && <small className="err">{c.error ?? "فشل التنفيذ دون سبب مسجّل."}</small>}
                             {c.finishedAt && <small className="muted ltr">{fmtUtc(c.finishedAt)}</small>}

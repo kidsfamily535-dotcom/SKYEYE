@@ -11,8 +11,20 @@ export type AgentPage = { companyId: string; canWrite: boolean; opts: { email: O
 export function answerText(result: unknown): string | null {
   if (!result || typeof result !== "object") return typeof result === "string" && result ? result : null;
   const r = result as Record<string, unknown>;
-  for (const k of ["answer", "text", "message", "summary", "reply"]) if (typeof r[k] === "string" && r[k]) return r[k] as string;
+  for (const k of ["answer", "answer_ar", "note_ar", "text", "message", "summary", "reply"]) if (typeof r[k] === "string" && r[k]) return r[k] as string;
   return null;
+}
+
+/** Sources the agent cited (strings only, exactly as written). */
+export function sourcesOf(result: unknown): string[] {
+  const r = result && typeof result === "object" ? (result as Record<string, unknown>) : null;
+  return r && Array.isArray(r.sources) ? r.sources.filter((x): x is string => typeof x === "string") : [];
+}
+/** Field names the agent said it still needs from the employee. */
+export function missingOf(result: unknown): string[] {
+  const r = result && typeof result === "object" ? (result as Record<string, unknown>) : null;
+  if (!r || !Array.isArray(r.missing)) return [];
+  return r.missing.map((m) => (m && typeof m === "object" && typeof (m as Record<string, unknown>).field === "string" ? ((m as Record<string, unknown>).field as string) : null)).filter((x): x is string => !!x);
 }
 
 export async function getAgentPage(): Promise<AgentPage | null> {
