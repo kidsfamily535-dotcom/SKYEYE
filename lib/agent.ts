@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-import { CMD_AR, STATUS_AR, TARGET_AR, type Opt } from "@/lib/agent-labels";
-export { CMD_AR, STATUS_AR, TARGET_AR };
+import type { Opt } from "@/lib/labels";
 export type { Opt };
 
 export type Cmd = { id: string; type: string; targetType: string; targetLabel: string | null; instruction: string | null; status: string; result: unknown; error: string | null; createdAt: string; claimedAt: string | null; finishedAt: string | null };

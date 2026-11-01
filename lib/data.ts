@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type Tone = "late" | "warn" | "info" | "ok";
+import { ROLE_AR, urgencyTone, type Tone } from "@/lib/labels";
+export type { Tone };
 export type Decision = { id: string; tone: Tone; text: string; action: string; href?: string };
 export type ActiveRequest = { id: string; airline: string; title: string; status: string; tone: Tone; next: string };
 export type RadarCounts = { onGround: number | null; inbound: number | null; delayed: number | null; awaitingMsg: number | null };
@@ -15,8 +16,6 @@ export type CommandData = {
   requests: ActiveRequest[];
 };
 
-const ROLE_AR: Record<string, string> = { owner: "مالك", admin: "مدير", operator: "موظف عمليات", viewer: "مشاهد" };
-const urgencyTone = (u: string | null): Tone => (u === "urgent" ? "late" : u === "important" ? "warn" : "info");
 
 /** Everything here is read through RLS: the signed-in user only ever sees their own company's rows. */
 export async function getCommandData(): Promise<CommandData> {

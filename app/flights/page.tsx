@@ -6,16 +6,15 @@ import FlightTimeline from "@/components/FlightTimeline";
 import FlightActions from "@/components/FlightActions";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
-import { fmtUtc } from "@/lib/format";
+import { fmtUtc, hm } from "@/lib/format";
 import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
-
-const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
-const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
+import { FLIGHT_STATUS_AR } from "@/lib/labels";
+import { PageHeader, Split, Tabs, Tag, Empty, ProgressBar } from "@/components/ui";
 
 function Progress({ r }: { r: FlightRow }) {
   if (!r.stepsTotal) return <small className="muted">التقدم: —</small>;
   const pct = Math.round(((r.stepsRecorded ?? 0) / r.stepsTotal) * 100);
-  return <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="مراحل المناولة المسجّلة"><i style={{ width: `${pct}%` }} /></div>;
+  return <ProgressBar pct={pct} label="مراحل المناولة المسجّلة" />;
 }
 
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string }> }) {
@@ -28,21 +27,20 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d}>
       <main className="page">
-        <div className="inbox">
+        <PageHeader title="الرحلات" subtitle="الدورانات الحالية بمراحلها، وأسئلة الوكيل، والخط الزمني لكل طائرة.">
+          <Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link>
+        </PageHeader>
+        <Split>
           <section className="card" aria-label="الرحلات">
-            <div className="tabs" role="tablist">
-              <Link role="tab" aria-selected={tab === "active"} className={tab === "active" ? "on" : ""} href="/flights">الحالية</Link>
-              <Link role="tab" aria-selected={tab === "done"} className={tab === "done" ? "on" : ""} href="/flights?tab=done">المنتهية</Link>
-            </div>
-            <div className="row"><Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link></div>
-            {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p>}
+            <Tabs items={[{ href: "/flights", label: "الحالية", active: tab === "active" }, { href: "/flights?tab=done", label: "المنتهية", active: tab === "done" }]} />
+            {list.length === 0 && <Empty>{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</Empty>}
             <ul className="list">
               {list.map((r) => (
                 <li key={r.rotationId} className={r.rotationId === f?.rotation_id ? "cur" : ""}>
                   <Link className="item" href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} aria-current={r.rotationId === f?.rotation_id ? "true" : undefined}>
                     <b>{r.airline && <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} />} <span className="ltr">{r.flightIn ?? "—"} ← → {r.flightOut ?? "—"}</span></b>
                     <small className="muted"><span className="ltr">{r.origin ?? "—"} → {r.station ?? "—"} → {r.destination ?? "—"}</span> · <span className="ltr">{r.registration ?? "—"}</span></small>
-                    <small className="muted">وصول <span className="ltr">{hm(r.ata ?? r.eta ?? r.sta)}</span>{r.ata ? "" : r.eta ? " (متوقع)" : " (مجدول)"} · مغادرة <span className="ltr">{hm(r.atd ?? r.std)}</span> · {STATUS_AR[r.status] ?? r.status}</small>
+                    <small className="muted">وصول <span className="ltr">{hm(r.ata ?? r.eta ?? r.sta)}</span>{r.ata ? "" : r.eta ? " (متوقع)" : " (مجدول)"} · مغادرة <span className="ltr">{hm(r.atd ?? r.std)}</span> · {FLIGHT_STATUS_AR[r.status] ?? r.status}</small>
                     <Progress r={r} />
                   </Link>
                 </li>
@@ -51,10 +49,10 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
           </section>
 
           <section className="detail" aria-label="تفاصيل الرحلة">
-            {!sel && <div className="card"><p className="muted">اختر رحلة لعرض خطها الزمني.</p></div>}
+            {!sel && <div className="card"><Empty>اختر رحلة لعرض خطها الزمني.</Empty></div>}
             {sel && f && c && (<>
               <div className="card">
-                <div className="chips"><span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>{Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
+                <div className="chips"><Tag tone={f.status === "delayed" ? "late" : "info"}>{FLIGHT_STATUS_AR[f.status] ?? f.status}</Tag>{Number(f.sop_critical_open) > 0 && <Tag tone="warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></Tag>}</div>
                 <h2>{sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />} <span className="ltr">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</span></h2>
                 <p className="muted"><span className="ltr">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}</span> · <span className="ltr">{f.registration ?? "—"}</span></p>
                 {!sel.canAct && <p role="alert" className="err">حسابك غير مربوط بملف موظف، فلا يمكنك تسجيل أوقات أو إفادات. اطلب من المدير إضافتك.</p>}
@@ -85,7 +83,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>
             </>)}
           </section>
-        </div>
+        </Split>
       </main>
     </Shell>
   );

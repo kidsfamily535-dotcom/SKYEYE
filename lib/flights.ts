@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { airlinePrefix, resolveAirlines, type Airline } from "@/lib/requests";
 
-export { TRACK_AR } from "@/lib/flight-labels";
 
 export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;

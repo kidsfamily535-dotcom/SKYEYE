@@ -1,11 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 
-export const CATEGORY_AR: Record<string, string> = {
-  mvt: "رسالة حركة", load_message: "رسالة حمولة", schedule: "جدول رحلات", service_request: "طلب خدمة", slot: "سلوت",
-  permit: "تصريح", finance: "مالية", complaint: "شكوى", general: "عام", unknown: "غير مصنّف",
-};
-export const URGENCY_AR: Record<string, string> = { normal: "عادي", important: "مهم", urgent: "عاجل" };
-export const STATUS_AR: Record<string, string> = { new: "جديد", reviewed: "تمت المراجعة", replied: "تم الرد", no_reply_needed: "لا يحتاج رداً", dismissed: "مستبعد" };
 
 export type InboxItem = {
   id: string; messageId: string; category: string; summary: string | null; requestedAction: string | null; replyReason: string | null; replyKind: string | null;

@@ -5,16 +5,15 @@ import RequestActions from "@/components/RequestActions";
 import AlertActions from "@/components/AlertActions";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc, hoursPhrase } from "@/lib/format";
-import { getAlerts, getPolicies, getRequest, getRequestList, getStages, ACTOR_AR, TYPE_AR, WAITING_AR, type RequestRow, type Stage } from "@/lib/requests";
-
-const POLICY_AR: Record<string, string> = { warn_before_hours: "تنبيه قبل موعد الطلب", urgent_hours: "ما يُعدّ عاجلاً قبل الرحلة", lead_time_hours: "المهلة الطبيعية قبل الرحلة", stall_after_hours: "الطلب الراكد بعد" };
-const KIND_AR = { overdue: "متأخر", due: "اقترب موعده", stalled: "راكد" } as const;
+import { getAlerts, getPolicies, getRequest, getRequestList, getStages, type RequestRow, type Stage } from "@/lib/requests";
+import { ACTOR_AR, POLICY_AR, REQUEST_ALERT_KIND_AR, TYPE_AR, WAITING_AR } from "@/lib/labels";
+import { PageHeader, Split, Tabs, Tag, Empty, ProgressBar } from "@/components/ui";
 
 function Progress({ stages, current, status }: { stages: Stage[]; current: string; status: string }) {
   const line = stages.filter((s) => s.code !== "cancelled");
   const idx = Math.max(0, line.findIndex((s) => s.code === current));
   const pct = status === "cancelled" ? 0 : Math.round(((idx + (status === "closed" ? 1 : 0)) / (line.length - 1)) * 100);
-  return <div className={`bar ${status === "cancelled" ? "off" : ""}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="تقدم الطلب"><i style={{ width: `${pct}%` }} /></div>;
+  return <ProgressBar pct={pct} label="تقدم الطلب" off={status === "cancelled"} />;
 }
 
 function Airline({ r }: { r: RequestRow }) {
@@ -32,6 +31,9 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
   return (
     <Shell data={d}>
       <main className="page">
+        <PageHeader title="ملفات الطلبات" subtitle="كل تصريح أو طلب خدمة بمراحله والمنتظَر فيه.">
+          <Link className="btn gold sm" href="/inbox">+ افتح ملفاً من إيميل</Link>
+        </PageHeader>
         {alerts.length > 0 && (
           <section className="card" aria-label="التنبيهات">
             <h2>تنبيهات الطلبات</h2>
@@ -40,7 +42,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
                 <li key={a.id} className="alert-row">
                   <i className={`dot ${a.severity === "high" ? "late" : "warn"}`} />
                   <span>
-                    <em className={`tag ${a.severity === "high" ? "late" : "warn"}`}>{KIND_AR[a.kind]}</em>{" "}
+                    <Tag tone={a.severity === "high" ? "late" : "warn"}>{REQUEST_ALERT_KIND_AR[a.kind]}</Tag>{" "}
                     {a.file ? <Link href={`/requests?id=${a.file.id}`}><bdi>{a.file.title}</bdi></Link> : <bdi>{a.title}</bdi>}
                     {a.file && <small className="muted">الموعد <span className="ltr">{fmtUtc(a.file.dueAt)}</span> · المرحلة: {a.file.stageLabelAr} · بانتظار {WAITING_AR[a.file.waitingOn] ?? "—"}{a.kind === "stalled" ? ` · بلا حركة منذ ${hoursPhrase(a.file.hoursSince)}` : ""}</small>}
                   </span>
@@ -51,13 +53,10 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           </section>
         )}
 
-        <div className="inbox">
+        <Split>
           <section className="card" aria-label="ملفات الطلبات">
-            <div className="tabs" role="tablist">
-              <Link role="tab" aria-selected={tab === "open"} className={tab === "open" ? "on" : ""} href="/requests">المفتوحة</Link>
-              <Link role="tab" aria-selected={tab === "done"} className={tab === "done" ? "on" : ""} href="/requests?tab=done">المغلقة والملغاة</Link>
-            </div>
-            {list.length === 0 && <p className="muted">{tab === "open" ? "لا توجد ملفات طلبات مفتوحة. افتح ملفاً من إيميل داخل الوارد." : "لا توجد ملفات مغلقة بعد."}</p>}
+            <Tabs items={[{ href: "/requests", label: "المفتوحة", active: tab === "open" }, { href: "/requests?tab=done", label: "المغلقة والملغاة", active: tab === "done" }]} />
+            {list.length === 0 && <Empty>{tab === "open" ? "لا توجد ملفات طلبات مفتوحة. افتح ملفاً من إيميل داخل الوارد." : "لا توجد ملفات مغلقة بعد."}</Empty>}
             <ul className="list">
               {list.map((r) => (
                 <li key={r.id} className={r.id === sel?.row.id ? "cur" : ""}>
@@ -73,14 +72,14 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           </section>
 
           <section className="detail" aria-label="تفاصيل الطلب">
-            {!sel && <div className="card"><p className="muted">اختر ملف طلب لعرض مراحله.</p></div>}
+            {!sel && <div className="card"><Empty>اختر ملف طلب لعرض مراحله.</Empty></div>}
             {sel && (() => {
               const r = sel.row;
               const line = typeStages(r.type).filter((s) => s.code !== "cancelled");
               const cur = line.findIndex((s) => s.code === r.stage);
               return (<>
                 <div className="card">
-                  <div className="chips"><span className="tag info">{TYPE_AR[r.type] ?? r.type}</span><span className={`tag ${r.status === "open" ? "warn" : "ok"}`}>{r.status === "open" ? r.stageLabelAr : r.status === "closed" ? "اتقفل" : "اتلغى"}</span>{r.urgent && <span className="tag late">عاجل</span>}</div>
+                  <div className="chips"><Tag>{TYPE_AR[r.type] ?? r.type}</Tag><Tag tone={r.status === "open" ? "warn" : "ok"}>{r.status === "open" ? r.stageLabelAr : r.status === "closed" ? "اتقفل" : "اتلغى"}</Tag>{r.urgent && <Tag tone="late">عاجل</Tag>}</div>
                   <h2><Airline r={r} /> <bdi>{r.title}</bdi></h2>
                   <p className="muted"><span className="ltr">{r.flightRef ?? "—"}</span> · رحلة <span className="ltr">{r.flightDate ?? "—"}</span></p>
                   <ol className="steps" aria-label="مراحل الطلب">
@@ -110,7 +109,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
                 </div>
 
                 <div className="card"><h2>الإيميلات المربوطة</h2>
-                  {sel.mails.length === 0 && <p className="muted">لا توجد إيميلات مربوطة.</p>}
+                  {sel.mails.length === 0 && <Empty>لا توجد إيميلات مربوطة.</Empty>}
                   <ul className="list">{sel.mails.map((m) => (
                     <li key={m.messageId}><span>{m.triageId ? <Link href={`/inbox?id=${m.triageId}`} className="ltr">{m.subject ?? "(no subject)"}</Link> : <bdi className="ltr">{m.subject ?? "(no subject)"}</bdi>}<small className="muted ltr">{m.from ?? ""} · {fmtUtc(m.at)}</small></span></li>))}</ul>
                 </div>
@@ -120,10 +119,10 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
             <div className="card"><h2>مهل بانتظار قرارك</h2>
               <p className="muted">لا يُولَّد تنبيه إلا بمهلة معتمدة. غير المعتمد يظهر «—» ولا أفترض له رقماً.</p>
               <ul className="list">{policies.map((p, i) => (
-                <li key={i}><i className={`dot ${p.status === "approved" ? "ok" : "warn"}`} /><span>{POLICY_AR[p.kind] ?? p.kind}</span><b className="ltr">{p.hours === null ? "—" : `${p.hours}h`}</b><em className={`tag ${p.status === "approved" ? "ok" : "warn"}`}>{p.status === "approved" ? "معتمدة" : "بانتظار الاعتماد"}</em></li>))}</ul>
+                <li key={i}><i className={`dot ${p.status === "approved" ? "ok" : "warn"}`} /><span>{POLICY_AR[p.kind] ?? p.kind}</span><b className="ltr">{p.hours === null ? "—" : `${p.hours}h`}</b><Tag tone={p.status === "approved" ? "ok" : "warn"}>{p.status === "approved" ? "معتمدة" : "بانتظار الاعتماد"}</Tag></li>))}</ul>
             </div>
           </section>
-        </div>
+        </Split>
       </main>
     </Shell>
   );

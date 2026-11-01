@@ -2,20 +2,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const items: { href?: string; label: string; session: number }[] = [
-  { href: "/", label: "قيادتي", session: 1 }, { href: "/inbox", label: "الوارد والمسودات", session: 3 },
-  { href: "/requests", label: "الطلبات", session: 4 }, { href: "/flights", label: "الرحلات", session: 5 }, { href: "/handover", label: "تقرير الوردية", session: 6 }, { href: "/agent", label: "كلّم الوكيل", session: 7 }, { label: "الإعدادات", session: 7 },
+/** Grouped by how the work is done: what you do all shift, then what you follow up on. */
+const groups: { title: string; items: { href: string; label: string }[] }[] = [
+  { title: "العمل اليومي", items: [
+    { href: "/", label: "قيادتي" }, { href: "/flights", label: "الرحلات" }, { href: "/requests", label: "الطلبات" }, { href: "/inbox", label: "الوارد والمسودات" },
+  ] },
+  { title: "المتابعة", items: [
+    { href: "/handover", label: "تقرير الوردية" }, { href: "/agent", label: "كلّم الوكيل" },
+  ] },
 ];
 
 export default function Nav() {
   const path = usePathname();
   return (
-    <nav>
-      {items.map((n) => {
-        if (!n.href) return <span key={n.label} className="nav off" aria-disabled="true">{n.label}<em>جلسة {n.session}</em></span>;
-        const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
-        return <Link key={n.label} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>{n.label}</Link>;
-      })}
+    <nav aria-label="التنقل">
+      {groups.map((g) => (
+        <div key={g.title} className="nav-group" role="group" aria-label={g.title}>
+          <small className="nav-title">{g.title}</small>
+          {g.items.map((n) => {
+            const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
+            return <Link key={n.href} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>{n.label}</Link>;
+          })}
+        </div>
+      ))}
     </nav>
   );
 }

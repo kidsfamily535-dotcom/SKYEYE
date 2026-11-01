@@ -1,11 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
 import { correctStep, recordStep } from "@/app/flights/actions";
-import { fmtUtc } from "@/lib/format";
-import { TRACK_AR } from "@/lib/flight-labels";
+import { fmtUtc, hm } from "@/lib/format";
+import { TRACK_AR } from "@/lib/labels";
 import type { StepRow } from "@/lib/flights";
 
-const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 
 export default function FlightTimeline({ steps, arrivalLeg, canAct }: { steps: StepRow[]; arrivalLeg: string; canAct: boolean }) {
   const [edit, setEdit] = useState<string | null>(null);

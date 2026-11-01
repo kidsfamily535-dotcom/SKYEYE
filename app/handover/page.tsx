@@ -3,13 +3,12 @@ import Shell from "@/components/Shell";
 import ShiftAck from "@/components/ShiftAck";
 import ShiftDefinitionForm from "@/components/ShiftDefinitionForm";
 import { getCommandData } from "@/lib/data";
-import { fmtUtc } from "@/lib/format";
+import { dash, fmtUtc } from "@/lib/format";
 import { getShiftPage, hhmm } from "@/lib/shifts";
+import { ALERT_STATUS_AR, QUESTION_STATUS_AR } from "@/lib/labels";
+import { PageHeader, Split, Tag, Empty, NoCompany } from "@/components/ui";
 
-const dash = (n: number | null) => (n === null ? "—" : String(n));
-const Q_AR: Record<string, string> = { asked: "مطروح", in_progress: "قيد المتابعة", late: "متأخر", escalated: "مُصعَّد" };
 const SEV_TONE = (s: string) => (s === "high" ? "late" : "warn");
-const ALERT_ST_AR: Record<string, string> = { open: "جديد", acknowledged: "تمت رؤيته" };
 
 export default async function HandoverPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const sp = await searchParams;
@@ -18,7 +17,8 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   return (
     <Shell data={d}>
       <main className="page">
-        {!p && <section className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></section>}
+        <PageHeader title="تقرير الوردية" subtitle="لقطة نهاية كل وردية، والاستلام خطوة صريحة باسم من يستلم." />
+        {!p && <NoCompany />}
         {p && (
           <>
             <section className="card" aria-label="الورديات">
@@ -40,7 +40,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
                 : p.defs.length === 0 && <p className="muted">اطلب من المسؤول تعريف الورديات.</p>}
             </section>
 
-            <div className="inbox">
+            <Split>
               <section className="card" aria-label="تقارير الوردية">
                 <h2>تقارير الوردية</h2>
                 {p.reports.length === 0 && <p className="muted">لا توجد تقارير بعد. أول تقرير يظهر قبل نهاية أول وردية معرّفة بـ 15 دقيقة.</p>}
@@ -48,7 +48,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
                   {p.reports.map((r) => (
                     <li key={r.id} className={r.id === p.sel?.id ? "cur" : ""}>
                       <Link className="item" href={`/handover?id=${r.id}`} aria-current={r.id === p.sel?.id ? "true" : undefined}>
-                        <b><bdi>{r.shiftName}</bdi> <em className={`tag ${r.status === "generated" ? "warn" : "ok"}`}>{r.status === "generated" ? "بانتظار الاستلام" : "تم الاستلام"}</em></b>
+                        <b><bdi>{r.shiftName}</bdi> <Tag tone={r.status === "generated" ? "warn" : "ok"}>{r.status === "generated" ? "بانتظار الاستلام" : "تم الاستلام"}</Tag></b>
                         <small className="muted"><span className="ltr">{fmtUtc(r.start)}</span> ← <span className="ltr">{fmtUtc(r.end)}</span></small>
                       </Link>
                     </li>
@@ -57,12 +57,12 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
               </section>
 
               <section className="detail" aria-label="تفاصيل التقرير">
-                {!p.sel && <div className="card"><p className="muted">اختر تقريراً لعرضه.</p></div>}
+                {!p.sel && <div className="card"><Empty>اختر تقريراً لعرضه.</Empty></div>}
                 {p.sel && (() => {
                   const r = p.sel; const c = r.content;
                   return (<>
                     <div className="card">
-                      <div className="chips"><span className={`tag ${r.status === "generated" ? "warn" : "ok"}`}>{r.status === "generated" ? "بانتظار الاستلام" : "تم الاستلام"}</span></div>
+                      <div className="chips"><Tag tone={r.status === "generated" ? "warn" : "ok"}>{r.status === "generated" ? "بانتظار الاستلام" : "تم الاستلام"}</Tag></div>
                       <h2><bdi>{r.shiftName}</bdi></h2>
                       <p className="muted"><span className="ltr">{fmtUtc(r.start)}</span> ← <span className="ltr">{fmtUtc(r.end)}</span> · ولّده الوكيل <span className="ltr">{fmtUtc(r.generatedAt)}</span></p>
                       <p className="muted">هذه لقطة لحظة التوليد؛ قسم «الآن» يوضح حال كل طلب اليوم.</p>
@@ -91,12 +91,12 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
 
                     <div className="card"><h2>التنبيهات القائمة</h2>
                       {c.alerts.length === 0 && <p className="muted">لا تنبيهات قائمة.</p>}
-                      <ul className="list">{c.alerts.map((a) => <li key={a.id}><i className={`dot ${SEV_TONE(a.severity)}`} /><span><bdi className="ltr">{a.title}</bdi><small className="muted"><span className="ltr">{fmtUtc(a.detectedAt)}</span> · {ALERT_ST_AR[a.status] ?? a.status}</small></span></li>)}</ul>
+                      <ul className="list">{c.alerts.map((a) => <li key={a.id}><i className={`dot ${SEV_TONE(a.severity)}`} /><span><bdi className="ltr">{a.title}</bdi><small className="muted"><span className="ltr">{fmtUtc(a.detectedAt)}</span> · {ALERT_STATUS_AR[a.status] ?? a.status}</small></span></li>)}</ul>
                     </div>
 
                     <div className="card"><h2>أسئلة الوكيل بلا إجابة</h2>
                       {c.questions.length === 0 && <p className="muted">لا أسئلة معلّقة.</p>}
-                      <ul className="list">{c.questions.map((q) => <li key={q.id}><i className={`dot ${q.status === "late" || q.status === "escalated" ? "late" : "warn"}`} /><span><b className="ltr">{q.flightNumber ?? "—"}</b> {q.questionAr ?? "—"}<small className="muted">الموعد <span className="ltr">{fmtUtc(q.dueAt)}</span> · {Q_AR[q.status] ?? q.status}</small></span></li>)}</ul>
+                      <ul className="list">{c.questions.map((q) => <li key={q.id}><i className={`dot ${q.status === "late" || q.status === "escalated" ? "late" : "warn"}`} /><span><b className="ltr">{q.flightNumber ?? "—"}</b> {q.questionAr ?? "—"}<small className="muted">الموعد <span className="ltr">{fmtUtc(q.dueAt)}</span> · {QUESTION_STATUS_AR[q.status] ?? q.status}</small></span></li>)}</ul>
                     </div>
 
                     <div className="card"><h2>الطائرات على الأرض</h2>
@@ -127,7 +127,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
                   </>);
                 })()}
               </section>
-            </div>
+            </Split>
           </>
         )}
       </main>

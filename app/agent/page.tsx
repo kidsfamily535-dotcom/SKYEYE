@@ -4,23 +4,24 @@ import AgentCancel from "@/components/AgentCancel";
 import AgentRefresh from "@/components/AgentRefresh";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
-import { answerText, getAgentPage, CMD_AR, STATUS_AR, TARGET_AR } from "@/lib/agent";
-
-const TONE: Record<string, string> = { queued: "warn", running: "info", done: "ok", failed: "late", cancelled: "info" };
+import { answerText, getAgentPage } from "@/lib/agent";
+import { AGENT_STATUS_AR, AGENT_STATUS_TONE, AGENT_TARGET_AR, CMD_AR } from "@/lib/labels";
+import { PageHeader, Split, Tag, Empty, NoCompany } from "@/components/ui";
 
 export default async function AgentPage() {
   const [d, p] = await Promise.all([getCommandData(), getAgentPage()]);
   return (
     <Shell data={d}>
       <main className="page">
-        {!p && <section className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></section>}
+        <PageHeader title="كلّم الوكيل" subtitle="اختر الموضوع واكتب للوكيل؛ رده يظهر هنا في المحادثة." />
+        {!p && <NoCompany />}
         {p && (
           <>
             <AgentRefresh active={p.active > 0} />
-            <div className="inbox">
+            <Split>
               <section className="card" aria-label="رسالة جديدة">
                 <h2>كلّم الوكيل</h2>
-                {p.canWrite ? <AgentComposer companyId={p.companyId} opts={p.opts} /> : <p className="muted">صلاحية المشاهدة لا تسمح بإرسال أوامر للوكيل.</p>}
+                {p.canWrite ? <AgentComposer companyId={p.companyId} opts={p.opts} /> : <Empty>صلاحية المشاهدة لا تسمح بإرسال أوامر للوكيل.</Empty>}
               </section>
 
               <section className="detail" aria-label="المحادثة">
@@ -35,11 +36,11 @@ export default async function AgentPage() {
                         <li key={c.id}>
                           <div className="bubble me">
                             <b>{CMD_AR[c.type] ?? c.type}</b>
-                            <small className="muted">{TARGET_AR[c.targetType] ?? c.targetType}{c.targetLabel ? <>: <bdi className="ltr">{c.targetLabel}</bdi></> : ""} · <span className="ltr">{fmtUtc(c.createdAt)}</span></small>
+                            <small className="muted">{AGENT_TARGET_AR[c.targetType] ?? c.targetType}{c.targetLabel ? <>: <bdi className="ltr">{c.targetLabel}</bdi></> : ""} · <span className="ltr">{fmtUtc(c.createdAt)}</span></small>
                             {c.instruction && <p><bdi>{c.instruction}</bdi></p>}
                           </div>
                           <div className="bubble agent">
-                            <span className={`tag ${TONE[c.status] ?? "info"}`}>{STATUS_AR[c.status] ?? c.status}</span>
+                            <Tag tone={AGENT_STATUS_TONE[c.status] ?? "info"}>{AGENT_STATUS_AR[c.status] ?? c.status}</Tag>
                             {c.status === "queued" && <small className="muted">لم يأخذه الوكيل بعد.</small>}
                             {c.status === "done" && (ans ? <p><bdi>{ans}</bdi></p> : <small className="muted">نفّذه الوكيل{c.result ? " ولم يكتب نصاً للرد." : "."}</small>)}
                             {c.status === "done" && !ans && c.result ? <details><summary className="muted">تفاصيل النتيجة</summary><pre className="ltr raw">{JSON.stringify(c.result, null, 2)}</pre></details> : null}
@@ -53,7 +54,7 @@ export default async function AgentPage() {
                   </ol>
                 </div>
               </section>
-            </div>
+            </Split>
           </>
         )}
       </main>

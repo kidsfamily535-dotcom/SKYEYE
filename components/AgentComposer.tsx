@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { sendToAgent } from "@/app/agent/actions";
-import { CMD_AR, type Opt } from "@/lib/agent-labels";
+import { CMD_AR, type Opt } from "@/lib/labels";
 
 type Kind = "email" | "draft" | "request" | "flight";
 const KINDS: { kind: Kind; label: string; targetType: string; cmds: string[] }[] = [

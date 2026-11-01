@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader, Empty } from "@/components/ui";
 import Shell from "@/components/Shell";
 import ProgramImport from "@/components/ProgramImport";
 import { getCommandData } from "@/lib/data";
@@ -9,9 +10,11 @@ export default async function ImportPage() {
   return (
     <Shell data={d}>
       <main className="page">
+        <PageHeader title="رفع برنامج الرحلات" subtitle="الصق الجدول أو ارفع CSV، افحصه أولاً ثم اعتمده.">
+          <Link className="btn sm" href="/flights">رجوع للرحلات</Link>
+        </PageHeader>
         <section className="card" aria-label="رفع برنامج الرحلات">
-          <div className="row"><h2 className="grow">رفع برنامج الرحلات</h2><Link className="btn sm" href="/flights">رجوع للرحلات</Link></div>
-          {!c && <p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p>}
+          {!c && <Empty>حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</Empty>}
           {c && !c.canWrite && <p role="alert" className="err">حسابك للمشاهدة فقط، فلا يمكنك رفع برنامج الرحلات.</p>}
           {c && c.canWrite && <ProgramImport canAdmin={c.canAdmin} />}
         </section>
