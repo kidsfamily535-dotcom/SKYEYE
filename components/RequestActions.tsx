@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import Hint from "@/components/Hint";
 import { advanceRequest } from "@/app/requests/actions";
 
 type Move = { to: string; label: string };
@@ -24,7 +25,7 @@ export default function RequestActions({ fileId, moves, canClose }: { fileId: st
           : <button key={m.to} type="button" className="btn" disabled={pending} onClick={() => setPick(m.to)}>{m.label}</button>)}
         {forward.length === 0 && !canClose && <span className="muted">لا توجد خطوة يدوية الآن.</span>}
       </div>
-      {canClose && <p className="muted">الإغلاق لا يتم بزر: يُغلق الطلب تلقائياً عندما تضغط «أرسلتُه من بريدي» على الرد الأخير داخل الوارد.</p>}
+      {canClose && <Hint>الإغلاق لا يتم بزر: يُغلق الطلب تلقائياً عندما تضغط «أرسلتُه من بريدي» على الرد الأخير داخل الوارد.</Hint>}
       {cancelMove && (!cancel
         ? <button type="button" className="btn danger sm" onClick={() => setCancel(true)}>إلغاء الطلب</button>
         : <div className="cancel-box">

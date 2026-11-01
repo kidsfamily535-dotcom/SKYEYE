@@ -8,6 +8,7 @@ import FlightActions from "@/components/FlightActions";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
+import Hint from "@/components/Hint";
 import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
 
 const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
@@ -19,12 +20,15 @@ function Progress({ r }: { r: FlightRow }) {
   return <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="مراحل المناولة المسجّلة"><i style={{ width: `${pct}%` }} /></div>;
 }
 
-export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string }> }) {
+export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "active";
+  const view = ["timeline", "messages", "delay"].includes(sp.view ?? "") ? sp.view : "overview";
   const [d, list] = await Promise.all([getCommandData(), getFlightList(tab)]);
   const sel = sp.id ? await getFlight(sp.id) : list[0] ? await getFlight(list[0].rotationId) : null;
   const f = sel?.file; const c = sel?.clock;
+  const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
+  const views: [string, string][] = [["overview", `الحالة والأسئلة${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["timeline", "الخط الزمني"], ["messages", "الرسائل"], ["delay", "إفادات التأخير"]];
 
   return (
     <Shell data={d}>
@@ -72,21 +76,24 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 </dl>
               </div>
 
-              <div className="card"><h2>أسئلة الوكيل</h2>
+              <div className="tabs views" role="tablist" aria-label="أقسام الرحلة">
+                {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
+              </div>
+
+              {view === "overview" && <div className="card"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من الخط الزمني.</Hint></h2>
                 <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
-                <p className="muted">لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من الخط الزمني.</p>
-              </div>
+              </div>}
 
-              <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
-                legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />
+              {view === "messages" && <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
+                legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />}
 
-              <div className="card"><h2>الخط الزمني</h2>
+              {view === "timeline" && <div className="card"><h2>الخط الزمني</h2>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
-              </div>
+              </div>}
 
-              <div className="card"><h2>إفادات التأخير</h2>
+              {view === "delay" && <div className="card"><h2>إفادات التأخير</h2>
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
-              </div>
+              </div>}
             </>)}
           </section>
         </div>

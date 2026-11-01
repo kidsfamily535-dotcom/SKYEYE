@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { composeFlightMessage, type Composed } from "@/app/flights/actions";
+import Hint from "@/components/Hint";
 import type { MessageType } from "@/lib/flights";
 
 /** Actions: every message type the system can build. It fills what it knows; the employee completes the actual times. Drafts only: nothing is sent. */
@@ -12,8 +13,7 @@ export default function FlightActions({ companyId, types, legs, canAct }: { comp
   const ready = types.filter((m) => m.composable);
   return (
     <div className="card">
-      <h2>رسائل جاهزة</h2>
-      <span className="muted">النظام يبني المسودة مما يعرفه وأنت تكمل الأوقات الفعلية. لا يُرسَل شيء: انسخها وأرسلها من بريد الشركة.</span>
+      <h2>رسائل جاهزة<Hint>النظام يبني المسودة مما يعرفه وأنت تكمل الأوقات الفعلية. لا يُرسَل شيء: انسخها وأرسلها من بريد الشركة.</Hint></h2>
       {ready.length === 0 ? <p className="muted">لا توجد صيغ رسائل قابلة للبناء.</p> : <>
         <fieldset className="row"><legend className="muted">الرسالة تخص</legend>{legs.map((l) => <label key={l.id}><input type="radio" name="leg" checked={leg === l.id} onChange={() => { setLeg(l.id); setRes(null); }} /> <span className="ltr">{l.label}</span></label>)}</fieldset>
         <div className="row">

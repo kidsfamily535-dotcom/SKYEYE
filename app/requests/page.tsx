@@ -5,9 +5,8 @@ import RequestActions from "@/components/RequestActions";
 import AlertActions from "@/components/AlertActions";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc, hoursPhrase } from "@/lib/format";
-import { getAlerts, getPolicies, getRequest, getRequestList, getStages, ACTOR_AR, TYPE_AR, WAITING_AR, type RequestRow, type Stage } from "@/lib/requests";
+import { getAlerts, getRequest, getRequestList, getStages, ACTOR_AR, TYPE_AR, WAITING_AR, type RequestRow, type Stage } from "@/lib/requests";
 
-const POLICY_AR: Record<string, string> = { warn_before_hours: "تنبيه قبل موعد الطلب", urgent_hours: "ما يُعدّ عاجلاً قبل الرحلة", lead_time_hours: "المهلة الطبيعية قبل الرحلة", stall_after_hours: "الطلب الراكد بعد" };
 const KIND_AR = { overdue: "متأخر", due: "اقترب موعده", stalled: "راكد" } as const;
 
 function Progress({ stages, current, status }: { stages: Stage[]; current: string; status: string }) {
@@ -24,7 +23,7 @@ function Airline({ r }: { r: RequestRow }) {
 export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "open";
-  const [d, list, alerts, policies, { stages, transitions }] = await Promise.all([getCommandData(), getRequestList(tab), getAlerts(), getPolicies(), getStages()]);
+  const [d, list, alerts, { stages, transitions }] = await Promise.all([getCommandData(), getRequestList(tab), getAlerts(), getStages()]);
   const sel = sp.id ? await getRequest(sp.id) : list[0] ? await getRequest(list[0].id) : null;
   const typeStages = (t: string) => stages.filter((s) => s.type === t);
   const moves = sel ? transitions.filter((t) => t.type === sel.row.type && t.from === sel.row.stage).map((t) => ({ to: t.to, label: stages.find((s) => s.type === t.type && s.code === t.to)?.labelAr ?? t.to })) : [];
@@ -116,12 +115,6 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
                 </div>
               </>);
             })()}
-
-            <div className="card"><h2>مهل بانتظار قرارك</h2>
-              <p className="muted">لا يُولَّد تنبيه إلا بمهلة معتمدة. غير المعتمد يظهر «—» ولا أفترض له رقماً.</p>
-              <ul className="list">{policies.map((p, i) => (
-                <li key={i}><i className={`dot ${p.status === "approved" ? "ok" : "warn"}`} /><span>{POLICY_AR[p.kind] ?? p.kind}</span><b className="ltr">{p.hours === null ? "—" : `${p.hours}h`}</b><em className={`tag ${p.status === "approved" ? "ok" : "warn"}`}>{p.status === "approved" ? "معتمدة" : "بانتظار الاعتماد"}</em></li>))}</ul>
-            </div>
           </section>
         </div>
       </main>

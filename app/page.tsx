@@ -31,7 +31,6 @@ export default async function CommandPage() {
       <main className="page">
         <section className="hero">
           <div className="hero-text">
-            <small className="eyebrow ltr">GROUND OPERATIONS INTELLIGENCE · SYSTEM ONLINE</small>
             <h1>{g.text}، فريق العمليات</h1>
             <p><span className="ltr">{g.date}</span> · هذا ما يحدث الآن وما ينتظر قرارك.</p>
             <ul className="stats">
@@ -56,19 +55,9 @@ export default async function CommandPage() {
             {d.noMembership && <p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p>}
             {!d.noMembership && stream.length === 0 && <p className="muted">لا شيء يحتاج قرارك الآن.</p>}
             <ul className="list">{stream.map((x) => (
-              <li key={x.id}><i className={`dot ${x.tone}`} /><span>{x.text}</span>{x.href ? <Link className="btn ghost" href={x.href}>{x.action}</Link> : null}</li>))}</ul>
+              <li key={x.id}><i className={`dot ${x.tone}`} /><span>{x.text}</span>{x.href ? <Link className="btn sm" href={x.href}>{x.action}</Link> : null}</li>))}</ul>
           </section>
           <div className="side-col">
-            <section className="card"><h2>الخطوات التالية</h2>
-              <div className="stack">
-                {(d.counts.inboxToReview ?? 0) > 0 && <Link className="btn gold" href="/inbox">راجع الإيميلات ({d.counts.inboxToReview})</Link>}
-                {(d.counts.draftsWaiting ?? 0) > 0 && <Link className="btn ghost" href="/inbox">مسودات تنتظر قرارك ({d.counts.draftsWaiting})</Link>}
-                {(m.awaiting ?? 0) > 0 && <Link className="btn ghost" href="/flights">أسئلة الوكيل عن الرحلات ({m.awaiting})</Link>}
-                <Link className="btn ghost" href="/requests">ملفات الطلبات</Link>
-                <Link className="btn ghost" href="/handover">جهّز تسليم الوردية</Link>
-                <Link className="btn ghost" href="/agent">كلّم الوكيل</Link>
-              </div>
-            </section>
             <section className="card"><h2>طلباتك النشطة</h2>{d.requests.length === 0 && <p className="muted">لا توجد طلبات مفتوحة.</p>}
               <ul className="list">{d.requests.map((r) => (
                 <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span><Link href={`/requests?id=${r.id}`}>{r.title}</Link><small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
@@ -76,16 +65,7 @@ export default async function CommandPage() {
           </div>
         </div>
 
-        <section className="memory card" aria-label="ذاكرة العمليات">
-          <h2>ذاكرة العمليات</h2>
-          <ul>
-            <li><b className="ltr">{dash(m.activeFlights)}</b>رحلات جارية</li>
-            <li><b className="ltr">{dash(m.pendingEmails)}</b>إيميلات معلّقة</li>
-            <li><b className="ltr">{dash(m.openTasks)}</b>طلبات مفتوحة</li>
-            <li><b className="ltr">{dash(m.awaiting)}</b>بانتظار تأكيدك</li>
-            <li className="wide"><small className="muted">آخر تسليم وردية</small>{m.lastShift ? <span>«{m.lastShift.name}» — {m.lastShift.acknowledged ? "تم الاستلام" : "بانتظار الاستلام"} · <span className="ltr">{fmtUtc(m.lastShift.at)}</span></span> : <span className="muted">لا توجد تقارير وردية بعد.</span>}</li>
-          </ul>
-        </section>
+        {m.lastShift && <p className="muted">آخر تسليم وردية: «{m.lastShift.name}» — {m.lastShift.acknowledged ? "تم الاستلام" : "بانتظار الاستلام"} · <span className="ltr">{fmtUtc(m.lastShift.at)}</span> · <Link href="/handover">فتح</Link></p>}
       </main>
     </Shell>
   );

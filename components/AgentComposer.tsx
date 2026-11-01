@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import Hint from "@/components/Hint";
 import { sendToAgent } from "@/app/agent/actions";
 import { CMD_AR, type Opt } from "@/lib/agent-labels";
 
@@ -36,7 +37,7 @@ export default function AgentComposer({ companyId, opts }: { companyId: string; 
       {list.length === 0 && <p className="muted">لا توجد عناصر من هذا النوع بعد.</p>}
       <label>ماذا تريد من الوكيل؟<select value={cmd} onChange={(e) => setCmd(e.target.value)}>{k.cmds.map((c) => <option key={c} value={c}>{CMD_AR[c] ?? c}</option>)}</select></label>
       <label>الرسالة<textarea rows={4} maxLength={2000} value={text} placeholder={HINT[cmd] ?? "تفاصيل إضافية (اختياري)"} onChange={(e) => setText(e.target.value)} /></label>
-      <p className="muted">الوكيل لا يرسل شيئاً خارج الشركة: ما يرجع لك مسودة أو معلومة تراجعها بنفسك.</p>
+      <Hint>الوكيل لا يرسل شيئاً خارج الشركة: ما يرجع لك مسودة أو معلومة تراجعها بنفسك.</Hint>
       {msg && <p role={msg.ok ? "status" : "alert"} className={msg.ok ? "muted" : "err"}>{msg.text}</p>}
       <div className="row"><button type="button" className="btn gold" disabled={pending || !target || (needText && !text.trim())} onClick={() => start(async () => {
         const r = await sendToAgent(companyId, cmd, k.targetType, target, text);

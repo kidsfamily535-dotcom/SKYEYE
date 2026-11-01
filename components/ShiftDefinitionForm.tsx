@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import Hint from "@/components/Hint";
 import { saveShiftDefinition } from "@/app/handover/actions";
 
 export default function ShiftDefinitionForm({ companyId }: { companyId: string }) {
@@ -11,7 +12,7 @@ export default function ShiftDefinitionForm({ companyId }: { companyId: string }
       <label>اسم الوردية<input value={f.name} maxLength={60} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
       <label>بداية الوردية (بتوقيت UTC)<input className="ltr" placeholder="09:00" inputMode="numeric" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></label>
       <label>مدتها بالساعات<input className="ltr" inputMode="decimal" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} /></label>
-      <p className="muted">إن كان الاسم موجوداً من قبل يُعدَّل بدل أن يتكرر. التقرير يُولَّد قبل نهاية الوردية بـ 15 دقيقة.</p>
+      <Hint>إن كان الاسم موجوداً من قبل يُعدَّل بدل أن يتكرر. التقرير يُولَّد قبل نهاية الوردية بـ 15 دقيقة.</Hint>
       {msg && <p role={msg.ok ? "status" : "alert"} className={msg.ok ? "muted" : "err"}>{msg.text}</p>}
       <div className="row"><button type="button" className="btn gold" disabled={pending || !f.name.trim() || !f.start.trim()} onClick={() => start(async () => {
         const r = await saveShiftDefinition(companyId, f.name, f.start, Number(f.hours), true);
