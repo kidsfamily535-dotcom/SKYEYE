@@ -1,62 +1,33 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import Logo from "@/components/Logo";
+import FlightBoard from "@/components/FlightBoard";
 import FlightQuestions from "@/components/FlightQuestions";
 import FlightTimeline from "@/components/FlightTimeline";
 import FlightActions from "@/components/FlightActions";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
-import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
+import { getBoard, type BoardTab } from "@/lib/board";
+import { getFlight } from "@/lib/flights";
 
 const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
-const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
-
-function Progress({ r }: { r: FlightRow }) {
-  if (!r.stepsTotal) return <small className="muted">التقدم: —</small>;
-  const pct = Math.round(((r.stepsRecorded ?? 0) / r.stepsTotal) * 100);
-  return <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="مراحل المناولة المسجّلة"><i style={{ width: `${pct}%` }} /></div>;
-}
+const TABS = new Set<BoardTab>(["all", "arrival", "turnaround", "departure", "done"]);
 
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string }> }) {
   const sp = await searchParams;
-  const tab = sp.tab === "done" ? "done" : "active";
-  const [d, list] = await Promise.all([getCommandData(), getFlightList(tab)]);
-  const sel = sp.id ? await getFlight(sp.id) : list[0] ? await getFlight(list[0].rotationId) : null;
-  const f = sel?.file; const c = sel?.clock;
+  const d = await getCommandData();
 
-  return (
-    <Shell data={d}>
-      <main className="page">
-        <div className="inbox">
-          <section className="card" aria-label="الرحلات">
-            <div className="tabs" role="tablist">
-              <Link role="tab" aria-selected={tab === "active"} className={tab === "active" ? "on" : ""} href="/flights">الحالية</Link>
-              <Link role="tab" aria-selected={tab === "done"} className={tab === "done" ? "on" : ""} href="/flights?tab=done">المنتهية</Link>
-            </div>
-            <div className="row"><Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link></div>
-            {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p>}
-            <ul className="list">
-              {list.map((r, i) => (<Fragment key={r.rotationId}>
-                {tab === "active" && ((i === 0 && !r.stale) || (r.stale && (i === 0 || !list[i - 1].stale))) && (
-                  <li className="grp" aria-hidden="true">{r.stale ? "متأخر إغلاقها (تاريخها قبل اليوم)" : "اليوم وما بعده"}</li>
-                )}
-                <li className={r.rotationId === f?.rotation_id ? "cur" : ""}>
-                  <Link className="item" href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} aria-current={r.rotationId === f?.rotation_id ? "true" : undefined}>
-                    <b>{r.airline && <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} />} <span className="ltr">{r.flightIn ?? "—"} ← → {r.flightOut ?? "—"}</span></b>
-                    <small className="muted"><span className="ltr">{r.origin ?? "—"} → {r.station ?? "—"} → {r.destination ?? "—"}</span> · <span className="ltr">{r.registration ?? "—"}</span></small>
-                    <small className="muted">وصول <span className="ltr">{hm(r.ata ?? r.eta ?? r.sta)}</span>{r.ata ? "" : r.eta ? " (متوقع)" : " (مجدول)"} · مغادرة <span className="ltr">{hm(r.atd ?? r.std)}</span> · {STATUS_AR[r.status] ?? r.status}</small>
-                    <Progress r={r} />
-                  </Link>
-                </li>
-              </Fragment>))}
-            </ul>
-          </section>
-
-          <section className="detail" aria-label="تفاصيل الرحلة">
-            {!sel && <div className="card"><p className="muted">اختر رحلة لعرض خطها الزمني.</p></div>}
-            {sel && f && c && (<>
+  // Flight Profile — فتح رحلة واحدة: كل مراحلها وأسئلة الوكيل والإفادات
+  if (sp.id) {
+    const sel = await getFlight(sp.id);
+    const f = sel?.file; const c = sel?.clock;
+    return (
+      <Shell data={d}>
+        <main className="page">
+          <div className="row"><Link className="btn sm" href="/flights">← لوحة الرحلات</Link></div>
+          {!sel || !f || !c ? <div className="card"><p className="muted">لم يُعثر على الرحلة، أو لا تملك صلاحية عرضها.</p></div> : (
+            <section className="detail" aria-label="ملف الرحلة">
               <div className="card">
                 <div className="chips"><span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>{Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
                 <h2>{sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />} <span className="ltr">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</span></h2>
@@ -87,9 +58,20 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               <div className="card"><h2>إفادات التأخير</h2>
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
               </div>
-            </>)}
-          </section>
-        </div>
+            </section>
+          )}
+        </main>
+      </Shell>
+    );
+  }
+
+  // Flight Board — الشاشة الرئيسية
+  const tab: BoardTab = TABS.has(sp.tab as BoardTab) ? (sp.tab as BoardTab) : "all";
+  const board = await getBoard(tab);
+  return (
+    <Shell data={d}>
+      <main className="page">
+        <FlightBoard board={board} tab={tab} stationLabel={`${d.company.name} · LIVE OPERATIONS`} />
       </main>
     </Shell>
   );

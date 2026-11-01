@@ -92,3 +92,30 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 /* ---- inbox 3 columns ---- */
 .inbox3{display:grid;grid-template-columns:340px 1fr 320px;gap:20px;align-items:start}.understand dl{margin:10px 0 0;display:flex;flex-direction:column;gap:10px}.understand dt{font-size:12px;color:var(--muted)}.understand dd{margin:2px 0 0;line-height:1.7}
 @media (max-width:1400px){.inbox3{grid-template-columns:340px 1fr}.inbox3>.aside{grid-column:1/-1}}@media (max-width:1100px){.inbox3{grid-template-columns:1fr}}
+/* ===== Flight Operations Live Board ===== */
+.fb-head{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between}
+.fb-head small{letter-spacing:.14em;color:var(--gold);font-size:12px}.fb-head h1{margin:4px 0 2px;font-size:clamp(22px,2.6vw,32px)}
+.fb-kpis{display:flex;gap:12px;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.fb-kpis li{min-width:118px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;gap:2px}
+.fb-kpis b{font-size:30px;font-weight:600;color:var(--gold);line-height:1.1}.fb-kpis span{font-size:12px;color:var(--muted)}
+.fb-kpis li.ok b{color:var(--ok)}.fb-kpis li.info b{color:var(--info)}.fb-kpis li.warn b{color:var(--warn)}
+.fb-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.fb .tabs{align-items:center;flex-wrap:wrap}.fb .tabs .fb-import{margin-inline-start:auto;display:inline-flex;align-items:center;text-decoration:none}
+.cnt{font-style:normal;font-size:11px;margin-inline-start:8px;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.1)}
+.fb-scroll{overflow-x:auto;margin-top:8px}
+.fb table{width:100%;border-collapse:collapse;min-width:1000px;font-size:13px}
+.fb th{text-align:start;font-size:11px;letter-spacing:.04em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.fb td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+.fb-row{position:relative}.fb-row:hover{background:rgba(227,185,100,.07)}.fb-row.stale{opacity:.7}
+.fb .rowlink{color:var(--ink);text-decoration:none}.fb .rowlink::after{content:"";position:absolute;inset:0}
+.fb .rowlink:focus-visible{outline-offset:-3px}
+.fb tr.grp th{padding:14px 10px 6px;border:0;color:var(--gold);font-size:12px}
+.fb .route{white-space:nowrap}.fb .sep{color:var(--muted)}
+.phase{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;margin-bottom:4px;background:rgba(255,255,255,.08);color:var(--muted)}
+.phase.arrival{color:var(--info)}.phase.turnaround{color:var(--gold)}.phase.departure{color:var(--ok)}
+.tag.mute{color:var(--muted)}
+.fb .alert{max-width:260px;line-height:1.6}
+.fb-note{margin-top:12px;line-height:1.7}
+.fb-monitor h2{margin:0 0 4px}
+.fb-monitor .list li{align-items:flex-start}.fb-monitor .list li>span{display:flex;flex-direction:column;gap:2px}.fb-monitor .dot{margin-top:6px}
+@media(max-width:1100px){.fb-grid{grid-template-columns:1fr}}
