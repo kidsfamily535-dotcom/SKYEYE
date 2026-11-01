@@ -123,3 +123,4 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .fb-search label{display:block}.fb-search input[type=search]{min-width:260px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);padding:0 14px}
 .fb-search input[type=date]{min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);padding:0 12px;color-scheme:dark}
 .fb-search .btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}.fb-search .btn.gold{color:#1B2436}.fb-search .btn.on{border-color:var(--gold);color:var(--gold)}
+.fb-hint{margin:0 0 12px;padding:10px 14px;border:1px solid var(--warn);border-radius:12px;color:var(--warn);font-size:13px;line-height:1.7}

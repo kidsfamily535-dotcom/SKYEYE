@@ -21,7 +21,7 @@ function Row({ r }: { r: BoardRow }) {
         <Link className="rowlink" href={`/flights?id=${r.rotationId}`}>
           <b>{r.airline && <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} />} <span className="ltr">{r.flightIn ?? "—"}/{r.flightOut ?? "—"}</span></b>
         </Link>
-        <small className="muted ltr">{r.registration ?? "—"}</small>
+        <small className="muted ltr">{r.callIn ?? "—"}{r.callOut && r.callOut !== r.callIn ? ` / ${r.callOut}` : ""} · {r.registration ?? "—"}</small>
       </td>
       <td className="ltr route">{r.origin ?? "—"} → <b>{r.station ?? "—"}</b> → {r.destination ?? "—"}</td>
       <td className="ltr"><span>{hm(r.sta)}</span> <span className="sep">/</span> <span>{hm(r.std)}</span></td>
@@ -72,13 +72,14 @@ export default function FlightBoard({ board, tab, stationLabel, q, day }: { boar
         <section className="card fb" aria-label="جدول الرحلات">
           <form className="fb-search" method="get" action="/flights" role="search" aria-label="بحث في الرحلات">
             {tab !== "all" && <input type="hidden" name="tab" value={tab} />}
-            <label><span className="sr">رقم الرحلة أو التسجيل</span><input className="ltr" type="search" name="q" defaultValue={q} placeholder="رقم الرحلة أو التسجيل: NE231 · 232 · SU-GDA" autoComplete="off" /></label>
+            <label><span className="sr">رقم الرحلة أو التسجيل</span><input className="ltr" type="search" name="q" defaultValue={q} placeholder="كود الشركة + الرقم: NE231 · MS777 · ABY553 · SU-GDA" autoComplete="off" /></label>
             <label><span className="sr">اليوم</span><input type="date" name="day" defaultValue={day} /></label>
             <button className="btn gold sm" type="submit">بحث</button>
             <Link className={`btn sm ${day === isoDay(0) ? "on" : ""}`} href={href(tab, { day: isoDay(0) })}>اليوم</Link>
             <Link className={`btn sm ${day === isoDay(1) ? "on" : ""}`} href={href(tab, { day: isoDay(1) })}>غداً</Link>
             {board.filtered && <Link className="btn sm" href={href(tab, { q: "", day: "" })}>مسح البحث</Link>}
           </form>
+          {board.qNeedsCode && <p role="status" className="fb-hint">رقم الرحلة يبدأ دائماً بكود الشركة (call sign) مثل <span className="ltr">NE{q}</span> أو <span className="ltr">MS{q}</span>. اكتب الكود قبل الرقم ثم ابحث.</p>}
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
               <Link key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "on" : ""} href={href(t.key)}>

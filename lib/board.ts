@@ -12,7 +12,7 @@ export type Phase = "arrival" | "turnaround" | "departure" | "done";
 export type Sla = "late" | "risk" | "ok" | "none";
 export type BoardEvent = { id: string; rotationId: string; flight: string; tone: "late" | "warn" | "info"; text: string; rank: number };
 export type BoardRow = {
-  rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null;
+  rotationId: string; flightIn: string | null; flightOut: string | null; callIn: string | null; callOut: string | null; registration: string | null;
   origin: string | null; station: string | null; destination: string | null;
   sta: string | null; std: string | null; eta: string | null; etd: string | null; ata: string | null; atd: string | null;
   status: string; phase: Phase; stage: string; next: string | null; sla: Sla; slaWhy: string | null; alert: string | null;
@@ -26,6 +26,8 @@ export type Board = {
   draftBasis: boolean;
   /** بحث باليوم أو برقم الرحلة مفعّل */
   filtered: boolean;
+  /** النص المكتوب أرقام فقط: لا يُبحث به لأن رقم الرحلة يسبقه كود الشركة دائماً */
+  qNeedsCode: boolean;
 };
 
 type Raw = Record<string, any>;
@@ -57,7 +59,7 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
   const active = (act ?? []) as Raw[];
   const ids = active.map((r) => r.rotation_id as string);
 
-  const [steps, clk, qs, drafts, doneQ] = await Promise.all([
+  const [steps, clk, qs, drafts, doneQ, legCs] = await Promise.all([
     fetchSteps(sb, ids),
     sb.from("v_ground_clock").select("rotation_id, expected_std, arrival_delay_min, arrival_leg_id, departure_leg_id").limit(1000),
     sb.from("turnaround_checkins").select("id, flight_id, step_code, question_ar, due_at, status").in("status", ["asked", "in_progress", "late", "escalated"]).limit(200),
@@ -65,10 +67,15 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
     tab === "done"
       ? sb.from("v_flight_file").select("*").or("atd.not.is.null,status.eq.cancelled").order("std", { ascending: false, nullsFirst: false }).limit(50)
       : Promise.resolve({ data: [] as Raw[] }),
+    sb.from("flights").select("rotation_id, direction, callsign").in("rotation_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]).limit(1000),
   ]);
 
   const clockBy = new Map<string, Raw>(); const legToRot = new Map<string, string>();
   for (const c of (clk.data ?? []) as Raw[]) { clockBy.set(c.rotation_id, c); if (c.arrival_leg_id) legToRot.set(c.arrival_leg_id, c.rotation_id); if (c.departure_leg_id) legToRot.set(c.departure_leg_id, c.rotation_id); }
+  const doneIds = ((doneQ.data ?? []) as Raw[]).map((r) => r.rotation_id as string);
+  const doneCs = doneIds.length ? ((await sb.from("flights").select("rotation_id, direction, callsign").in("rotation_id", doneIds).limit(1000)).data ?? []) : [];
+  const cs = new Map<string, string | null>();
+  for (const f of [...((legCs.data ?? []) as Raw[]), ...(doneCs as Raw[])]) cs.set(`${f.rotation_id}:${f.direction}`, f.callsign ?? null);
   const stepsBy = new Map<string, Raw[]>();
   for (const s of steps) { const a = stepsBy.get(s.rotation_id) ?? []; a.push(s); stepsBy.set(s.rotation_id, a); }
   const qBy = new Map<string, Raw[]>();
@@ -128,7 +135,7 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
     const stale = !r.atd && String(r.date_out ?? r.date_in ?? "9999") < today;
     const p = airlinePrefix(r.flight_in ?? r.flight_out);
     return {
-      rotationId: rid, flightIn: r.flight_in, flightOut: r.flight_out, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
+      rotationId: rid, flightIn: r.flight_in, flightOut: r.flight_out, callIn: cs.get(`${rid}:arrival`) ?? null, callOut: cs.get(`${rid}:departure`) ?? null, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
       sta: r.sta, std: r.std, eta: r.eta, etd: clock?.expected_std ?? null, ata: r.ata, atd: r.atd, status: r.status, phase, stage, next, sla, slaWhy,
       alert: ev[0]?.text ?? null, stale, dateIn: r.date_in ?? null, dateOut: r.date_out ?? null, airline: (p.iata ?? p.icao) ? { code: (p.iata ?? p.icao) as string, name: null, logoUrl: null } : null,
     };
@@ -138,7 +145,7 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
   // القديمة غير المغلقة تُعرض بعد رحلات اليوم وما بعدها
   const ordered = [...activeRows.filter((r) => !r.stale), ...activeRows.filter((r) => r.stale).reverse()];
   const doneRows: BoardRow[] = ((doneQ.data ?? []) as Raw[]).map((r) => ({
-    rotationId: r.rotation_id, flightIn: r.flight_in, flightOut: r.flight_out, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
+    rotationId: r.rotation_id, flightIn: r.flight_in, flightOut: r.flight_out, callIn: cs.get(`${r.rotation_id}:arrival`) ?? null, callOut: cs.get(`${r.rotation_id}:departure`) ?? null, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
     sta: r.sta, std: r.std, eta: r.eta, etd: null, ata: r.ata, atd: r.atd, status: r.status, phase: "done" as Phase,
     stage: r.status === "cancelled" ? "ملغاة" : "غادرت", next: null, sla: "none" as Sla, slaWhy: null, alert: null, stale: false, airline: null, dateIn: r.date_in ?? null, dateOut: r.date_out ?? null,
   }));
@@ -146,7 +153,11 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
   const q = (filter?.q ?? "").toUpperCase().replace(/[\s-]/g, "");
   const day = /^\d{4}-\d{2}-\d{2}$/.test(filter?.day ?? "") ? (filter!.day as string) : null;
   const norm = (x: string | null) => (x ?? "").toUpperCase().replace(/[\s-]/g, "");
-  const match = (r: BoardRow) => (!day || r.dateIn === day || r.dateOut === day) && (!q || [r.flightIn, r.flightOut, r.registration].some((x) => norm(x).includes(q)));
+  // رقم الرحلة = كود الشركة + الرقم (NE231) أو الـ call sign (ABY553). أرقام فقط لا تُقبل لأنها تلتبس بين الشركات.
+  const qNeedsCode = !!q && /^\d+$/.test(q);
+  const qq = qNeedsCode ? "" : q;
+  const match = (r: BoardRow) => (!day || r.dateIn === day || r.dateOut === day)
+    && (!qq || [r.flightIn, r.flightOut, r.callIn, r.callOut].some((x) => norm(x).startsWith(qq)) || norm(r.registration).includes(qq));
   let rows = (tab === "done" ? doneRows : tab === "all" ? ordered : ordered.filter((r) => r.phase === tab)).filter(match);
   const air = await resolveAirlines(rows.map((r) => r.flightIn ?? r.flightOut));
   rows = rows.map((r) => { const p = airlinePrefix(r.flightIn ?? r.flightOut); const k = p.iata ?? p.icao; return { ...r, airline: k ? air.get(k) ?? { code: k, name: null, logoUrl: null } : null }; });
@@ -163,6 +174,7 @@ export async function getBoard(tab: BoardTab, filter?: { q?: string; day?: strin
     },
     events: events.filter((e) => ordered.some((r) => r.rotationId === e.rotationId && !r.stale)).sort((a, b) => b.rank - a.rank),
     draftBasis: anyStep && !anyApproved,
-    filtered: !!q || !!day,
+    filtered: !!qq || !!day,
+    qNeedsCode,
   };
 }
