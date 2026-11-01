@@ -68,3 +68,5 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 .track { margin: .5rem 0; }
 .track > summary { cursor: pointer; padding: .4rem 0; }
 .mono { white-space: pre-wrap; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+.fold{margin-top:12px}.fold summary{cursor:pointer;list-style:none;display:inline-flex}.fold summary::-webkit-details-marker{display:none}.open-form textarea{width:100%;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:10px 12px;font:inherit;line-height:1.7;resize:vertical}
