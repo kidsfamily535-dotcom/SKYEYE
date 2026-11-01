@@ -24,7 +24,7 @@ export default function Shell({ data, children }: { data: CommandData; children:
           <label className="search"><span className="sr">بحث</span><input placeholder="ابحث عن رحلة أو إيميل أو شركة طيران…" disabled /></label>
           <UtcClock />
           {data.shadowMode && <span className="chip shadow">وضع الظل · لا يُرسل شيء</span>}
-          <div className="user"><span className="av">م</span><div><strong>{data.user.name}</strong><small>{data.user.role}</small></div></div>
+          <div className="user"><span className="av">{data.user.name.slice(0, 1)}</span><div><strong>{data.user.name}</strong><small>{data.user.role}</small></div><form action="/auth/signout" method="post"><button className="btn ghost">خروج</button></form></div>
         </header>
         {children}
       </div>

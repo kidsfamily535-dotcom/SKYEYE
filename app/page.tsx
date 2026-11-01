@@ -23,11 +23,12 @@ export default async function CommandPage() {
         </section>
 
         <div className="cols">
-          <section className="card"><h2>الوكيل يقول لك</h2>{d.isSample && <small className="muted">أمثلة توضيحية حتى ربط البيانات</small>}
+          <section className="card"><h2>الوكيل يقول لك</h2>
+            {d.noMembership && <p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p>}{!d.noMembership && d.decisions.length === 0 && <p className="muted">لا شيء يحتاج قرارك الآن.</p>}
             <ul className="list">{d.decisions.map((x) => (
               <li key={x.id}><i className={`dot ${x.tone}`} /><span>{x.text}</span><button className="btn ghost">{x.action}</button></li>))}</ul>
           </section>
-          <section className="card"><h2>طلباتك النشطة</h2>
+          <section className="card"><h2>طلباتك النشطة</h2>{d.requests.length === 0 && <p className="muted">لا توجد طلبات مفتوحة.</p>}
             <ul className="list">{d.requests.map((r) => (
               <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span>{r.title}<small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
           </section>
