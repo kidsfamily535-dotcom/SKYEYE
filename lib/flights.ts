@@ -7,6 +7,8 @@ export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;
   sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string;
   stepsTotal: number | null; stepsRecorded: number | null; criticalOpen: number | null; airline: Airline | null;
+  /** رحلة تاريخها قبل اليوم ولم تُغلق (لا وقت مغادرة فعلي) */
+  stale: boolean;
 };
 export type StepRow = {
   track: string; seq: number; code: string; nameAr: string; nameEn: string; kind: string; isCritical: boolean; templateStatus: string;
@@ -25,11 +27,18 @@ export async function getFlightList(tab: "active" | "done"): Promise<FlightRow[]
   const { data } = tab === "active"
     ? await q.is("atd", null).neq("status", "cancelled").order("sta", { ascending: true, nullsFirst: false }).limit(200)
     : await q.or("atd.not.is.null,status.eq.cancelled").order("std", { ascending: false, nullsFirst: false }).limit(50);
-  const rows = (data ?? []) as Raw[];
+  const today = new Date().toISOString().slice(0, 10);
+  const isStale = (r: Raw) => tab === "active" && !r.atd && String(r.date_out ?? r.date_in ?? "9999") < today;
+  const all = (data ?? []) as Raw[];
+  // الحالية: رحلات اليوم وما بعدها أولاً (الأقرب فالأبعد)، ثم القديمة غير المغلقة (الأحدث فالأقدم)
+  const rows = tab === "active"
+    ? [...all.filter((r) => !isStale(r)), ...all.filter(isStale).reverse()]
+    : all;
   const airlines = await resolveAirlines(rows.map((r) => r.flight_in ?? r.flight_out));
   return rows.map((r) => {
     const p = airlinePrefix(r.flight_in ?? r.flight_out); const key = p.iata ?? p.icao;
     return {
+      stale: isStale(r),
       rotationId: r.rotation_id, flightIn: r.flight_in, flightOut: r.flight_out, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
       sta: r.sta, std: r.std, eta: r.eta, ata: r.ata, atd: r.atd, status: r.status,
       stepsTotal: r.sop_steps_total === null ? null : Number(r.sop_steps_total), stepsRecorded: r.sop_steps_recorded === null ? null : Number(r.sop_steps_recorded),

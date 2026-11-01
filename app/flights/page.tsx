@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import Logo from "@/components/Logo";
@@ -37,8 +38,11 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
             <div className="row"><Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link></div>
             {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p>}
             <ul className="list">
-              {list.map((r) => (
-                <li key={r.rotationId} className={r.rotationId === f?.rotation_id ? "cur" : ""}>
+              {list.map((r, i) => (<Fragment key={r.rotationId}>
+                {tab === "active" && ((i === 0 && !r.stale) || (r.stale && (i === 0 || !list[i - 1].stale))) && (
+                  <li className="grp" aria-hidden="true">{r.stale ? "متأخر إغلاقها (تاريخها قبل اليوم)" : "اليوم وما بعده"}</li>
+                )}
+                <li className={r.rotationId === f?.rotation_id ? "cur" : ""}>
                   <Link className="item" href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} aria-current={r.rotationId === f?.rotation_id ? "true" : undefined}>
                     <b>{r.airline && <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} />} <span className="ltr">{r.flightIn ?? "—"} ← → {r.flightOut ?? "—"}</span></b>
                     <small className="muted"><span className="ltr">{r.origin ?? "—"} → {r.station ?? "—"} → {r.destination ?? "—"}</span> · <span className="ltr">{r.registration ?? "—"}</span></small>
@@ -46,7 +50,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                     <Progress r={r} />
                   </Link>
                 </li>
-              ))}
+              </Fragment>))}
             </ul>
           </section>
 
