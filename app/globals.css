@@ -109,3 +109,4 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .tabs.views{flex-wrap:wrap;margin:0}
 .top .grow{flex:1}
 @media (max-width:760px){.nav-sep{width:1px;height:auto;margin:6px 4px;flex:none}}
+.next.late{border-color:var(--late)}.next.ok{border-color:var(--line)}.next.ok .eye{background:var(--ok);animation:none}

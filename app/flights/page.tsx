@@ -9,6 +9,7 @@ import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
+import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
 import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
 
 const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
@@ -20,6 +21,15 @@ function Progress({ r }: { r: FlightRow }) {
   return <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="مراحل المناولة المسجّلة"><i style={{ width: `${pct}%` }} /></div>;
 }
 
+function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
+  return (
+    <li><i className={`dot ${wait ? "warn" : x.tone}`} /><div>
+      <b>{x.href ? <Link href={x.href}><bdi>{x.title}</bdi></Link> : <bdi>{x.title}</bdi>}</b>
+      <small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{wait ? " · الموعد" : ""}{x.detail ? <> · <bdi className="ltr">{x.detail}</bdi></> : null}</small>
+    </div></li>
+  );
+}
+
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "active";
@@ -27,8 +37,10 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const [d, list] = await Promise.all([getCommandData(), getFlightList(tab)]);
   const sel = sp.id ? await getFlight(sp.id) : list[0] ? await getFlight(list[0].rotationId) : null;
   const f = sel?.file; const c = sel?.clock;
+  const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
+  const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
-  const views: [string, string][] = [["overview", `الحالة والأسئلة${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["timeline", "الخط الزمني"], ["messages", "الرسائل"], ["delay", "إفادات التأخير"]];
+  const views: [string, string][] = [["overview", `الملف${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["timeline", "مراحل المناولة"], ["messages", "الرسائل"], ["delay", "إفادات التأخير"]];
 
   return (
     <Shell data={d}>
@@ -80,9 +92,18 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
               </div>
 
-              {view === "overview" && <div className="card"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من الخط الزمني.</Hint></h2>
-                <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
-              </div>}
+              {view === "overview" && next && feed && <>
+                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("timeline") : next.href}>{next.action}</Link>}</section>
+                <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب مراحل المناولة.</Hint></h2>
+                  <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
+                </div>
+                <div className="card"><h2>سجل الرحلة<Hint>إيميلات الرحلة وما سُجّل عليها وإفادات التأخير في خط واحد. لا يُعرض وقت إلا إذا كان مسجّلاً.</Hint></h2>
+                  {feed.waiting.length > 0 && <><h3>ينتظر الآن</h3><ol className="timeline">{feed.waiting.map((x) => <FeedRow key={x.id} x={x} wait />)}</ol></>}
+                  <h3>ما حدث</h3>
+                  {feed.done.length === 0 && <p className="muted">لا أحداث مسجّلة على هذه الرحلة بعد.</p>}
+                  <ol className="timeline">{feed.done.map((x) => <FeedRow key={x.id} x={x} />)}</ol>
+                </div>
+              </>}
 
               {view === "messages" && <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
                 legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />}
