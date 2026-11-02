@@ -8,16 +8,21 @@ import CopyButton from "@/components/CopyButton";
 import ScrollTop from "@/components/ScrollTop";
 import { getFilesForMessage, resolveAirlines } from "@/lib/requests";
 import { getCommandData } from "@/lib/data";
-import { getInbox, CATEGORY_AR, URGENCY_AR, STATUS_AR, ATT_AR, type InboxItem } from "@/lib/inbox";
+import { getInbox, type InboxItem } from "@/lib/inbox";
+import { getT } from "@/lib/lang";
+import { labelOf, fwd, type Key } from "@/lib/i18n";
 
 const tone = (u: string) => (u === "urgent" ? "late" : u === "important" ? "warn" : "info");
 const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 const day = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(5, 10) : "");
 const full = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16).replace("T", " ") + " UTC" : "—");
-const title = (i: InboxItem) => i.message?.subject ?? CATEGORY_AR[i.category] ?? i.category;
 
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ id?: string; q?: string; f?: string }> }) {
+  const { t, lang } = await getT();
   const [d, all, sp] = await Promise.all([getCommandData(), getInbox(), searchParams]);
+  const L = (prefix: string, v: string) => labelOf(lang, prefix, v);
+  const title = (i: InboxItem) => i.message?.subject ?? L("cat", i.category);
+  const nextArrow = fwd(lang); const prevArrow = lang === "ar" ? "›" : "‹";
   const needle = (sp.q ?? "").trim().toLowerCase();
   const items = all.filter((i) => (sp.f !== "new" || i.status === "new") && (!needle || [i.message?.subject, i.summary, i.flightNumber, i.message?.from].some((x) => (x ?? "").toLowerCase().includes(needle))));
   const selId = sp.id ?? (items.find((i) => i.status === "new") ?? items[0])?.id;
@@ -31,83 +36,83 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
   // one primary action, taken from what SKYEYE actually prepared; never a recorded time
   const primary = !sel ? null
-    : sel.draft?.status === "draft" ? { label: "راجع المسودة", href: "#draft" }
-    : sel.flightRotationId && sel.category === "mvt" ? { label: "سجّل الوقت الفعلي في الرحلة", href: `/flights?id=${sel.flightRotationId}&view=timeline` }
-    : sel.flightRotationId ? { label: "افتح ملف الرحلة", href: `/flights?id=${sel.flightRotationId}` } : null;
+    : sel.draft?.status === "draft" ? { label: t("data.email.reviewDraft"), href: "#draft" }
+    : sel.flightRotationId && sel.category === "mvt" ? { label: t("inbox.act.recordActual"), href: `/flights?id=${sel.flightRotationId}&view=timeline` }
+    : sel.flightRotationId ? { label: t("inbox.act.openFile"), href: `/flights?id=${sel.flightRotationId}` } : null;
 
   return (
     <Shell data={d}>
       <main className="page">
-        <section className="fhero" aria-label="الوارد والمسودات"><h1>الوارد والمسودات</h1><p>كل الإيميلات المرتبطة برحلاتك في مكان واحد{newCount ? ` · ${newCount} جديد` : ""}.</p></section>
+        <section className="fhero" aria-label={t("nav.inbox")}><h1>{t("nav.inbox")}</h1><p>{t("inbox.sub")}{newCount ? t("inbox.newCount", { n: newCount }) : ""}.</p></section>
         <div className={`imail ${sp.id ? "reading" : ""}`}>
-          <section className="ilist card" aria-label="قائمة الإيميلات">
+          <section className="ilist card" aria-label={t("inbox.list.aria")}>
             <form method="get" action="/inbox" role="search" className="isearch">
               {sp.f === "new" && <input type="hidden" name="f" value="new" />}
-              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder="ابحث في الإيميلات أو رقم الرحلة…" aria-label="بحث في الإيميلات" />
+              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder={t("inbox.search.ph")} aria-label={t("inbox.search.aria")} />
             </form>
-            <div className="ffilters"><Link className={`chip-link ${sp.f !== "new" ? "on" : ""}`} href={listHref()}>الكل</Link><Link className={`chip-link ${sp.f === "new" ? "on" : ""}`} href={listHref("new")}>جديد</Link></div>
-            {items.length === 0 && <p className="muted">{all.length === 0 ? "لا توجد إيميلات بعد. ستظهر هنا فور وصولها وتحليلها." : "لا نتائج مطابقة."}</p>}
+            <div className="ffilters"><Link className={`chip-link ${sp.f !== "new" ? "on" : ""}`} href={listHref()}>{t("inbox.f.all")}</Link><Link className={`chip-link ${sp.f === "new" ? "on" : ""}`} href={listHref("new")}>{t("est.new")}</Link></div>
+            {items.length === 0 && <p className="muted">{all.length === 0 ? t("inbox.empty") : t("inbox.noMatch")}</p>}
             <ul className="mlist">
               {items.map((i) => (
                 <li key={i.id} className={`mrow ${i.id === sel?.id ? "cur" : ""}`}>
                   <Link href={q(i.id)} aria-current={i.id === sel?.id ? "true" : undefined}>
                     <span className="mtime ltr"><b>{hm(i.message?.at ?? i.createdAt)}</b><small>{day(i.message?.at ?? i.createdAt)}</small></span>
                     <span className="mbody"><b className="mtitle"><bdi>{title(i)}</bdi></b><small className="muted"><bdi>{i.summary ?? ""}</bdi></small>
-                      <small className="muted">{i.flightNumber && <span className="ltr">{i.flightNumber} · </span>}{CATEGORY_AR[i.category] ?? i.category}{i.message?.hasAttachments ? " · 📎" : ""}</small></span>
-                    <span className="mflags">{i.status === "new" && <i className={`dot ${tone(i.urgency)}`} aria-label="جديد" />}{i.draft?.status === "draft" && <em className="tag warn">مسودة</em>}</span>
+                      <small className="muted">{i.flightNumber && <span className="ltr">{i.flightNumber} · </span>}{L("cat", i.category)}{i.message?.hasAttachments ? " · 📎" : ""}</small></span>
+                    <span className="mflags">{i.status === "new" && <i className={`dot ${tone(i.urgency)}`} aria-label={t("est.new")} />}{i.draft?.status === "draft" && <em className="tag warn">{t("inbox.draftTag")}</em>}</span>
                   </Link>
                 </li>
               ))}
             </ul>
-            <small className="muted">{items.length} من {all.length} رسالة</small>
+            <small className="muted">{t("inbox.count", { n: items.length, total: all.length })}</small>
           </section>
 
-          <section className="ireader" aria-label="تفاصيل الإيميل">
-            {!sel && <div className="card"><p className="muted">اختر إيميلاً لعرضه.</p></div>}
+          <section className="ireader" aria-label={t("inbox.reader.aria")}>
+            {!sel && <div className="card"><p className="muted">{t("inbox.pick")}</p></div>}
             {sel && <>
               <ScrollTop id={sel.id} />
               <div className="itool">
-                <Link className="back ireturn" href={listHref(sp.f)}>‹ كل الرسائل</Link>
+                <Link className="back ireturn" href={listHref(sp.f)}>{t("inbox.back")}</Link>
                 <span className="grow" />
-                {idx > 0 && <Link className="btn ghost sm" href={q(items[idx - 1].id)} aria-label="الإيميل السابق">›</Link>}
-                {idx >= 0 && idx < items.length - 1 && <Link className="btn ghost sm" href={q(items[idx + 1].id)} aria-label="الإيميل التالي">‹</Link>}
-                <CopyButton text={sel.message?.body ?? ""} label="نسخ النص" />
-                {sel.draft && <Link className="btn sm" href="#draft">رد</Link>}
-                {sel.flightRotationId ? <Link className="btn gold sm" href={`/flights?id=${sel.flightRotationId}`}>افتح الرحلة</Link> : <span className="tag info">غير مربوطة برحلة</span>}
+                {idx > 0 && <Link className="btn ghost sm" href={q(items[idx - 1].id)} aria-label={t("inbox.prev")}>{prevArrow}</Link>}
+                {idx >= 0 && idx < items.length - 1 && <Link className="btn ghost sm" href={q(items[idx + 1].id)} aria-label={t("inbox.next")}>{nextArrow}</Link>}
+                <CopyButton text={sel.message?.body ?? ""} label={t("inbox.copyBody")} />
+                {sel.draft && <Link className="btn sm" href="#draft">{t("inbox.reply")}</Link>}
+                {sel.flightRotationId ? <Link className="btn gold sm" href={`/flights?id=${sel.flightRotationId}`}>{t("cockpit.open")}</Link> : <span className="tag info">{t("inbox.noFlight")}</span>}
               </div>
 
               <div className="card">
                 <div className="mhead">
                   {airline && <Logo url={airline.logoUrl} code={airline.code} name={airline.name} size="md" />}
                   <div><h2><bdi>{title(sel)}</bdi></h2>
-                    <div className="chips"><span className={`tag ${tone(sel.urgency)}`}>{URGENCY_AR[sel.urgency]}</span><span className="tag info">{CATEGORY_AR[sel.category] ?? sel.category}</span><span className={`tag ${sel.status === "new" ? "warn" : "ok"}`}>{STATUS_AR[sel.status] ?? sel.status}</span></div></div>
+                    <div className="chips"><span className={`tag ${tone(sel.urgency)}`}>{L("urg", sel.urgency)}</span><span className="tag info">{L("cat", sel.category)}</span><span className={`tag ${sel.status === "new" ? "warn" : "ok"}`}>{L("est", sel.status)}</span></div></div>
                 </div>
                 <dl className="meta ltr"><div><dt>From</dt><dd>{sel.message?.from}</dd></div><div><dt>To</dt><dd>{sel.message?.to.join(", ")}</dd></div>{sel.message?.cc.length ? <div><dt>Cc</dt><dd>{sel.message.cc.join(", ")}</dd></div> : null}<div><dt>Date</dt><dd>{full(sel.message?.at ?? sel.createdAt)}</dd></div></dl>
                 <pre className="ltr orig">{sel.message?.body}</pre>
               </div>
 
               <div className="card understand">
-                <h2>ملخص الوكيل<Hint>ما فهمه SKYEYE من الرسالة. راجعه دائماً قبل الاعتماد عليه.</Hint></h2>
-                <p>{sel.summary ?? "لا يوجد ملخص."}</p>
+                <h2>{t("inbox.summary")}<Hint>{t("inbox.summary.hint")}</Hint></h2>
+                <p>{sel.summary ?? t("inbox.noSummary")}</p>
                 <dl>
-                  <div><dt>ماذا يريد؟</dt><dd>{sel.requestedAction ?? "لا يوجد طلب محدد."}</dd></div>
-                  <div><dt>هل نرد؟</dt><dd>{sel.replyKind === "acknowledge" ? "نعم، رد استلام." : "نعم، رد موضوعي."} {sel.replyReason}</dd></div>
-                  <div><dt>الرحلة</dt><dd className="ltr">{sel.flightLabel ?? "غير مربوطة بعد"}</dd></div>
-                  <div><dt>المرفقات</dt><dd>{sel.attachments.length === 0 ? (sel.message?.hasAttachments ? "فيه مرفقات لم تُسجَّل بعد." : "لا يوجد.") : sel.attachments.map((a) => <div key={a.name}><bdi className="ltr">{a.name}</bdi> — {ATT_AR[a.state] ?? a.state}</div>)}</dd></div>
+                  <div><dt>{t("inbox.wants")}</dt><dd>{sel.requestedAction ?? t("inbox.noAsk")}</dd></div>
+                  <div><dt>{t("inbox.reply.q")}</dt><dd>{sel.replyKind === "acknowledge" ? t("inbox.reply.ack") : t("inbox.reply.sub")} {sel.replyReason}</dd></div>
+                  <div><dt>{t("inbox.flight")}</dt><dd className="ltr">{sel.flightLabel ?? t("inbox.notLinked")}</dd></div>
+                  <div><dt>{t("inbox.attachments")}</dt><dd>{sel.attachments.length === 0 ? (sel.message?.hasAttachments ? t("inbox.attach.unrecorded") : t("inbox.attach.none")) : sel.attachments.map((a) => <div key={a.name}><bdi className="ltr">{a.name}</bdi> — {L("att", a.state)}</div>)}</dd></div>
                 </dl>
               </div>
 
               <div className="card actions-card">
-                <h2>الإجراءات المقترحة</h2>
+                <h2>{t("inbox.actions")}</h2>
                 <div className="row">
-                  {primary ? <Link className="btn gold" href={primary.href}>{primary.label}</Link> : <p className="muted">لا إجراء مقترح الآن.</p>}
-                  {sel.flightRotationId && primary?.href !== `/flights?id=${sel.flightRotationId}` && <Link className="btn" href={`/flights?id=${sel.flightRotationId}`}>متابعة الخط الزمني</Link>}
+                  {primary ? <Link className="btn gold" href={primary.href}>{primary.label}</Link> : <p className="muted">{t("inbox.noAction")}</p>}
+                  {sel.flightRotationId && primary?.href !== `/flights?id=${sel.flightRotationId}` && <Link className="btn" href={`/flights?id=${sel.flightRotationId}`}>{t("inbox.followTimeline")}</Link>}
                 </div>
-                <details><summary>ملفات الطلبات</summary><OpenRequestForm key={sel.id} companyId={d.company.id} triageId={sel.id} messageId={sel.messageId} linked={files.linked} linkable={files.linkable} /></details>
+                <details><summary>{t("inbox.files")}</summary><OpenRequestForm key={sel.id} companyId={d.company.id} triageId={sel.id} messageId={sel.messageId} linked={files.linked} linkable={files.linkable} /></details>
               </div>
 
-              <div className="card" id="draft"><h2>المسودة (بالإنجليزية)</h2>
-                {sel.draft ? <DraftPanel key={sel.draft.id} draft={sel.draft} /> : <p className="muted">لم يجهّز الوكيل مسودة لهذا الإيميل بعد.</p>}
+              <div className="card" id="draft"><h2>{t("inbox.draft.title")}</h2>
+                {sel.draft ? <DraftPanel key={sel.draft.id} draft={sel.draft} /> : <p className="muted">{t("inbox.draft.none")}</p>}
               </div>
             </>}
           </section>

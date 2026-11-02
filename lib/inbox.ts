@@ -1,13 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-
-export const CATEGORY_AR: Record<string, string> = {
-  mvt: "رسالة حركة", load_message: "رسالة حمولة", schedule: "جدول رحلات", service_request: "طلب خدمة", slot: "سلوت",
-  permit: "تصريح", finance: "مالية", complaint: "شكوى", general: "عام", unknown: "غير مصنّف",
-};
-export const URGENCY_AR: Record<string, string> = { normal: "عادي", important: "مهم", urgent: "عاجل" };
-export const STATUS_AR: Record<string, string> = { new: "جديد", reviewed: "تمت المراجعة", replied: "تم الرد", no_reply_needed: "لا يحتاج رداً", dismissed: "مستبعد" };
-
-export const ATT_AR: Record<string, string> = { pending: "لم يُقرأ بعد", reading: "قيد القراءة", done: "قُرئ", failed: "فشلت القراءة", skipped: "تم تخطيه", needs_vision: "يحتاج قراءة بصرية" };
+import { getT } from "@/lib/lang";
 
 export type InboxItem = {
   id: string; messageId: string; category: string; summary: string | null; requestedAction: string | null; replyReason: string | null; replyKind: string | null;
@@ -17,6 +9,7 @@ export type InboxItem = {
 };
 
 export async function getInbox(): Promise<InboxItem[]> {
+  const { t: tx } = await getT();
   const sb = await createClient();
   const { data: tri } = await sb.from("email_triage").select("id, category, summary, requested_action, reply_reason, reply_kind, urgency, confidence, status, created_at, message_id, flight_id").order("created_at", { ascending: false }).limit(100);
   if (!tri?.length) return [];
@@ -36,7 +29,7 @@ export async function getInbox(): Promise<InboxItem[]> {
       urgency: t.urgency, confidence: t.confidence, status: t.status, createdAt: t.created_at,
       flightLabel: (() => { const f = flts.data?.find((x) => x.id === t.flight_id); return f ? `${f.flight_number ?? "—"} · ${f.flight_date ?? "—"}` : null; })(),
       flightNumber: flts.data?.find((x) => x.id === t.flight_id)?.flight_number ?? null, flightRotationId: flts.data?.find((x) => x.id === t.flight_id)?.rotation_id ?? null,
-      attachments: (atts.data ?? []).filter((a) => a.message_id === t.message_id).map((a) => ({ name: a.filename ?? "مرفق", state: a.extraction_status ?? "pending" })),
+      attachments: (atts.data ?? []).filter((a) => a.message_id === t.message_id).map((a) => ({ name: a.filename ?? tx("inbox.attachment"), state: a.extraction_status ?? "pending" })),
       message: m ? { from: m.from_address, to: m.to_addresses ?? [], cc: m.cc_addresses ?? [], subject: m.subject, body: m.new_text ?? m.body_text, quoted: m.quoted_text, at: m.received_at ?? m.sent_at, hasAttachments: m.has_attachments } : null,
       draft: d ? { id: d.id, subject: d.subject, body: d.body_text, to: d.to_address, status: d.status, warnings: Array.isArray(d.warnings) ? d.warnings.map(String) : [] } : null,
     };
