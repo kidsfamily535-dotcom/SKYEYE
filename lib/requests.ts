@@ -1,9 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getT } from "@/lib/lang";
 
-export const WAITING_AR: Record<string, string> = { employee: "الموظف", permits_dept: "قسم التصاريح", authority: "السلطة المدنية", airline: "شركة الطيران", none: "—" };
-export const ACTOR_AR: Record<string, string> = { employee: "موظف", agent: "الوكيل", system: "النظام" };
-export const TYPE_AR: Record<string, string> = { permit: "تصريح" };
 
 export type Stage = { type: string; code: string; order: number; labelAr: string; labelEn: string; waitingOn: string; nextAr: string | null; nextEn: string | null; terminal: boolean };
 export type Airline = { code: string; name: string | null; logoUrl: string | null };

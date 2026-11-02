@@ -14,7 +14,8 @@ import FlightCard from "@/components/FlightCard";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
-import { getFlight, getFlightList, stepName, type FlightRow } from "@/lib/flights";
+import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
+import { stepName } from "@/lib/step-name";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
 

@@ -1,4 +1,5 @@
-import { stepName, type FlightMail, type FlightRqm, type Question, type Statement, type StepRow } from "@/lib/flights";
+import { stepName } from "@/lib/step-name";
+import type { FlightMail, FlightRqm, Question, Statement, StepRow } from "@/lib/flights";
 import type { Lang, TFn } from "@/lib/i18n";
 
 export type FeedItem = { id: string; at: string | null; kind: "step" | "mail" | "draft" | "statement" | "question"; tone: "ok" | "info" | "warn" | "late"; title: string; detail?: string; href?: string };

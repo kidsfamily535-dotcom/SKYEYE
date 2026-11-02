@@ -2,7 +2,8 @@
 import { useState, useTransition } from "react";
 import { stateDelay } from "@/app/flights/actions";
 import { fmtUtc } from "@/lib/format";
-import { stepName, type DelayCode, type Statement, type StepRow } from "@/lib/flights";
+import { stepName } from "@/lib/step-name";
+import type { DelayCode, Statement, StepRow } from "@/lib/flights";
 import { useT } from "@/components/I18n";
 
 /** The employee states the reason. SKYEYE never proposes one (fixed rule 7). */

@@ -1,9 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { airlinePrefix, resolveAirlines, type Airline } from "@/lib/requests";
-import type { Lang } from "@/lib/i18n";
-
-/** Step name in the interface language. English falls back to Arabic when the database has no English name. */
-export const stepName = (s: { nameAr: string; nameEn?: string | null }, lang: Lang) => (lang === "en" ? s.nameEn || s.nameAr : s.nameAr);
 
 export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;

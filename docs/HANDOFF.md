@@ -314,3 +314,15 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - أسئلة الوكيل بلا إجابة في تسليم الوردية (`question_ar` من `turnaround_checkins`): لا يوجد مقابل إنجليزي في القاعدة، فتظهر بالعربية حتى بالواجهة الإنجليزية. الحل بإضافة عمود إنجليزي أو ترجمة من القوالب (`turnaround_milestone_templates.name_en`)، قراراً منك.
 - ملخصات الإيميلات والتنبيهات النصية التي يكتبها الوكيل (`email_triage.summary` وغيرها) تظهر بلغتها المخزّنة.
 **قبل الدمج النهائي:** افتح `/`, `/inbox`, `/handover`, `/flights`, `/agent` بالإنجليزية على الموبايل، وتأكد من الاتجاه LTR وأن الأسهم صحيحة وأن اللغة تبقى بعد الخروج والدخول.
+
+## تبديل اللغة — الجلسة 3 (2026-11-02، branch feat/language-switch)
+**منجز وبُني بنجاح (`tsc --noEmit` و`next build`)، لم يُفحص بصرياً بحساب حقيقي:**
+- الرحلات: `/flights` (القائمة والتفاصيل والتبويبات وسجل التدقيق) + `FlightCard` + `FlightJourney` + `FlightTimeline` + `FlightActions` + `RqmDrafts` + `DelayForm` + `FlightQuestions` + أخطاء `app/flights/actions.ts`.
+- مكتبات الرحلات تأخذ المترجم: `buildJourney(f, clock, steps, t, lang)` و`buildFeed(input, t, lang)` و`nextStep(input, t)` و`cardStatus(r, t)` و`summarize(rows, t)`. حالة بطاقة الرحلة صار لها `code` (لم يعد العدّ يقارن نص التسمية).
+- أسماء المراحل: `stepName(step, lang)` في `lib/step-name.ts` (يختار `name_en` ويرجع للعربي إن غاب). أسماء المسارات: مفاتيح `track.*` عبر `labelOf`. حالات الرحلة `fl.status.*`.
+- استيراد البرنامج: `ProgramImport` + `/flights/import` + `app/flights/import/actions.ts` + `lib/program.ts` (`parseProgram(text, t)`). أسماء أعمدة CSV العربية ما زالت مقبولة عمداً (`ALIASES`).
+- الوكيل: `/agent` + `AgentComposer` + `ChatDock` + `app/agent/actions.ts` + `lib/agent.ts`. حُذفت خرائط `CMD_AR` و`STATUS_AR` و`TARGET_AR` وصارت `agent.cmd.*` و`agent.status.*` و`agent.target.*`. أسئلة الاقتراح السريع تُرسَل للوكيل بلغة الواجهة.
+- حُذف `lib/flight-labels.ts` وخرائط `*_AR` غير المستعملة في `lib/requests.ts`.
+**ما بقي عربياً عمداً:** نص `question_ar` لأسئلة الوكيل (لا مقابل إنجليزي في القاعدة)، ملخصات الإيميلات وتنبيهات الوكيل بلغتها المخزّنة، وتسميات حقول `compose_message` القادمة من القاعدة. تعليقات الكود بالعربية.
+**تنبيه تقني:** مكوّنات العميل لا تستورد قيماً من `lib/flights.ts` أو `lib/agent.ts` أو `lib/program.ts` (تسحب `next/headers` للمتصفح وتفشل البناء). استورد الأنواع فقط (`import type`) أو ضع الدوال المشتركة في ملف صغير مثل `lib/step-name.ts`.
+**المتبقي:** المراجعة البصرية لكل الصفحات بالإنجليزية على الموبايل (`/` و`/inbox` و`/handover` و`/flights` و`/flights/import` و`/agent`): الاتجاه LTR، الأسهم (`fwd(lang)` في بطاقة الرحلة)، بقاء اللغة بعد الخروج والدخول، وأن عبارات الجمع/المفرد مقبولة بالإنجليزية. ثم القرارات المعلّقة أعلاه (لغة ردود الوكيل، `question_en`).

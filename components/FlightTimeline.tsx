@@ -3,7 +3,8 @@ import { useState, useTransition } from "react";
 import { correctStep, recordStep } from "@/app/flights/actions";
 import { fmtUtc } from "@/lib/format";
 import { labelOf } from "@/lib/i18n";
-import { stepName, type StepRow } from "@/lib/flights";
+import { stepName } from "@/lib/step-name";
+import type { StepRow } from "@/lib/flights";
 import { useT } from "@/components/I18n";
 
 const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");

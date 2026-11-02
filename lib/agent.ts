@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-import { CMD_AR, STATUS_AR, TARGET_AR, type Opt } from "@/lib/agent-labels";
-export { CMD_AR, STATUS_AR, TARGET_AR };
+import type { Opt } from "@/lib/agent-labels";
+import { getT } from "@/lib/lang";
 export type { Opt };
 
 export type Cmd = { createdBy: string | null; senderName: string | null; mine: boolean; id: string; type: string; targetType: string; targetLabel: string | null; instruction: string | null; status: string; result: unknown; error: string | null; createdAt: string; claimedAt: string | null; finishedAt: string | null };
@@ -37,6 +37,7 @@ export function missingOf(result: unknown): string[] {
 }
 
 export async function getAgentPage(want?: { flight?: string }): Promise<AgentPage | null> {
+  const { t: tx } = await getT();
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return null;
@@ -83,8 +84,8 @@ export async function getAgentPage(want?: { flight?: string }): Promise<AgentPag
   return {
     companyId: m.company_id, canWrite: m.role !== "viewer", ctx,
     opts: {
-      email: (triage.data ?? []).map((t) => ({ id: t.message_id as string, label: subj.get(t.message_id as string) ?? t.summary ?? "(بدون عنوان)" })),
-      draft: (drafts.data ?? []).map((d) => ({ id: d.id, label: d.subject ?? "(بدون عنوان)" })),
+      email: (triage.data ?? []).map((t) => ({ id: t.message_id as string, label: subj.get(t.message_id as string) ?? t.summary ?? tx("agent.noSubject") })),
+      draft: (drafts.data ?? []).map((d) => ({ id: d.id, label: d.subject ?? tx("agent.noSubject") })),
       request: (reqs.data ?? []).map((r) => ({ id: r.id, label: `${r.title}${r.flight_ref ? ` · ${r.flight_ref}` : ""}` })),
       flight: flightOpts,
     },
