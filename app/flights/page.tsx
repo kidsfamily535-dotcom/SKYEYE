@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import Logo from "@/components/Logo";
@@ -11,16 +10,12 @@ import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
 import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
+import FlightCard from "@/components/FlightCard";
+import { summarize } from "@/lib/flight-status";
 import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
 
 const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
 const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
-
-function Progress({ r }: { r: FlightRow }) {
-  if (!r.stepsTotal) return <small className="muted">التقدم: —</small>;
-  const pct = Math.round(((r.stepsRecorded ?? 0) / r.stepsTotal) * 100);
-  return <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="مراحل المناولة المسجّلة"><i style={{ width: `${pct}%` }} /></div>;
-}
 
 function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
   return (
@@ -31,12 +26,17 @@ function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
   );
 }
 
-export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string }> }) {
+export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "active";
   const view = ["timeline", "messages", "delay"].includes(sp.view ?? "") ? sp.view : "overview";
-  const [d, list] = await Promise.all([getCommandData(), getFlightList(tab)]);
-  const sel = sp.id ? await getFlight(sp.id) : list[0] ? await getFlight(list[0].rotationId) : null;
+  const [d, all] = await Promise.all([getCommandData(), sp.id ? Promise.resolve([] as FlightRow[]) : getFlightList(tab)]);
+  const sel = sp.id ? await getFlight(sp.id) : null;
+  const needle = (sp.q ?? "").trim().toLowerCase();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const list = all.filter((r) => (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.destination, r.registration, r.airline?.name].some((x) => (x ?? "").toLowerCase().includes(needle))) && (sp.day !== "today" || (r.sta ?? r.std ?? "").slice(0, 10) === todayIso));
+  const sum = summarize(all);
+  const lh = (o: { tab?: string; day?: string }) => { const p = new URLSearchParams(); const t = o.tab ?? tab; if (t === "done") p.set("tab", "done"); const dd = "day" in o ? o.day : sp.day; if (dd) p.set("day", dd); if (needle) p.set("q", sp.q ?? ""); const s = p.toString(); return `/flights${s ? `?${s}` : ""}`; };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
@@ -46,34 +46,31 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d}>
       <main className="page">
-        <div className="inbox">
-          <section className="card" aria-label="الرحلات">
-            <div className="tabs" role="tablist">
-              <Link role="tab" aria-selected={tab === "active"} className={tab === "active" ? "on" : ""} href="/flights">الحالية</Link>
-              <Link role="tab" aria-selected={tab === "done"} className={tab === "done" ? "on" : ""} href="/flights?tab=done">المنتهية</Link>
-            </div>
-            <div className="row"><Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link></div>
-            {list.length === 0 && <p className="muted">{tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p>}
-            <ul className="list">
-              {list.map((r, i) => (<Fragment key={r.rotationId}>
-                {tab === "active" && ((i === 0 && !r.stale) || (r.stale && (i === 0 || !list[i - 1].stale))) && (
-                  <li className="grp" aria-hidden="true">{r.stale ? "متأخر إغلاقها (تاريخها قبل اليوم)" : "اليوم وما بعده"}</li>
-                )}
-                <li className={r.rotationId === f?.rotation_id ? "cur" : ""}>
-                  <Link className="item" href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} aria-current={r.rotationId === f?.rotation_id ? "true" : undefined}>
-                    <b>{r.airline && <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} />} <span className="ltr">{r.flightIn ?? "—"} ← → {r.flightOut ?? "—"}</span></b>
-                    <small className="muted"><span className="ltr">{r.origin ?? "—"} → {r.station ?? "—"} → {r.destination ?? "—"}</span> · <span className="ltr">{r.registration ?? "—"}</span></small>
-                    <small className="muted">وصول <span className="ltr">{hm(r.ata ?? r.eta ?? r.sta)}</span>{r.ata ? "" : r.eta ? " (متوقع)" : " (مجدول)"} · مغادرة <span className="ltr">{hm(r.atd ?? r.std)}</span> · {STATUS_AR[r.status] ?? r.status}</small>
-                    <Progress r={r} />
-                  </Link>
-                </li>
-              </Fragment>))}
-            </ul>
-          </section>
+        {!sp.id && <>
+          <section className="fhero" aria-label="الرحلات"><h1>الرحلات</h1><p>كل الرحلات في مكان واحد مع متابعة الوكيل.</p></section>
+          <div className="ffilters">
+            <form method="get" action="/flights" className="grow" role="search">
+              {tab === "done" && <input type="hidden" name="tab" value="done" />}{sp.day === "today" && <input type="hidden" name="day" value="today" />}
+              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder="ابحث برقم الرحلة أو الوجهة…" aria-label="بحث في الرحلات" />
+            </form>
+            <Link className={`chip-link ${tab === "active" ? "on" : ""}`} href={lh({ tab: "active" })}>الحالية</Link>
+            <Link className={`chip-link ${tab === "done" ? "on" : ""}`} href={lh({ tab: "done" })}>المنتهية</Link>
+            <Link className={`chip-link ${sp.day === "today" ? "on" : ""}`} href={lh({ day: sp.day === "today" ? "" : "today" })}>اليوم</Link>
+            <Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link>
+          </div>
+          {list.length === 0 && <section className="card"><p className="muted">{needle || sp.day ? "لا نتائج مطابقة." : tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p></section>}
+          <ul className="flist">{list.map((r, i) => <FlightCard key={r.rotationId} r={r} hot={i === 0 && tab === "active"} href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} />)}</ul>
+          {tab === "active" && <section className="fsum" aria-label="ملخص">
+            <div><b className="ltr">{sum.today}</b><small>رحلات اليوم</small></div><div><b className="ltr">{sum.ok}</b><small>على الموعد</small></div>
+            <div><b className="ltr">{sum.late}</b><small>متأخرة</small></div><div><b className="ltr">{sum.soon}</b><small>قادمة قريباً</small></div>
+            <small className="muted">الحالة تُعرض فقط عند وجود دليل مسجّل</small>
+          </section>}
+        </>}
 
-          <section className="detail" aria-label="تفاصيل الرحلة">
-            {!sel && <div className="card"><p className="muted">اختر رحلة لعرض خطها الزمني.</p></div>}
-            {sel && f && c && (<>
+        {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ كل الرحلات</Link>}
+        {sp.id && !sel && <section className="card"><p className="muted">لم أجد هذه الرحلة.</p></section>}
+        {sp.id && sel && <div className="detail">
+            {f && c && (<>
               <div className="card">
                 <div className="chips"><span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>{Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
                 <h2>{sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />} <span className="ltr">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</span></h2>
@@ -118,8 +115,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
               </div>}
             </>)}
-          </section>
-        </div>
+        </div>}
       </main>
     </Shell>
   );

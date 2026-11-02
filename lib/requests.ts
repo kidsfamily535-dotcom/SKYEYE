@@ -39,14 +39,14 @@ export async function resolveAirlines(refs: (string | null)[]): Promise<Map<stri
   ]);
   const rows = [...(a.data ?? []), ...(b.data ?? [])];
   const ca = rows.length ? await sb.from("company_airlines").select("airline_id, logo_path").in("airline_id", rows.map((r) => r.id)) : { data: [] as { airline_id: string; logo_path: string | null }[] };
-  const paths = (ca.data ?? []).map((c) => c.logo_path).filter(Boolean) as string[];
+  const paths = (ca.data ?? []).map((c) => c.logo_path).filter((p): p is string => !!p && !p.startsWith("/"));
   const signed = paths.length ? await sb.storage.from("logos").createSignedUrls(paths, 3600) : { data: [] as { path: string | null; signedUrl: string }[] };
   const urlOf = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
   for (const p of pre) {
     const key = p.iata ?? p.icao; if (!key || out.has(key)) continue;
     const row = rows.find((r) => (p.iata ? r.iata_code === p.iata : r.icao_code === p.icao));
     const logo = row ? (ca.data ?? []).find((c) => c.airline_id === row.id)?.logo_path ?? null : null;
-    out.set(key, { code: key, name: row?.name ?? null, logoUrl: logo ? urlOf.get(logo) ?? null : null });
+    out.set(key, { code: key, name: row?.name ?? null, logoUrl: logo ? (logo.startsWith("/") ? logo : urlOf.get(logo) ?? null) : null });
   }
   return out;
 }
