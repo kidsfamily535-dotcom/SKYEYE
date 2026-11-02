@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/lang";
 
 export type ShiftDef = { id: string; name: string; startMinute: number; durationMinutes: number; active: boolean };
-export type RepRequest = { id: string; title: string; flightRef: string | null; stageLabelAr: string | null; dueAt: string | null; urgent: boolean; ownerName: string | null; lastEventAt: string | null; lastEventSummary: string | null };
+export type RepRequest = { id: string; title: string; flightRef: string | null; stageLabelAr: string | null; stageLabel?: string | null; dueAt: string | null; urgent: boolean; ownerName: string | null; lastEventAt: string | null; lastEventSummary: string | null };
 export type RepAlert = { id: string; severity: string; status: string; title: string; detectedAt: string | null };
 export type RepQuestion = { id: string; flightNumber: string | null; questionAr: string | null; dueAt: string | null; status: string };
 export type RepFlight = { key: string; flightIn: string | null; flightOut: string | null; registration: string | null; ata: string | null; std: string | null };
@@ -14,7 +15,7 @@ export type ShiftReport = {
   id: string; shiftName: string; start: string; end: string; generatedAt: string; status: "generated" | "acknowledged";
   ackByName: string | null; ackAt: string | null; ackNote: string | null; tookCount: number | null; content: ReportContent;
 };
-export type LiveRequest = { status: string; stageLabelAr: string | null; ownerName: string | null };
+export type LiveRequest = { status: string; stageLabelAr: string | null; stageLabel: string | null; ownerName: string | null };
 export type ShiftPage = {
   companyId: string; role: string; hasEmployee: boolean; canAdmin: boolean; canWrite: boolean;
   defs: ShiftDef[]; nextReports: { name: string; generateAt: string; shiftEnd: string }[];
@@ -73,11 +74,16 @@ export async function getShiftPage(selectedId?: string): Promise<ShiftPage | nul
   const { data: m } = await sb.from("memberships").select("id, role, company_id").eq("user_id", user.id).maybeSingle();
   if (!m) return null;
 
-  const [emp, defsQ, listQ] = await Promise.all([
+  const { lang } = await getT();
+  const [emp, defsQ, listQ, stagesQ] = await Promise.all([
     sb.from("employees").select("id").eq("company_id", m.company_id).eq("membership_id", m.id).maybeSingle(),
     sb.from("shift_definitions").select("id, name, start_minute_utc, duration_minutes, active").order("start_minute_utc"),
     sb.from("shift_reports").select(SEL).order("shift_end", { ascending: false }).limit(20),
+    sb.from("request_stages").select("request_type, stage_code, label_ar, label_en"),
   ]);
+  // Stage names come from request_stages (label_ar / label_en). The report snapshot only stores the Arabic label, so map it back.
+  const stages = stagesQ.data ?? [];
+  const stageName = (ar: string | null) => (!ar || lang === "ar" ? ar : stages.find((s) => s.label_ar === ar)?.label_en ?? ar);
   const defs: ShiftDef[] = (defsQ.data ?? []).map((d) => ({ id: d.id, name: d.name, startMinute: d.start_minute_utc, durationMinutes: d.duration_minutes, active: d.active }));
   const reports = ((listQ.data ?? []) as unknown as RawReport[]).map(toReport);
 
@@ -85,6 +91,7 @@ export async function getShiftPage(selectedId?: string): Promise<ShiftPage | nul
   if (!sel && selectedId) { const one = await sb.from("shift_reports").select(SEL).eq("id", selectedId).maybeSingle(); if (one.data) sel = toReport(one.data as unknown as RawReport); }
   // Default: the newest report still waiting for acknowledgement, otherwise the newest one.
   if (!sel) sel = reports.find((r) => r.status === "generated") ?? reports[0] ?? null;
+  if (sel) sel.content.requests = sel.content.requests.map((r) => ({ ...r, stageLabel: stageName(r.stageLabelAr) }));
 
   // Follow-up of open cases: where are the requests of this snapshot right now?
   const live = new Map<string, LiveRequest>();
@@ -92,12 +99,9 @@ export async function getShiftPage(selectedId?: string): Promise<ShiftPage | nul
   if (ids.length) {
     const { data: rows } = await sb.from("request_files").select("id, status, current_stage, request_type, owner_employee_id").in("id", ids);
     const owners = [...new Set((rows ?? []).map((r) => r.owner_employee_id).filter(Boolean))] as string[];
-    const [names, stages] = await Promise.all([
-      owners.length ? sb.from("employees").select("id, full_name").in("id", owners) : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
-      sb.from("request_stages").select("request_type, stage_code, label_ar"),
-    ]);
+    const names = owners.length ? await sb.from("employees").select("id, full_name").in("id", owners) : { data: [] as { id: string; full_name: string | null }[] };
     const nameOf = new Map((names.data ?? []).map((n) => [n.id, n.full_name]));
-    for (const r of rows ?? []) live.set(r.id, { status: r.status, stageLabelAr: (stages.data ?? []).find((s) => s.request_type === r.request_type && s.stage_code === r.current_stage)?.label_ar ?? null, ownerName: r.owner_employee_id ? nameOf.get(r.owner_employee_id) ?? null : null });
+    for (const r of rows ?? []) live.set(r.id, { status: r.status, stageLabelAr: stages.find((s) => s.request_type === r.request_type && s.stage_code === r.current_stage)?.label_ar ?? null, stageLabel: ((s) => (s ? (lang === "ar" ? s.label_ar : s.label_en ?? s.label_ar) : null))(stages.find((s) => s.request_type === r.request_type && s.stage_code === r.current_stage)), ownerName: r.owner_employee_id ? nameOf.get(r.owner_employee_id) ?? null : null });
   }
 
   return { companyId: m.company_id, role: m.role, hasEmployee: !!emp.data, canAdmin: m.role === "owner" || m.role === "admin", canWrite: m.role !== "viewer", defs, nextReports: nextReportTimes(defs), reports, sel, live };
