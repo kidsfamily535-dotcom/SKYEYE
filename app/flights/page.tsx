@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import Logo from "@/components/Logo";
+import RqmDrafts from "@/components/RqmDrafts";
 import FlightQuestions from "@/components/FlightQuestions";
 import FlightTimeline from "@/components/FlightTimeline";
 import FlightActions from "@/components/FlightActions";
@@ -37,7 +38,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const [d, list] = await Promise.all([getCommandData(), getFlightList(tab)]);
   const sel = sp.id ? await getFlight(sp.id) : list[0] ? await getFlight(list[0].rotationId) : null;
   const f = sel?.file; const c = sel?.clock;
-  const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
+  const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
   const views: [string, string][] = [["overview", `الملف${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["timeline", "مراحل المناولة"], ["messages", "الرسائل"], ["delay", "إفادات التأخير"]];
@@ -94,6 +95,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
 
               {view === "overview" && next && feed && <>
                 <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("timeline") : next.href}>{next.action}</Link>}</section>
+                <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
                 <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب مراحل المناولة.</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
                 </div>

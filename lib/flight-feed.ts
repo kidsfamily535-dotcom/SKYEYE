@@ -1,9 +1,9 @@
-import type { FlightMail, Question, Statement, StepRow } from "@/lib/flights";
+import type { FlightMail, FlightRqm, Question, Statement, StepRow } from "@/lib/flights";
 
 export type FeedItem = { id: string; at: string | null; kind: "step" | "mail" | "draft" | "statement" | "question"; tone: "ok" | "info" | "warn" | "late"; title: string; detail?: string; href?: string };
 export type NextStep = { tone: "ok" | "info" | "warn" | "late"; text: string; href?: string; action?: string };
 
-type Input = { steps: StepRow[]; questions: Question[]; statements: Statement[]; mails: FlightMail[]; criticalOpen: number };
+type Input = { steps: StepRow[]; questions: Question[]; statements: Statement[]; mails: FlightMail[]; rqms?: FlightRqm[]; criticalOpen: number };
 
 /** Everything here comes from recorded data. Nothing is guessed: no time or reason is invented. */
 export function buildFeed({ steps, questions, statements, mails }: Input) {
@@ -22,9 +22,12 @@ export function buildFeed({ steps, questions, statements, mails }: Input) {
   return { waiting, done };
 }
 
-export function nextStep({ questions, mails, criticalOpen }: Input): NextStep {
+export function nextStep({ questions, mails, rqms = [], criticalOpen }: Input): NextStep {
+  const rq = rqms.find((x) => !x.sentAt);
+  const wait = rqms.find((x) => x.sentAt);
   const late = questions.find((q) => q.status === "late" || q.status === "escalated");
   if (late) return { tone: "late", text: `متأخر: ${late.text}`, href: "#questions", action: "أجب الآن" };
+  if (rq) return { tone: "warn", text: rq.followup ? "مسودة متابعة RQM جاهزة: لم يصل رد على الاستفسار." : "لم تصل رسالة المغادرة (AD). جهّزت لك استفسار RQM.", href: "#rqm", action: "راجع المسودة" };
   const q = questions[0];
   if (q) return { tone: "warn", text: `الوكيل ينتظر: ${q.text}`, href: "#questions", action: "أجب الآن" };
   const draft = mails.find((m) => m.draft?.status === "draft");
@@ -32,5 +35,6 @@ export function nextStep({ questions, mails, criticalOpen }: Input): NextStep {
   const fresh = mails.find((m) => m.status === "new");
   if (fresh) return { tone: "info", text: "وصل إيميل مرتبط بهذه الرحلة ولم تراجعه.", href: `/inbox?id=${fresh.triageId}`, action: "افتح الإيميل" };
   if (criticalOpen > 0) return { tone: "warn", text: `مراحل حرجة مفتوحة: ${criticalOpen}`, href: "?view=timeline", action: "افتح المراحل" };
+  if (wait) return { tone: "info", text: "أُرسل استفسار RQM. الوكيل ينتظر الرد ويجهّز متابعة بعد 15 دقيقة من الإرسال إن لم يصل." };
   return { tone: "ok", text: "لا شيء يحتاج قرارك الآن. الوكيل يتابع الرحلة." };
 }

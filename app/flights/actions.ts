@@ -69,3 +69,15 @@ export async function composeFlightMessage(companyId: string, type: string, flig
   if (o.status === "unsupported") return { status: "error", message: `هذه الرسالة غير متاحة للبناء الآلي الآن${typeof o.reason === "string" ? ` (${o.reason})` : ""}.` };
   return { status: "error", message: typeof o.note === "string" ? o.note : "تعذّر بناء الرسالة." };
 }
+
+/** Records that the employee sent the drafted message from the company mailbox. The system sends nothing. */
+export async function markMessageSent(draftId: string): Promise<Result> {
+  const { error } = await (await createClient()).rpc("mark_message_sent", { p_draft_id: draftId });
+  if (error) return { ok: false, message: explain(error.message) };
+  refresh(); return { ok: true };
+}
+export async function rejectMessageDraft(draftId: string): Promise<Result> {
+  const { error } = await (await createClient()).rpc("review_message_draft", { p_draft_id: draftId, p_decision: "rejected" });
+  if (error) return { ok: false, message: explain(error.message) };
+  refresh(); return { ok: true };
+}

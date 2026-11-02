@@ -18,6 +18,7 @@ export type Question = { id: string; step: string; text: string; dueAt: string |
 export type DelayCode = { id: string; label: string };
 export type Statement = { id: string; step: string | null; minutes: number | null; reason: string; code: string | null; by: string | null; at: string };
 export type FlightMail = { triageId: string; subject: string | null; from: string | null; at: string | null; summary: string | null; action: string | null; status: string; draft: { id: string; status: string; at: string } | null };
+export type FlightRqm = { id: string; status: string; body: string; createdAt: string; sentAt: string | null; followup: boolean; warnings: string[] };
 export type MessageType = { type: string; title: string | null; composable: boolean };
 
 type Raw = Record<string, any>;
@@ -75,6 +76,11 @@ export async function getFlight(rotationId: string) {
     const m = (mm.data ?? []).find((x: Raw) => x.id === t.message_id); const d = (dr.data ?? []).find((x: Raw) => x.triage_id === t.id);
     return { triageId: t.id, subject: m?.subject ?? null, from: m?.from_address ?? null, at: m?.received_at ?? m?.sent_at ?? t.created_at, summary: t.summary, action: t.requested_action, status: t.status, draft: d ? { id: d.id, status: d.status, at: d.created_at } : null };
   });
+  const { data: rq } = await sb.from("message_drafts").select("id, status, body_text, created_at, sent_at, followup_of, warnings").in("flight_id", legs).eq("message_type", "RQM").in("status", ["draft", "approved"]).order("created_at", { ascending: false }).limit(5);
+  const rqms: FlightRqm[] = (rq ?? []).filter((x) => x.status === "draft" || (x.sent_at && x.status === "approved")).map((x) => ({
+    id: x.id, status: x.status, body: x.body_text, createdAt: x.created_at, sentAt: x.sent_at, followup: !!x.followup_of,
+    warnings: (Array.isArray(x.warnings) ? x.warnings : []).map((w: unknown) => typeof w === "string" ? w : String((w as { message?: string })?.message ?? "")).filter(Boolean),
+  }));
   const me = mem.data ? (await sb.from("employees").select("id").eq("membership_id", mem.data.id).eq("active", true).maybeSingle()).data : null;
   const empIds = [...new Set((st.data ?? []).map((s) => s.stated_by_employee_id).filter(Boolean))];
   const emps = empIds.length ? (await sb.from("employees").select("id, full_name").in("id", empIds)).data ?? [] : [];
@@ -97,7 +103,7 @@ export async function getFlight(rotationId: string) {
 
   return {
     file: f as Raw, clock: clock as Raw, arrivalLeg: clock.arrival_leg_id as string, departureLeg: clock.departure_leg_id as string,
-    steps, questions, statements, delayCodes, messageTypes, mails, canAct: !!me,
+    steps, questions, statements, delayCodes, messageTypes, mails, rqms, canAct: !!me,
     airline: key ? airlines.get(key) ?? { code: key, name: null, logoUrl: null } : null,
   };
 }
