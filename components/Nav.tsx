@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "./I18n";
+import type { Key } from "@/lib/i18n";
 
 const ICONS: Record<string, string> = {
   "/": "M3 11l9-7 9 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1z",
@@ -9,13 +11,14 @@ const ICONS: Record<string, string> = {
   "/agent": "M4 5h16v11H9l-5 4z",
 };
 
-const items = [
-  { href: "/", label: "قيادتي" }, { href: "/inbox", label: "الوارد والمسودات" },
-  { href: "/flights", label: "الرحلات" }, { href: "/agent", label: "كلّم الوكيل" },
+const items: { href: string; label: Key }[] = [
+  { href: "/", label: "nav.home" }, { href: "/inbox", label: "nav.inbox" },
+  { href: "/flights", label: "nav.flights" }, { href: "/agent", label: "nav.agent" },
 ];
 
 export default function Nav() {
   const path = usePathname();
+  const { t } = useT();
   return (
     <nav>
       {items.map((n) => {
@@ -23,7 +26,7 @@ export default function Nav() {
         return (
           <Link key={n.href} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[n.href]} /></svg>
-            <span>{n.label}</span>
+            <span>{t(n.label)}</span>
           </Link>
         );
       })}

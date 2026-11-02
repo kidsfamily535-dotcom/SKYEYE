@@ -270,3 +270,26 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - **شاشة فاضية عند اختيار إيميل (Android Chrome):** السبب غير مؤكد (لم أستطع إعادة الإنتاج بلا حساب). الأرجح: `backdrop-filter` على كروت طويلة متراكمة يُسقط رسم الصفحة كلها. عُطّل على الشاشات ≤900px، والخلفية صارت طبقة ثابتة `body::before` (كانت تتمدد على طول الصفحة وتتشوش). أُضيف `app/error.tsx` (يظهر كود الخطأ بدل شاشة فاضية) و`components/ScrollTop.tsx` (كل إيميل يبدأ من أعلى الصفحة). **إن تكررت الشاشة الفاضية فخذ كود الخطأ من الصفحة.**
 - شات الوكيل: «أسأل عن» لم تعد حرفاً حرفاً، وplaceholder أقصر.
 - كارت الرحلة: حالة الرحلة بحجم نصها لا بعرض الصف.
+
+## تبديل اللغة عربي/إنجليزي — الجلسة 1 من 2 (2026-11-02، branch feat/language-switch)
+**القرار:** التبديل للواجهة فقط. مسودات الرد تبقى إنجليزية دائماً، والأكواد والأوقات UTC بالإنجليزية، ولا شيء يُترجم في القاعدة (أعمدة `_ar`/`_en` الموجودة تُستعمل كما هي).
+**اللغة الافتراضية:** العربية (RTL). الإنجليزية LTR. الـ CSS كله خصائص منطقية (لا left/right) فلا حاجة لتعديله.
+
+**منجز في الجلسة 1:**
+- القاعدة (طُبّقت على SKYEYE): عمود `memberships.preferred_language` (`ar`|`en`، الافتراضي `ar`، check) + دالتا `set_my_language(text)` و`get_my_language()` (security definer، للمستخدم المسجّل فقط، لا تعدّل إلا صف المستخدم نفسه). الملف: `supabase/migrations/preferred_language_on_memberships.sql`.
+- `lib/i18n.ts`: القاموس (`ar` و`en`) بنوع صارم: نقص أي مفتاح في الإنجليزية يفشل `tsc`. `translate(lang, key, vars)` تدعم `{n}`.
+- `lib/lang.ts`: `getLang()` و`getT()` للخادم (من كوكي `skyeye_lang`).
+- `components/I18n.tsx`: `I18nProvider` و`useT()` للمكوّنات `"use client"`.
+- `app/lang-actions.ts`: `setLanguage` (كوكي + حفظ في الحساب إن كان مسجّلاً) و`syncLanguageAfterLogin` (لغة اختيرت في شاشة الدخول تفوز وتُحفظ، وإلا تؤخذ لغة الحساب).
+- `components/LangSwitch.tsx`: زر التبديل، في الشريط العلوي (`Shell`) وفي شاشة الدخول.
+- مترجَم فعلاً: `layout.tsx` (lang وdir وعنوان الصفحة)، `Shell`، `Nav`، `Menu`، `/login`.
+- اختُبر: `tsc --noEmit` و`next build` فقط. **لم يُختبر في متصفح بحساب حقيقي** (بدّل اللغة وتأكد أن الاتجاه يتبدل، وأن اللغة تبقى بعد الخروج والدخول).
+
+**المتبقي للجلسة 2 (حوالي 440 سطراً عربياً مكتوباً مباشرة في 44 ملفاً):**
+1. الصفحات: `app/handover/page.tsx` (43)، `app/flights/page.tsx` (39)، `app/inbox/page.tsx` (30)، `app/page.tsx` (28)، `app/agent/page.tsx` (16)، `app/flights/import/page.tsx` (9)، `app/error.tsx` (3).
+2. المكوّنات: `ProgramImport` (29)، `FlightJourney` (14)، `AgentComposer` (14)، `ChatDock` (13)، `OpenRequestForm` (12)، `DraftPanel` (11)، `FlightTimeline` (9)، `FlightActions` (9)، `RqmDrafts` (7)، `DelayForm` (6)، `ShiftAck` (5)، `FlightQuestions` (5)، وباقيها أقل من 4 أسطر.
+3. المنطق/الرسائل: `lib/flight-journey.ts` (17)، `lib/flight-feed.ts` (13)، `lib/program.ts` (11)، `lib/flight-status.ts` (10)، `lib/inbox.ts`، `lib/data.ts`، `lib/agent-labels.ts`، `lib/requests.ts`، `lib/cockpit.ts`، `lib/flights.ts`، `lib/flight-labels.ts`، و`actions.ts` في flights وrequests وhandover وagent وinbox (رسائل الأخطاء).
+4. أسماء حقول القاعدة التي تعرض للمستخدم (`request_stages.label_ar/label_en` وغيرها): اختر العمود حسب اللغة بدل العربي فقط.
+5. تواريخ وأرقام: `lib/format.ts` و`UtcClock` (الأرقام والأكواد تبقى إنجليزية بكل الأحوال).
+6. **قرار مطلوب من المالك:** ما يكتبه الوكيل في الشات (ردوده للموظف): بلغة الواجهة أم يتبع لغة سؤال الموظف؟ لم يُغيَّر شيء بعد.
+**طريقة العمل المقترحة:** ملفاً ملفاً: انقل النص لمفتاح في `lib/i18n.ts` (ar ثم en)، ثم `tsc` و`build`. لا تدمج في main قبل مراجعة الصفحات بالإنجليزية على الموبايل.
