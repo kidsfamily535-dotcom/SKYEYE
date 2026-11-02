@@ -11,6 +11,8 @@ import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
 import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
 import FlightCard from "@/components/FlightCard";
+import FlightJourney from "@/components/FlightJourney";
+import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
 import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
 
@@ -39,6 +41,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const lh = (o: { tab?: string; day?: string }) => { const p = new URLSearchParams(); const t = o.tab ?? tab; if (t === "done") p.set("tab", "done"); const dd = "day" in o ? o.day : sp.day; if (dd) p.set("day", dd); if (needle) p.set("q", sp.q ?? ""); const s = p.toString(); return `/flights${s ? `?${s}` : ""}`; };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
+  const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps) : null;
   const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
   const audit: FeedItem[] = sel ? [
     ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: `${x.wasCorrected ? "صُحِّح وقت" : "سُجّل وقت"} المرحلة: ${x.nameAr}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
@@ -102,6 +105,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>
 
               {view === "overview" && next && feed && <>
+                {journey && <FlightJourney j={journey} />}
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب المناولة.</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
