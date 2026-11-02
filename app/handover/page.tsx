@@ -111,7 +111,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
 
                     <div className="card"><h2>{t("hv.q")}</h2>
                       {c.questions.length === 0 && <p className="muted">{t("hv.q.none")}</p>}
-                      <ul className="list">{c.questions.map((q) => <li key={q.id}><i className={`dot ${q.status === "late" || q.status === "escalated" ? "late" : "warn"}`} /><span><b className="ltr">{q.flightNumber ?? "—"}</b> {q.questionAr ?? "—"}<small className="muted">{t("hv.due")} <span className="ltr">{fmtUtc(q.dueAt)}</span> · {Q(q.status)}</small></span></li>)}</ul>
+                      <ul className="list">{c.questions.map((q) => <li key={q.id}><i className={`dot ${q.status === "late" || q.status === "escalated" ? "late" : "warn"}`} /><span><b className="ltr">{q.flightNumber ?? "—"}</b> {(lang === "en" ? q.questionEn ?? q.questionAr : q.questionAr) ?? "—"}<small className="muted">{t("hv.due")} <span className="ltr">{fmtUtc(q.dueAt)}</span> · {Q(q.status)}</small></span></li>)}</ul>
                     </div>
                     </>}
 

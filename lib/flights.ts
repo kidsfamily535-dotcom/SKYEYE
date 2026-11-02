@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getLang } from "@/lib/lang";
 import { airlinePrefix, resolveAirlines, type Airline } from "@/lib/requests";
 
 export type FlightRow = {
@@ -49,6 +50,7 @@ export async function getFlightList(tab: "active" | "done"): Promise<FlightRow[]
 
 export async function getFlight(rotationId: string) {
   const sb = await createClient();
+  const lang = await getLang();
   const { data: { user } } = await sb.auth.getUser();
   const [{ data: f }, { data: clock }] = await Promise.all([
     sb.from("v_flight_file").select("*").eq("rotation_id", rotationId).maybeSingle(),
@@ -58,7 +60,7 @@ export async function getFlight(rotationId: string) {
   const legs = [clock.arrival_leg_id, clock.departure_leg_id] as string[];
   const [tl, qs, st, dcs, mts, mem] = await Promise.all([
     sb.from("v_flight_timeline").select("*").in("flight_id", legs).order("track_order").order("seq"),
-    sb.from("turnaround_checkins").select("id, step_code, question_ar, due_at, status, note").eq("flight_id", clock.departure_leg_id).in("status", ["asked", "in_progress", "late", "escalated"]).order("due_at"),
+    sb.from("turnaround_checkins").select("id, step_code, question_ar, question_en, due_at, status, note").eq("flight_id", clock.departure_leg_id).in("status", ["asked", "in_progress", "late", "escalated"]).order("due_at"),
     sb.from("flight_delay_statements").select("id, step_code, delay_code_id, delay_minutes, reason_text, stated_by_employee_id, stated_at, supersedes_id").in("flight_id", legs).order("stated_at", { ascending: false }),
     sb.from("delay_codes").select("id, scheme, code, description").order("scheme").order("code"),
     sb.from("message_formats").select("message_type, title, composable").neq("status", "retired").order("message_type"),
@@ -89,7 +91,7 @@ export async function getFlight(rotationId: string) {
     track: t.track, seq: t.seq, code: t.step_code, nameAr: t.name_ar, nameEn: t.name_en, kind: t.kind, isCritical: !!t.is_critical, templateStatus: t.template_status,
     plannedAt: t.planned_at, actualAt: t.actual_at, state: t.state, variance: t.variance_minutes, eventId: t.event_id, wasCorrected: !!t.was_corrected, by: t.recorded_by_label,
   }));
-  const questions: Question[] = (qs.data ?? []).map((q) => ({ id: q.id, step: q.step_code, text: q.question_ar, dueAt: q.due_at, status: q.status, note: q.note }));
+  const questions: Question[] = (qs.data ?? []).map((q) => ({ id: q.id, step: q.step_code, text: lang === "en" ? (q.question_en || q.question_ar) : q.question_ar, dueAt: q.due_at, status: q.status, note: q.note }));
   const statements: Statement[] = (st.data ?? []).filter((s) => !replaced.has(s.id)).map((s) => {
     const c = codes.find((x) => x.id === s.delay_code_id);
     return { id: s.id, step: s.step_code, minutes: s.delay_minutes, reason: s.reason_text, code: c ? `${c.code} ${c.description}` : null, by: emps.find((e) => e.id === s.stated_by_employee_id)?.full_name ?? null, at: s.stated_at };

@@ -4,7 +4,7 @@ import { getT } from "@/lib/lang";
 export type ShiftDef = { id: string; name: string; startMinute: number; durationMinutes: number; active: boolean };
 export type RepRequest = { id: string; title: string; flightRef: string | null; stageLabelAr: string | null; stageLabel?: string | null; dueAt: string | null; urgent: boolean; ownerName: string | null; lastEventAt: string | null; lastEventSummary: string | null };
 export type RepAlert = { id: string; severity: string; status: string; title: string; detectedAt: string | null };
-export type RepQuestion = { id: string; flightNumber: string | null; questionAr: string | null; dueAt: string | null; status: string };
+export type RepQuestion = { id: string; flightNumber: string | null; questionAr: string | null; questionEn: string | null; dueAt: string | null; status: string };
 export type RepFlight = { key: string; flightIn: string | null; flightOut: string | null; registration: string | null; ata: string | null; std: string | null };
 export type ReportContent = {
   requests: RepRequest[]; alerts: RepAlert[]; questions: RepQuestion[]; flights: RepFlight[];
@@ -34,7 +34,7 @@ export function parseContent(raw: unknown): ReportContent {
   return {
     requests: arr(c.requests).map((r) => ({ id: String(r.id), title: str(r.title) ?? "—", flightRef: str(r.flight_ref), stageLabelAr: str(r.stage_label_ar), dueAt: str(r.due_at), urgent: r.urgent === true, ownerName: str(r.owner_name), lastEventAt: str(r.last_event_at), lastEventSummary: str(r.last_event_summary) })),
     alerts: arr(c.alerts).map((a) => ({ id: String(a.id), severity: str(a.severity) ?? "", status: str(a.status) ?? "", title: str(a.title) ?? "—", detectedAt: str(a.detected_at) })),
-    questions: arr(c.questions).map((q) => ({ id: String(q.id), flightNumber: str(q.flight_number), questionAr: str(q.question_ar), dueAt: str(q.due_at), status: str(q.status) ?? "" })),
+    questions: arr(c.questions).map((q) => ({ id: String(q.id), flightNumber: str(q.flight_number), questionAr: str(q.question_ar), questionEn: str(q.question_en), dueAt: str(q.due_at), status: str(q.status) ?? "" })),
     flights: arr(c.flights_on_ground).map((f, i) => ({ key: String(f.rotation_id ?? i), flightIn: str(f.flight_in), flightOut: str(f.flight_out), registration: str(f.registration), ata: str(f.ata), std: str(f.std) })),
     emails: { new: num(e.new), urgentNew: num(e.urgent_new), draftsWaiting: num(e.drafts_waiting) },
     during: { events: num(d.events_recorded), delays: num(d.delay_statements) },
