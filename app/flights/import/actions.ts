@@ -2,27 +2,30 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseProgram, type ProgramResult } from "@/lib/program";
+import { getT } from "@/lib/lang";
+import type { TFn } from "@/lib/i18n";
 
 export type ImportOut = { ok: true; data: ProgramResult } | { ok: false; message: string };
 
-function explain(msg: string): string {
-  if (msg.includes("not allowed to add")) return "إضافة شركات الطيران والمحطات للمدير فقط.";
-  if (msg.includes("not allowed")) return "ليست لديك صلاحية رفع برنامج الرحلات لهذه الشركة.";
-  if (msg.includes("too many rows")) return "الحد الأقصى 500 سطر في المرة الواحدة.";
-  if (msg.includes("no rows")) return "لا توجد أسطر في البرنامج.";
-  return "تعذّر تنفيذ الطلب. حاول مرة أخرى.";
+function explain(msg: string, t: TFn): string {
+  if (msg.includes("not allowed to add")) return t("imp.e.adminOnly");
+  if (msg.includes("not allowed")) return t("imp.e.notAllowed");
+  if (msg.includes("too many rows")) return t("imp.e.tooMany");
+  if (msg.includes("no rows")) return t("imp.e.noRows");
+  return t("fl.err.generic");
 }
 
 async function run(text: string, commit: boolean, addMissing: boolean): Promise<ImportOut> {
-  const p = parseProgram(text);
+  const { t } = await getT();
+  const p = parseProgram(text, t);
   if (!p.ok) return { ok: false, message: p.message };
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) return { ok: false, message: "انتهت الجلسة. سجّل الدخول من جديد." };
+  if (!user) return { ok: false, message: t("imp.e.session") };
   const { data: m } = await sb.from("memberships").select("company_id").eq("user_id", user.id).maybeSingle();
-  if (!m) return { ok: false, message: "حسابك غير مرتبط بشركة." };
+  if (!m) return { ok: false, message: t("imp.e.noCompany") };
   const { data, error } = await sb.rpc("submit_flight_program", { p_company_id: m.company_id, p_rows: p.rows, p_commit: commit, p_add_missing: addMissing });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, t) };
   if (commit) { revalidatePath("/flights"); revalidatePath("/"); }
   return { ok: true, data: data as ProgramResult };
 }

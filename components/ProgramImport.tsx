@@ -3,24 +3,20 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { previewProgram, commitProgram } from "@/app/flights/import/actions";
 import type { ProgramResult } from "@/lib/program";
+import { labelOf } from "@/lib/i18n";
+import { useT } from "@/components/I18n";
 
 const TEMPLATE = "fn,stn,origin,dest,date,sta,std,dep,block_min,reg\nMS777/8,CAI,DXB,DXB,2026-11-01,14:00,15:30,,240,SU-GDM\n";
-const ERR_AR: Record<string, string> = {
-  flight_format: "رقم الرحلة غير مقروء (الشكل: MS777/8)", airline_unknown: "كود شركة الطيران غير معروف", airline_missing: "شركة الطيران غير مضافة لشركتك",
-  station_unknown: "كود المحطة غير معروف", station_missing: "المحطة غير مضافة لشركتك", origin_unknown: "مطار القدوم غير معروف", dest_unknown: "مطار الوجهة غير معروف",
-  date_invalid: "التاريخ غير صحيح", sta_invalid: "وقت الوصول غير صحيح", std_invalid: "وقت المغادرة غير صحيح", dep_invalid: "وقت إقلاع المطار الأصلي غير صحيح",
-  block_invalid: "مدة الرحلة غير صحيحة", reg_invalid: "تسجيل الطائرة غير صحيح",
-};
-const WARN_AR: Record<string, string> = { exists: "موجودة من قبل وستُتجاوز", duplicate_in_paste: "مكررة في البرنامج الملصوق" };
 const SOFT = new Set(["airline_missing", "station_missing"]);
 
 export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
+  const { t: tr, lang } = useT();
   const [text, setText] = useState(""); const [res, setRes] = useState<ProgramResult | null>(null);
   const [msg, setMsg] = useState<string | null>(null); const [addMissing, setAddMissing] = useState(false);
   const [pending, start] = useTransition();
 
   const reset = (t: string) => { setText(t); setRes(null); setMsg(null); };
-  const onFile = async (f: File | undefined) => { if (!f) return; if (/\.xlsx?$/i.test(f.name)) { setMsg("ملفات Excel: افتحه وانسخ الجدول كله (مع العناوين) والصقه هنا، أو احفظه CSV."); return; } reset(await f.text()); };
+  const onFile = async (f: File | undefined) => { if (!f) return; if (/\.xlsx?$/i.test(f.name)) { setMsg(tr("imp.xlsx")); return; } reset(await f.text()); };
   const preview = () => start(async () => { const r = await previewProgram(text); if (!r.ok) { setMsg(r.message); setRes(null); } else { setMsg(null); setRes(r.data); } });
   const commit = () => start(async () => { const r = await commitProgram(text, addMissing); if (!r.ok) { setMsg(r.message); return; } setRes(r.data); setMsg(null); });
   const download = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([TEMPLATE], { type: "text/csv" })); a.download = "flight-program-template.csv"; a.click(); };
@@ -32,32 +28,32 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   return (
     <div className="stack">
       {!done && (<>
-        <p className="muted">الصق الجدول من Excel (مع سطر العناوين)، أو ارفع ملف CSV. كل سطر يعمل دوراناً كاملاً: رحلة وصول ورحلة مغادرة لنفس الطائرة. الأوقات بتوقيت <span className="ltr">UTC</span>. التاريخ بشكل <span className="ltr">2026-11-01</span> أو يوم/شهر/سنة.</p>
+        <p className="muted">{tr("imp.intro1")} <span className="ltr">UTC</span>{tr("imp.intro2")} <span className="ltr">2026-11-01</span> {tr("imp.intro3")}</p>
         <div className="row">
-          <button type="button" className="btn sm" onClick={download}>تحميل القالب</button>
-          <label className="btn sm" htmlFor="pf">رفع ملف CSV</label>
+          <button type="button" className="btn sm" onClick={download}>{tr("imp.template")}</button>
+          <label className="btn sm" htmlFor="pf">{tr("imp.upload")}</label>
           <input id="pf" type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" className="sr" onChange={(e) => onFile(e.target.files?.[0])} />
         </div>
-        <label htmlFor="pt">برنامج الرحلات</label>
+        <label htmlFor="pt">{tr("imp.programLabel")}</label>
         <textarea id="pt" className="ltr" rows={9} dir="ltr" value={text} onChange={(e) => reset(e.target.value)} placeholder={TEMPLATE} />
         {msg && <p role="alert" className="err">{msg}</p>}
-        <div className="row"><button type="button" className="btn gold" disabled={pending || text.trim().length < 5} onClick={preview}>{pending && !res ? "جارٍ الفحص…" : "فحص البرنامج"}</button></div>
+        <div className="row"><button type="button" className="btn gold" disabled={pending || text.trim().length < 5} onClick={preview}>{pending && !res ? tr("imp.checking") : tr("imp.check")}</button></div>
       </>)}
 
       {res && !done && (
         <div className="stack">
           <div className="chips">
-            <span className="tag info">الأسطر: <span className="ltr">{res.total}</span></span>
-            <span className={`tag ${blocking ? "late" : "ok"}`}>{blocking ? <>بها أخطاء: <span className="ltr">{blocking}</span></> : "سليم"}</span>
+            <span className="tag info">{tr("imp.rows")} <span className="ltr">{res.total}</span></span>
+            <span className={`tag ${blocking ? "late" : "ok"}`}>{blocking ? <>{tr("imp.hasErrors")} <span className="ltr">{blocking}</span></> : tr("imp.clean")}</span>
           </div>
           {hasMissing && (
             <div className="card glass">
-              <b>ناقص في إعدادات شركتك</b>
-              {res.missing_airlines.length > 0 && <small className="muted">شركات طيران: <span className="ltr">{res.missing_airlines.join(" ")}</span></small>}
-              {res.missing_stations.length > 0 && <small className="muted">محطات: <span className="ltr">{res.missing_stations.join(" ")}</span></small>}
+              <b>{tr("imp.missing.title")}</b>
+              {res.missing_airlines.length > 0 && <small className="muted">{tr("imp.missing.airlines")} <span className="ltr">{res.missing_airlines.join(" ")}</span></small>}
+              {res.missing_stations.length > 0 && <small className="muted">{tr("imp.missing.stations")} <span className="ltr">{res.missing_stations.join(" ")}</span></small>}
               {canAdmin
-                ? <label className="inline"><input type="checkbox" checked={addMissing} onChange={(e) => setAddMissing(e.target.checked)} /> أضفها لشركتي عند الاعتماد</label>
-                : <small className="muted">إضافتها للمدير فقط. اطلب منه إضافتها ثم افحص البرنامج من جديد.</small>}
+                ? <label className="inline"><input type="checkbox" checked={addMissing} onChange={(e) => setAddMissing(e.target.checked)} /> {tr("imp.addMissing")}</label>
+                : <small className="muted">{tr("imp.adminOnly")}</small>}
             </div>
           )}
           <ul className="list">
@@ -68,8 +64,8 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
                   <i className={`dot ${bad.length ? "late" : r.warnings.length ? "warn" : "ok"}`} />
                   <span>
                     <b className="ltr">{r.fn || "—"}</b> <small className="muted"><span className="ltr">{r.origin}→{r.stn}→{r.dest} · {r.date} · {r.sta}→{r.std}{r.reg ? ` · ${r.reg}` : ""}</span></small>
-                    {r.errors.map((e) => <small key={e} className={SOFT.has(e) && addMissing ? "muted" : "err"}>{ERR_AR[e] ?? e}{SOFT.has(e) && addMissing ? " (ستُضاف)" : ""}</small>)}
-                    {r.warnings.map((w) => <small key={w} className="muted">{WARN_AR[w] ?? w}</small>)}
+                    {r.errors.map((e) => <small key={e} className={SOFT.has(e) && addMissing ? "muted" : "err"}>{labelOf(lang, "imp.err", e)}{SOFT.has(e) && addMissing ? tr("imp.willAdd") : ""}</small>)}
+                    {r.warnings.map((w) => <small key={w} className="muted">{labelOf(lang, "imp.warn", w)}</small>)}
                   </span>
                 </li>
               );
@@ -77,24 +73,24 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
           </ul>
           {msg && <p role="alert" className="err">{msg}</p>}
           <div className="row">
-            <button type="button" className="btn gold" disabled={pending || blocking > 0} onClick={commit}>{pending ? "جارٍ الحفظ…" : "اعتمد الاستيراد"}</button>
-            <button type="button" className="btn" disabled={pending} onClick={() => setRes(null)}>تعديل البرنامج</button>
+            <button type="button" className="btn gold" disabled={pending || blocking > 0} onClick={commit}>{pending ? tr("imp.saving") : tr("imp.commit")}</button>
+            <button type="button" className="btn" disabled={pending} onClick={() => setRes(null)}>{tr("imp.edit")}</button>
           </div>
-          {blocking > 0 && <small className="muted">لا يُحفظ شيء حتى تصحَّح كل الأخطاء، فالبرنامج يدخل كاملاً أو لا يدخل.</small>}
+          {blocking > 0 && <small className="muted">{tr("imp.blockNote")}</small>}
         </div>
       )}
 
       {done && (
         <div className="stack">
-          <p className="ok">تم الاستيراد.</p>
+          <p className="ok">{tr("imp.done")}</p>
           <div className="chips">
-            <span className="tag ok">دورانات: <span className="ltr">{done.result?.rows ?? 0}</span></span>
-            <span className="tag ok">رحلات جديدة: <span className="ltr">{done.result?.flights_inserted ?? 0}</span></span>
-            <span className="tag info">موجودة وتم تجاوزها: <span className="ltr">{done.result?.flights_skipped_existing ?? 0}</span></span>
-            {(done.airlines_added ?? 0) > 0 && <span className="tag info">شركات طيران أُضيفت: <span className="ltr">{done.airlines_added}</span></span>}
-            {(done.stations_added ?? 0) > 0 && <span className="tag info">محطات أُضيفت: <span className="ltr">{done.stations_added}</span></span>}
+            <span className="tag ok">{tr("imp.r.rotations")} <span className="ltr">{done.result?.rows ?? 0}</span></span>
+            <span className="tag ok">{tr("imp.r.new")} <span className="ltr">{done.result?.flights_inserted ?? 0}</span></span>
+            <span className="tag info">{tr("imp.r.skipped")} <span className="ltr">{done.result?.flights_skipped_existing ?? 0}</span></span>
+            {(done.airlines_added ?? 0) > 0 && <span className="tag info">{tr("imp.r.airlines")} <span className="ltr">{done.airlines_added}</span></span>}
+            {(done.stations_added ?? 0) > 0 && <span className="tag info">{tr("imp.r.stations")} <span className="ltr">{done.stations_added}</span></span>}
           </div>
-          <div className="row"><Link className="btn gold" href="/flights">افتح الرحلات</Link><button type="button" className="btn" onClick={() => { reset(""); }}>رفع برنامج آخر</button></div>
+          <div className="row"><Link className="btn gold" href="/flights">{tr("imp.openFlights")}</Link><button type="button" className="btn" onClick={() => { reset(""); }}>{tr("imp.another")}</button></div>
         </div>
       )}
     </div>

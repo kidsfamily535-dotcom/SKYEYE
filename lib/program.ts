@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { TFn } from "@/lib/i18n";
 
 /** One row of the flight program, in the shape the database function expects. */
 export type ProgramRow = { fn: string; stn: string; origin: string; dest: string; date: string; sta: string; std: string; dep?: string; block_min?: string; reg?: string };
@@ -46,9 +47,9 @@ const fixTime = (v: string) => { const m = v.trim().match(/^(\d{1,2}):(\d{2})(:\
 
 export type ParseOut = { ok: true; rows: ProgramRow[] } | { ok: false; message: string };
 
-export function parseProgram(text: string): ParseOut {
+export function parseProgram(text: string, t: TFn): ParseOut {
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
-  if (lines.length < 2) return { ok: false, message: "الصق سطر العناوين وتحته سطراً واحداً على الأقل." };
+  if (lines.length < 2) return { ok: false, message: t("imp.p.headerRows") };
   const head = lines[0];
   const d = head.includes("\t") ? "\t" : head.includes(";") ? ";" : ",";
   const cols = splitLine(head, d).map(norm);
@@ -56,8 +57,8 @@ export function parseProgram(text: string): ParseOut {
   (Object.keys(ALIASES) as (keyof ProgramRow)[]).forEach((k) => { const p = cols.findIndex((c) => ALIASES[k].includes(c)); if (p >= 0) idx[k] = p; });
   const need: (keyof ProgramRow)[] = ["fn", "stn", "origin", "dest", "date", "sta", "std"];
   const lacking = need.filter((k) => idx[k] === undefined);
-  if (lacking.length) return { ok: false, message: `سطر العناوين ناقص: ${lacking.join("، ")}. حمّل القالب واكتب العناوين كما هي.` };
-  if (lines.length - 1 > 500) return { ok: false, message: "الحد الأقصى 500 سطر في المرة الواحدة. قسّم البرنامج." };
+  if (lacking.length) return { ok: false, message: t("imp.p.lacking", { cols: lacking.join(t("imp.sep")) }) };
+  if (lines.length - 1 > 500) return { ok: false, message: t("imp.p.max") };
   const rows: ProgramRow[] = lines.slice(1).map((l) => {
     const c = splitLine(l, d); const g = (k: keyof ProgramRow) => (idx[k] === undefined ? "" : (c[idx[k]!] ?? ""));
     return { fn: g("fn"), stn: g("stn"), origin: g("origin"), dest: g("dest"), date: fixDate(g("date")), sta: fixTime(g("sta")), std: fixTime(g("std")), dep: fixTime(g("dep")), block_min: g("block_min"), reg: g("reg") };
