@@ -4,23 +4,32 @@ import { composeFlightMessage, type Composed } from "@/app/flights/actions";
 import Hint from "@/components/Hint";
 import type { MessageType } from "@/lib/flights";
 
+/** الترتيب المعتمد للقائمة. الساق تُستنتج من نوع الرسالة (وصف الصيغ في القاعدة): AA للوصول، وAD وED وNI للمغادرة، وRQM يخص الرحلة القادمة (يُطلب من محطة الإقلاع الأصلية). */
+const ORDER: { type: string; label: string; leg: 0 | 1 }[] = [
+  { type: "RQM", label: "RQM MVT", leg: 0 },
+  { type: "MVT-AA", label: "AA MVT", leg: 0 },
+  { type: "MVT-ED", label: "ED", leg: 1 },
+  { type: "MVT-NI", label: "NI", leg: 1 },
+  { type: "MVT-AD", label: "AD MVT", leg: 1 },
+];
+
 /** Actions: every message type the system can build. It fills what it knows; the employee completes the actual times. Drafts only: nothing is sent. */
 export default function FlightActions({ companyId, types, legs, canAct }: { companyId: string; types: MessageType[]; legs: { id: string; label: string }[]; canAct: boolean }) {
-  const [type, setType] = useState<string | null>(null); const [leg, setLeg] = useState(legs[legs.length - 1]?.id ?? "");
+  const [type, setType] = useState<string | null>(null);
   const [vals, setVals] = useState<Record<string, string>>({}); const [res, setRes] = useState<Composed | null>(null); const [copied, setCopied] = useState(false); const [pending, start] = useTransition();
-  const run = (t: string, v: Record<string, string>) => start(async () => { setCopied(false); setRes(await composeFlightMessage(companyId, t, leg, v)); });
+  const ready = ORDER.filter((o) => types.some((m) => m.type === o.type && m.composable) && legs[o.leg]);
+  const legOf = (t: string) => legs[ORDER.find((o) => o.type === t)?.leg ?? 1]?.id ?? "";
+  const run = (t: string, v: Record<string, string>) => start(async () => { setCopied(false); setRes(await composeFlightMessage(companyId, t, legOf(t), v)); });
   if (!canAct) return null;
-  const ready = types.filter((m) => m.composable);
   return (
     <div className="card">
-      <h2>رسائل جاهزة<Hint>النظام يبني المسودة مما يعرفه وأنت تكمل الأوقات الفعلية. لا يُرسَل شيء: انسخها وأرسلها من بريد الشركة.</Hint></h2>
+      <h2>رسائل جاهزة<Hint>النظام يبني المسودة مما يعرفه حسب صيغة كل رسالة المعتمدة، وأنت تكمل الأوقات الفعلية. الرحلة المذكورة بجانب كل نوع هي التي تخصها الرسالة. لا يُرسَل شيء: انسخها وأرسلها من بريد الشركة.</Hint></h2>
       {ready.length === 0 ? <p className="muted">لا توجد صيغ رسائل قابلة للبناء.</p> : <>
-        <fieldset className="row"><legend className="muted">الرسالة تخص</legend>{legs.map((l) => <label key={l.id}><input type="radio" name="leg" checked={leg === l.id} onChange={() => { setLeg(l.id); setRes(null); }} /> <span className="ltr">{l.label}</span></label>)}</fieldset>
         <div className="row">
           <label className="sr" htmlFor="msg-type">نوع الرسالة</label>
-          <select id="msg-type" className="pick ltr" value={type ?? ""} onChange={(e) => { const t = e.target.value; if (!t) return; setType(t); setVals({}); setRes(null); run(t, {}); }}>
+          <select id="msg-type" className="pick ltr" value={type ?? ""} onChange={(e) => { const t = e.target.value; setVals({}); setRes(null); if (!t) { setType(null); return; } setType(t); run(t, {}); }}>
             <option value="">اختر نوع الرسالة</option>
-            {ready.map((m) => <option key={m.type} value={m.type}>{m.title ? `${m.type} — ${m.title}` : m.type}</option>)}
+            {ready.map((o) => <option key={o.type} value={o.type}>{`${o.label} — ${legs[o.leg].label}`}</option>)}
           </select>
         </div>
       </>}
