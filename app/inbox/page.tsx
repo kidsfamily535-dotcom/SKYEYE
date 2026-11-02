@@ -5,6 +5,7 @@ import Hint from "@/components/Hint";
 import DraftPanel from "@/components/DraftPanel";
 import OpenRequestForm from "@/components/OpenRequestForm";
 import CopyButton from "@/components/CopyButton";
+import ScrollTop from "@/components/ScrollTop";
 import { getFilesForMessage, resolveAirlines } from "@/lib/requests";
 import { getCommandData } from "@/lib/data";
 import { getInbox, CATEGORY_AR, URGENCY_AR, STATUS_AR, ATT_AR, type InboxItem } from "@/lib/inbox";
@@ -64,6 +65,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
           <section className="ireader" aria-label="تفاصيل الإيميل">
             {!sel && <div className="card"><p className="muted">اختر إيميلاً لعرضه.</p></div>}
             {sel && <>
+              <ScrollTop id={sel.id} />
               <div className="itool">
                 <Link className="back ireturn" href={listHref(sp.f)}>‹ كل الرسائل</Link>
                 <span className="grow" />

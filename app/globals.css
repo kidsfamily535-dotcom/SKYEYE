@@ -294,3 +294,22 @@ textarea,input,select{max-width:100%}
   .chatshell{height:calc(100dvh - 190px - env(safe-area-inset-bottom))}
 }
 @media (hover:none){.btn:hover:not(:disabled){background:rgba(255,255,255,.04)}.btn.gold:hover:not(:disabled){background:linear-gradient(90deg,#CFA24F,var(--gold))}}
+
+/* ---- phone fixes from real-device screenshots (2026-11-02) ---- */
+@media (max-width:900px){
+  /* Android Chrome can blank the whole page when tall backdrop-filter cards pile up: turn it off on phones */
+  *,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  :root{--panel:rgba(9,24,52,.92)}
+  .side{background:rgba(5,14,32,.97)}
+  /* background lives on a fixed layer: a body background stretches over the whole (very tall) page and goes blurry */
+  body{background:var(--bg)}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(6,18,42,.55),rgba(6,18,42,.9)),url(/bg-sky.jpg) center/cover,var(--bg)}
+  /* flight card: status pill sized to its text, not the whole row */
+  .fcard-link .fstatus{justify-self:start;width:auto;max-width:100%}
+  /* chat: the "ask about" label must not be squeezed into a vertical column */
+  .dock-top,.dock-ctx{flex-wrap:wrap}
+  .dock-ctx{width:100%}
+  .dock-ctx>span{white-space:nowrap;flex:none}
+  .dock-ctx .pick{flex:1 1 160px;min-width:0;max-width:100%}
+  .dock-row textarea{min-height:52px}
+}

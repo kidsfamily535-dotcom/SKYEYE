@@ -45,7 +45,7 @@ export default function ChatDock({ companyId, opts, initial, canWrite }: { compa
       </div>
       {err && <p role="alert" className="err">{err}</p>}
       <div className="dock-row">
-        <textarea rows={1} maxLength={2000} value={text} placeholder="اكتب للوكيل… (Enter للإرسال، Shift+Enter لسطر جديد)" aria-label="رسالتك للوكيل"
+        <textarea rows={1} maxLength={2000} value={text} placeholder="اكتب للوكيل…" title="Enter للإرسال، Shift+Enter لسطر جديد" aria-label="رسالتك للوكيل"
           onChange={(e) => { setText(e.target.value); e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 160)}px`; }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(text); } }} />
         <button type="button" className="btn gold" disabled={pending || !text.trim()} onClick={() => send(text)}>{pending ? "…" : "أرسل"}</button>
