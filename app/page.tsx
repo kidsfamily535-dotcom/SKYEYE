@@ -24,20 +24,23 @@ export default async function CommandPage() {
     : stream.length === 0 ? "لا شيء يحتاج قرارك الآن. أتابع البريد والرحلات وأنبّهك عند أي تغيير."
     : `لديك ${stream.length} ${stream.length === 1 ? "أمر يحتاج" : "أمور تحتاج"} متابعة. أقترح البدء بـ: ${short(first.text)}`;
 
+  const TONE_AR: Record<string, string> = { late: "عاجل", warn: "مهم", info: "للعلم", ok: "تم" };
+  const stat = (n: number | null | undefined, label: string, href: string, hot?: boolean) => (
+    <Link href={href} className="hstat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
+
   return (
     <Shell data={d}>
       <main className="page">
-        <section className="hero">
-          <div className="hero-text">
-            <h1>{g.text}، فريق العمليات</h1>
-            <p><span className="ltr">{g.date}</span> · هذا ما يحدث الآن وما ينتظر قرارك.</p>
-            <ul className="stats">
-              <li><b className="ltr">{dash(c.todayFlights)}</b>رحلات اليوم</li>
-              <li><b className="ltr">{dash(c.onGround)}</b>طائرات على الأرض</li>
-              <li><b className={`ltr ${attention > 0 ? "hot" : ""}`}>{d.noMembership ? "—" : attention}</b>تحتاج انتباهاً</li>
-            </ul>
-          </div>
-          <div className="card glass"><h2>الرادار الحي</h2><Radar counts={c.radar} /></div>
+        <section className="fhero" aria-label="قيادتي">
+          <h1>{g.text}، فريق العمليات</h1>
+          <p><span className="ltr">{g.date}</span> · هذا ما يحدث الآن وما ينتظر قرارك.</p>
+        </section>
+
+        <section className="fsum four" aria-label="ملخص اليوم">
+          {stat(c.todayFlights, "رحلات اليوم", "/flights?day=today")}
+          {stat(c.onGround, "طائرات على الأرض", "/flights")}
+          {stat(attention, "تحتاج انتباهاً", "#attention", attention > 0)}
+          {stat(d.counts.inboxToReview, "إيميلات للمراجعة", "/inbox?f=new")}
         </section>
 
         {reco && (
@@ -49,20 +52,24 @@ export default async function CommandPage() {
         )}
 
         <div className="cols2">
-          <section className="card"><h2>ما يحتاج انتباهك</h2>
-            {d.noMembership && <p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p>}
-            {!d.noMembership && stream.length === 0 && <p className="muted">لا شيء يحتاج قرارك الآن.</p>}
-            <ul className="list">{stream.map((x) => (
-              <li key={x.id}><i className={`dot ${x.tone}`} /><span>{x.text}</span>{x.href ? <Link className="btn sm" href={x.href}>{x.action}</Link> : null}</li>))}</ul>
+          <section id="attention" aria-label="ما يحتاج انتباهك">
+            <h2 className="sec">ما يحتاج انتباهك</h2>
+            {d.noMembership && <div className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></div>}
+            {!d.noMembership && stream.length === 0 && <div className="card"><p className="muted">لا شيء يحتاج قرارك الآن.</p></div>}
+            <ul className="flist">{stream.map((x, i) => (
+              <li key={x.id} className={`fcard ${i === 0 && x.tone === "late" ? "hot" : ""}`}>
+                <div className="arow">
+                  <span className={`fstatus ${x.tone === "ok" ? "ok" : x.tone}`}><b>{TONE_AR[x.tone]}</b></span>
+                  <span className="atext"><bdi>{x.text}</bdi></span>
+                  {x.href ? <Link className={`btn sm ${i === 0 ? "gold" : ""}`} href={x.href}>{x.action}</Link> : null}
+                </div>
+              </li>))}
+            </ul>
           </section>
           <div className="side-col">
-            <section className="card"><h2>طلباتك النشطة</h2>{d.requests.length === 0 && <p className="muted">لا توجد طلبات مفتوحة.</p>}
-              <ul className="list">{d.requests.map((r) => (
-                <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span>{r.title}<small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
-            </section>
+            <section className="card glass"><h2>الرادار الحي</h2><Radar counts={c.radar} /></section>
           </div>
         </div>
-
       </main>
     </Shell>
   );
