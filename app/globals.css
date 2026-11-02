@@ -211,3 +211,11 @@ h2.sec{margin:0 0 12px;font-size:18px;color:var(--gold)}
 @media (max-width:1100px){.hhero{flex-direction:column}.hradar{width:100%}.hstats{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.hhero{padding:16px;min-height:0}.hchip{flex:1;justify-content:center}}
 @media (prefers-reduced-motion:reduce){.livedot{animation:none}}
+
+/* ---- flight detail: glass cards + tab bar (same look as the home) ---- */
+.ws .card,.ws .idbar{background:rgba(11,21,48,.62);border:1px solid rgba(230,199,122,.3);border-radius:24px;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.ws .reco.next{border-color:rgba(230,199,122,.6)}.ws .reco.next.late{border-color:var(--late)}
+.ws .tabs.views{gap:8px;padding:6px;border-radius:999px;border:1px solid rgba(230,199,122,.25);background:rgba(11,21,48,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);align-self:flex-start;max-width:100%;overflow-x:auto}
+.ws .tabs.views a{border:0;padding:9px 18px;white-space:nowrap;min-height:40px;display:inline-flex;align-items:center}
+.ws .tabs.views a.on{background:linear-gradient(145deg,#E6C77A,#B8913A);color:#0B1530;font-weight:700}
+.ws .tabs.views a:not(.on):hover{background:rgba(255,255,255,.08);color:var(--ink)}

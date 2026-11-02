@@ -29,7 +29,7 @@ function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "active";
-  const view = sp.view === "timeline" ? "handling" : ["messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "handling";
+  const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "overview";
   const [d, all] = await Promise.all([getCommandData(), sp.id ? Promise.resolve([] as FlightRow[]) : getFlightList(tab)]);
   const sel = sp.id ? await getFlight(sp.id) : null;
   const needle = (sp.q ?? "").trim().toLowerCase();
@@ -45,8 +45,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: `أُدخلت إفادة تأخير: ${x.reason}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
     ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: x.followup ? "سُجّل إرسال متابعة RQM" : "سُجّل إرسال RQM", detail: undefined })),
   ].sort((a, b) => +new Date(b.at ?? 0) - +new Date(a.at ?? 0)) : [];
-  const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "handling" ? "" : `&view=${v}`}`;
-  const views: [string, string][] = [["handling", "المناولة"], ["messages", `المراسلات${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `الإفادات${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", "سجل التدقيق"]];
+  const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
+  const views: [string, string][] = [["overview", `نظرة عامة${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["handling", "المناولة"], ["messages", `المراسلات${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `الإفادات${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", "سجل التدقيق"]];
 
   return (
     <Shell data={d}>
@@ -93,8 +93,15 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </header>
               {!sel.canAct && <p role="alert" className="err">حسابك غير مربوط بملف موظف، فلا يمكنك تسجيل أوقات أو إفادات. اطلب من المدير إضافتك.</p>}
 
-              {next && feed && <>
-                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href}>{next.action}</Link>}</section>
+              {next && feed && (
+                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href.startsWith("#") ? `${vh("overview")}${next.href}` : next.href}>{next.action}</Link>}</section>
+              )}
+
+              <div className="tabs views" role="tablist" aria-label="أقسام الرحلة">
+                {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
+              </div>
+
+              {view === "overview" && next && feed && <>
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب المناولة.</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
@@ -108,10 +115,6 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   </ol>
                 </div>
               </>}
-
-              <div className="tabs views" role="tablist" aria-label="أقسام الرحلة">
-                {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
-              </div>
 
               {view === "handling" && <div className="card"><h2>مراحل المناولة</h2>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
