@@ -239,3 +239,58 @@ h2.sec{margin:0 0 12px;font-size:18px;color:var(--gold)}
 .jrow.lv-info{border-color:rgba(108,166,255,.45)}.jrow.lv-warn{border-color:rgba(242,174,64,.55)}.jrow.lv-late{border-color:rgba(255,114,102,.6)}
 .jname small{display:block}
 @media (max-width:640px){.jrow{grid-template-columns:auto 1fr}.jrow .jcells{grid-column:1/-1}}
+
+/* ---- responsive pass: all screens, mobile first-class ---- */
+html{-webkit-text-size-adjust:100%}
+img,svg,video{max-width:100%}
+.card,.detail,.ilist,.ireader,.fcard-link>*,.item{min-width:0;overflow-wrap:anywhere}
+textarea,input,select{max-width:100%}
+.btn,.nav,.pick,summary{touch-action:manipulation}
+
+/* tablets and small laptops: stack wide grids before they overflow */
+@media (max-width:1100px){
+  .fcard-link{grid-template-columns:1fr auto;grid-template-areas:"s g" "i i" "r r" "t t"}
+  .fcard-link .fstatus{grid-area:s;align-items:flex-start}.fcard-link .fid{grid-area:i}.fcard-link .froute{grid-area:r}.fcard-link .ftimes{grid-area:t}.fcard-link .fgo{grid-area:g}
+  .inbox3,.imail{grid-template-columns:1fr}
+  .hradar{width:100%}
+}
+
+/* phones and portrait tablets: bottom tab bar instead of a sidebar */
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:auto 0 0 0;z-index:50;flex-direction:row;gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-inline-end:0;border-top:1px solid var(--line);overflow:visible}
+  .side .brand{display:none}
+  .side nav{flex-direction:row;width:100%;gap:2px}
+  .side .nav{flex:1;flex-direction:column;justify-content:center;gap:3px;min-height:54px;padding:6px 2px;font-size:11px;text-align:center;white-space:normal;line-height:1.25}
+  .side .nav em{display:none}
+  .main{padding:14px 14px calc(88px + env(safe-area-inset-bottom));gap:16px}
+  .top{gap:8px}
+  .user>div{display:none}
+  .chip{min-height:36px;padding:0 12px;font-size:13px}
+  .chip.shadow{flex:1 1 100%;justify-content:center;order:5}
+  .hero{padding:20px;min-height:0}
+  .card{padding:16px}
+  .stats{gap:18px}.stats b{font-size:28px}
+}
+
+@media (max-width:560px){
+  .main{padding-inline:12px}
+  .hero h1{font-size:24px}
+  .hhero{padding:16px}.hgreet{max-width:none;padding:14px 16px}
+  .row{gap:6px}
+  .row .btn:not(.sm){flex:1 1 140px}
+  .menu-list{min-width:min(220px,calc(100vw - 32px))}
+  .fsum,.fsum.four{grid-template-columns:repeat(2,1fr)}
+  .list li{flex-wrap:wrap}
+  .login form{padding:22px}
+  .dock{padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+}
+
+/* iOS: 16px inputs stop the auto-zoom; real height instead of 100vh; no fixed bg jank */
+@media (max-width:900px){
+  input,textarea,select,.pick,.dock-row textarea{font-size:16px}
+  body{background-attachment:scroll,scroll,scroll}
+  .app,.login{min-height:100dvh}
+  .chatshell{height:calc(100dvh - 190px - env(safe-area-inset-bottom))}
+}
+@media (hover:none){.btn:hover:not(:disabled){background:rgba(255,255,255,.04)}.btn.gold:hover:not(:disabled){background:linear-gradient(90deg,#CFA24F,var(--gold))}}
