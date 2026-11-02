@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/lang";
 
 export const WAITING_AR: Record<string, string> = { employee: "الموظف", permits_dept: "قسم التصاريح", authority: "السلطة المدنية", airline: "شركة الطيران", none: "—" };
 export const ACTOR_AR: Record<string, string> = { employee: "موظف", agent: "الوكيل", system: "النظام" };
@@ -15,7 +16,7 @@ export type TimelineItem = { at: string; toLabelAr: string | null; toStage: stri
 export type LinkedMail = { messageId: string; subject: string | null; from: string | null; at: string | null; triageId: string | null; direction: string | null };
 export type AlertItem = { id: string; kind: "overdue" | "due" | "stalled"; severity: string; status: string; fileId: string | null; file: RequestRow | null; title: string };
 export type Policy = { kind: string; stage: string | null; hours: number | null; status: string; source: string | null };
-export type OpenFileOption = { id: string; title: string; flightRef: string | null; stageLabelAr: string };
+export type OpenFileOption = { id: string; title: string; flightRef: string | null; stageLabelAr: string; stageLabel?: string };
 
 /** IATA (2 chars, then a digit) or ICAO (3 letters, then a digit) airline prefix of a flight reference. */
 export function airlinePrefix(ref: string | null): { iata?: string; icao?: string } {
@@ -149,9 +150,10 @@ export async function getFilesForMessage(messageId: string) {
   ]);
   const linkedIds = (link.data ?? []).map((l) => l.request_file_id as string);
   const linkedRows = linkedIds.length ? (await sb.from("v_request_files").select("id, title, flight_ref, stage_label_ar").in("id", linkedIds)).data ?? [] : [];
-  const toOpt = (f: Record<string, any>) => ({ id: f.id as string, title: f.title as string, flightRef: f.flight_ref as string | null, stageLabelAr: f.stage_label_ar as string });
+  const { lang } = await getT();
+  const stageLabel = (ar: string) => (lang === "ar" ? ar : stages.find((s) => s.labelAr === ar)?.labelEn ?? ar);
+  const toOpt = (f: Record<string, any>) => ({ id: f.id as string, title: f.title as string, flightRef: f.flight_ref as string | null, stageLabelAr: f.stage_label_ar as string, stageLabel: stageLabel(f.stage_label_ar as string) });
   const linkedSet = new Set(linkedIds);
   const all = (open.data ?? []).filter((f) => !linkedSet.has(f.id)).map(toOpt);
-  void stages;
   return { linked: linkedRows.map(toOpt), linkable: all as OpenFileOption[] };
 }

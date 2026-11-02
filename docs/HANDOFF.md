@@ -293,3 +293,24 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 5. تواريخ وأرقام: `lib/format.ts` و`UtcClock` (الأرقام والأكواد تبقى إنجليزية بكل الأحوال).
 6. **قرار مطلوب من المالك:** ما يكتبه الوكيل في الشات (ردوده للموظف): بلغة الواجهة أم يتبع لغة سؤال الموظف؟ لم يُغيَّر شيء بعد.
 **طريقة العمل المقترحة:** ملفاً ملفاً: انقل النص لمفتاح في `lib/i18n.ts` (ar ثم en)، ثم `tsc` و`build`. لا تدمج في main قبل مراجعة الصفحات بالإنجليزية على الموبايل.
+
+## تبديل اللغة — الجلسة 2، الجزء الأول (2026-11-02، branch feat/language-switch ثم main)
+**منجز وبُني بنجاح (`tsc --noEmit` و`next build`)، لم يُفحص بصرياً بحساب حقيقي:**
+- الصفحة الرئيسية `/` (التحية، الإحصائيات، التوصية، القرارات، الإجراءات السريعة، سهم الاتجاه حسب اللغة) + `app/error.tsx` + `Radar` + `UtcClock` + `CopyButton` + `AgentCancel` + `Hint` (صار مكوّن عميل).
+- طبقة البيانات: `lib/data.ts` و`lib/cockpit.ts` تنتج نصوص القرارات بلغة المستخدم عبر `getT()` داخلها. `hoursPhrase(h, lang)` تقبل اللغة (لا تُستعمل بعد).
+- `/handover` كاملة + `ShiftAck` + أخطاء `app/handover/actions.ts`. أسماء المراحل: `lib/shifts.ts` يحوّل `label_ar` المخزّن في لقطة التقرير إلى `label_en` من `request_stages`.
+- `/inbox` كاملة + `DraftPanel` + `lib/inbox.ts` (حُذفت خرائط `*_AR`، وصارت المفاتيح `cat.*` `urg.*` `est.*` `att.*` عبر `labelOf(lang, prefix, code)` في `lib/i18n.ts`) + أخطاء `app/inbox/actions.ts`.
+- ملفات الطلبات: `OpenRequestForm` و`app/requests/actions.ts` و`lib/requests.ts` (`getFilesForMessage` تعيد `stageLabel` باللغة).
+**طريقة الإضافة:** مفتاح جديد = سطر في `ar` وسطر في `en` داخل `lib/i18n.ts`؛ نقص أي مفتاح إنجليزي يفشّل `tsc`. للقيم القادمة من القاعدة استعمل `labelOf(lang, "prefix", code)`. في ملفات الخادم `const { t, lang } = await getT()`، وفي مكوّنات العميل `const { t, lang } = useT()`. الأسهم: `fwd(lang)`؛ فاصل النطاق `←` في العربي و`→` في الإنجليزي.
+
+**المتبقي (حوالي 270 سطراً عربياً في 25 ملفاً، الرقم بين قوسين = عدد الأسطر):**
+1. `app/flights/page.tsx` (39) وفيه `STATUS_AR` للرحلة، و`app/flights/actions.ts` (18)، `components/FlightCard.tsx` (3).
+2. `components/FlightJourney.tsx` (14) مع `lib/flight-journey.ts` (17)، `components/FlightTimeline.tsx` (9)، `components/FlightActions.tsx` (9)، `components/RqmDrafts.tsx` (7)، `components/DelayForm.tsx` (6)، `components/FlightQuestions.tsx` (5)، `lib/flight-feed.ts` (13)، `lib/flight-status.ts` (10)، `lib/flights.ts` (2)، `lib/flight-labels.ts` (2).
+3. استيراد البرنامج: `components/ProgramImport.tsx` (29)، `app/flights/import/page.tsx` (9)، `app/flights/import/actions.ts` (7)، `lib/program.ts` (11).
+4. الوكيل: `app/agent/page.tsx` (16)، `components/AgentComposer.tsx` (14)، `components/ChatDock.tsx` (13)، `app/agent/actions.ts` (7)، `lib/agent-labels.ts` (4)، `lib/agent.ts` (2).
+5. تنظيف: `WAITING_AR` و`ACTOR_AR` و`TYPE_AR` في `lib/requests.ts` بلا مستهلك (اختياري حذفها).
+**أمور تحتاج قراراً:**
+- ردود الوكيل في الشات: تتبع لغة الواجهة أم لغة سؤال الموظف؟ لم يُغيَّر شيء. (النص يُولَّد في `agent-worker` Edge Function، لا في هذا المستودع.)
+- أسئلة الوكيل بلا إجابة في تسليم الوردية (`question_ar` من `turnaround_checkins`): لا يوجد مقابل إنجليزي في القاعدة، فتظهر بالعربية حتى بالواجهة الإنجليزية. الحل بإضافة عمود إنجليزي أو ترجمة من القوالب (`turnaround_milestone_templates.name_en`)، قراراً منك.
+- ملخصات الإيميلات والتنبيهات النصية التي يكتبها الوكيل (`email_triage.summary` وغيرها) تظهر بلغتها المخزّنة.
+**قبل الدمج النهائي:** افتح `/`, `/inbox`, `/handover`, `/flights`, `/agent` بالإنجليزية على الموبايل، وتأكد من الاتجاه LTR وأن الأسهم صحيحة وأن اللغة تبقى بعد الخروج والدخول.
