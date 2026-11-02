@@ -15,6 +15,8 @@ export function buildFeed({ steps, questions, statements, mails }: Input) {
     done.push({ id: `m-${m.triageId}`, at: m.at, kind: "mail", tone: m.status === "new" ? "info" : "ok", title: m.summary ?? m.subject ?? "إيميل", detail: [m.from, m.action].filter(Boolean).join(" · ") || undefined, href: `/inbox?id=${m.triageId}` });
   }
   for (const s of steps) if (s.state === "recorded" && s.actualAt) done.push({ id: `s-${s.track}-${s.code}`, at: s.actualAt, kind: "step", tone: "ok", title: s.nameAr, detail: s.code });
+  const planned = steps.filter((s) => s.state !== "recorded" && s.plannedAt && s.templateStatus === "approved").sort((a, b) => +new Date(a.plannedAt!) - +new Date(b.plannedAt!)).slice(0, 5);
+  for (const s of planned) waiting.push({ id: `p-${s.track}-${s.code}`, at: s.plannedAt, kind: "step", tone: "info", title: s.nameAr, detail: s.isCritical ? "مرحلة حرجة" : undefined });
   for (const s of statements) done.push({ id: `st-${s.id}`, at: s.at, kind: "statement", tone: "warn", title: `إفادة تأخير: ${s.reason}`, detail: [s.code, s.minutes !== null ? `${s.minutes} د` : null, s.by].filter(Boolean).join(" · ") || undefined });
   const t = (x: FeedItem) => (x.at ? +new Date(x.at) : 0);
   waiting.sort((a, b) => t(a) - t(b));
@@ -34,7 +36,7 @@ export function nextStep({ questions, mails, rqms = [], criticalOpen }: Input): 
   if (draft) return { tone: "warn", text: "مسودة رد جاهزة لمراجعتك واعتمادك.", href: `/inbox?id=${draft.triageId}`, action: "راجع المسودة" };
   const fresh = mails.find((m) => m.status === "new");
   if (fresh) return { tone: "info", text: "وصل إيميل مرتبط بهذه الرحلة ولم تراجعه.", href: `/inbox?id=${fresh.triageId}`, action: "افتح الإيميل" };
-  if (criticalOpen > 0) return { tone: "warn", text: `مراحل حرجة مفتوحة: ${criticalOpen}`, href: "?view=timeline", action: "افتح المراحل" };
+  if (criticalOpen > 0) return { tone: "warn", text: `مراحل حرجة مفتوحة: ${criticalOpen}`, href: "?view=handling", action: "افتح المراحل" };
   if (wait) return { tone: "info", text: "أُرسل استفسار RQM. الوكيل ينتظر الرد ويجهّز متابعة بعد 15 دقيقة من الإرسال إن لم يصل." };
   return { tone: "ok", text: "لا شيء يحتاج قرارك الآن. الوكيل يتابع الرحلة." };
 }

@@ -19,7 +19,7 @@ const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 
 
 function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
   return (
-    <li><i className={`dot ${wait ? "warn" : x.tone}`} /><div>
+    <li className={wait ? "wait" : undefined}><i className={`dot ${wait ? "warn" : x.tone}`} /><div>
       <b>{x.href ? <Link href={x.href}><bdi>{x.title}</bdi></Link> : <bdi>{x.title}</bdi>}</b>
       <small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{wait ? " · الموعد" : ""}{x.detail ? <> · <bdi className="ltr">{x.detail}</bdi></> : null}</small>
     </div></li>
@@ -29,7 +29,7 @@ function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "active";
-  const view = ["timeline", "messages", "delay"].includes(sp.view ?? "") ? sp.view : "overview";
+  const view = sp.view === "timeline" ? "handling" : ["messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "handling";
   const [d, all] = await Promise.all([getCommandData(), sp.id ? Promise.resolve([] as FlightRow[]) : getFlightList(tab)]);
   const sel = sp.id ? await getFlight(sp.id) : null;
   const needle = (sp.q ?? "").trim().toLowerCase();
@@ -40,8 +40,13 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
-  const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
-  const views: [string, string][] = [["overview", `الملف${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["timeline", "مراحل المناولة"], ["messages", "الرسائل"], ["delay", "إفادات التأخير"]];
+  const audit: FeedItem[] = sel ? [
+    ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: `${x.wasCorrected ? "صُحِّح وقت" : "سُجّل وقت"} المرحلة: ${x.nameAr}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
+    ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: `أُدخلت إفادة تأخير: ${x.reason}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
+    ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: x.followup ? "سُجّل إرسال متابعة RQM" : "سُجّل إرسال RQM", detail: undefined })),
+  ].sort((a, b) => +new Date(b.at ?? 0) - +new Date(a.at ?? 0)) : [];
+  const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "handling" ? "" : `&view=${v}`}`;
+  const views: [string, string][] = [["handling", "المناولة"], ["messages", `المراسلات${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `الإفادات${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", "سجل التدقيق"]];
 
   return (
     <Shell data={d}>
@@ -69,52 +74,65 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
 
         {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ كل الرحلات</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">لم أجد هذه الرحلة.</p></section>}
-        {sp.id && sel && <div className="detail">
-            {f && c && (<>
-              <div className="card">
-                <div className="chips"><span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>{Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
-                <h2>{sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />} <span className="ltr">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</span></h2>
-                <p className="muted"><span className="ltr">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}</span> · <span className="ltr">{f.registration ?? "—"}</span></p>
-                {!sel.canAct && <p role="alert" className="err">حسابك غير مربوط بملف موظف، فلا يمكنك تسجيل أوقات أو إفادات. اطلب من المدير إضافتك.</p>}
-                <dl className="facts">
-                  <div><dt>وصول مجدول / فعلي</dt><dd className="ltr">{fmtUtc(f.sta)} / {fmtUtc(f.ata)}</dd></div>
-                  <div><dt>مغادرة مجدولة</dt><dd className="ltr">{fmtUtc(f.std)}</dd></div>
-                  <div><dt>المغادرة المتوقعة على الأرض</dt><dd className="ltr">{fmtUtc(c.expected_std)}</dd></div>
-                  <div><dt>تأخر الوصول (دقيقة)</dt><dd className="ltr">{c.arrival_delay_min ?? "—"}</dd></div>
-                  <div><dt>زمن الأرض المخطط (دقيقة)</dt><dd className="ltr">{c.planned_ground_minutes ?? "—"}</dd></div>
-                  <div><dt>بدء الأرض الفعلي</dt><dd className="ltr">{fmtUtc(c.ground_start_actual)}</dd></div>
+        {sp.id && sel && f && c && <div className="detail ws">
+              <header className="idbar card">
+                {sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />}
+                <div className="idmain">
+                  <div className="idtop"><b className="ltr idfn">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</b>
+                    <span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>
+                    {Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
+                  <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
+                </div>
+                <dl className="idtimes">
+                  <div><dt>وصول</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}</dd></div>
+                  <div><dt>مغادرة</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}</dd></div>
+                  {c.arrival_delay_min !== null && c.arrival_delay_min !== undefined && Number(c.arrival_delay_min) !== 0 && <div><dt>تأخر الوصول</dt><dd className="ltr">{String(c.arrival_delay_min)} د</dd></div>}
+                  {c.planned_ground_minutes ? <div><dt>زمن الأرض المخطط</dt><dd className="ltr">{String(c.planned_ground_minutes)} د</dd></div> : null}
                 </dl>
-              </div>
+              </header>
+              {!sel.canAct && <p role="alert" className="err">حسابك غير مربوط بملف موظف، فلا يمكنك تسجيل أوقات أو إفادات. اطلب من المدير إضافتك.</p>}
+
+              {next && feed && <>
+                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href}>{next.action}</Link>}</section>
+                <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
+                {sel.questions.length > 0 && <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب المناولة.</Hint></h2>
+                  <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
+                </div>}
+                <div className="card"><h2>خط الرحلة<Hint>إيميلات الرحلة والمسودات والمراحل وإفادات التأخير في خط واحد. لا يُعرض وقت إلا إذا كان مسجّلاً أو مخططاً.</Hint></h2>
+                  {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">لا أحداث على هذه الرحلة بعد.</p>}
+                  <ol className="vt">
+                    {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait />)}
+                    {feed.waiting.length > 0 && <li className="now" aria-label="الآن"><i /><span>الآن</span></li>}
+                    {feed.done.map((x) => <FeedRow key={x.id} x={x} />)}
+                  </ol>
+                </div>
+              </>}
 
               <div className="tabs views" role="tablist" aria-label="أقسام الرحلة">
                 {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
               </div>
 
-              {view === "overview" && next && feed && <>
-                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("timeline") : next.href}>{next.action}</Link>}</section>
-                <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
-                <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب مراحل المناولة.</Hint></h2>
-                  <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
-                </div>
-                <div className="card"><h2>سجل الرحلة<Hint>إيميلات الرحلة وما سُجّل عليها وإفادات التأخير في خط واحد. لا يُعرض وقت إلا إذا كان مسجّلاً.</Hint></h2>
-                  {feed.waiting.length > 0 && <><h3>ينتظر الآن</h3><ol className="timeline">{feed.waiting.map((x) => <FeedRow key={x.id} x={x} wait />)}</ol></>}
-                  <h3>ما حدث</h3>
-                  {feed.done.length === 0 && <p className="muted">لا أحداث مسجّلة على هذه الرحلة بعد.</p>}
-                  <ol className="timeline">{feed.done.map((x) => <FeedRow key={x.id} x={x} />)}</ol>
-                </div>
-              </>}
-
-              {view === "messages" && <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
-                legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />}
-
-              {view === "timeline" && <div className="card"><h2>الخط الزمني</h2>
+              {view === "handling" && <div className="card"><h2>مراحل المناولة</h2>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
               </div>}
+
+              {view === "messages" && <>
+                <div className="card"><h2>الإيميلات المرتبطة</h2>
+                  {sel.mails.length === 0 && <p className="muted">لا إيميلات مرتبطة بهذه الرحلة.</p>}
+                  <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? "إيميل"}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? "مسودة بانتظارك" : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
+                </div>
+                <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
+                  legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />
+              </>}
 
               {view === "delay" && <div className="card"><h2>إفادات التأخير</h2>
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
               </div>}
-            </>)}
+
+              {view === "audit" && <div className="card"><h2>سجل التدقيق<Hint>كل ما سُجّل على هذه الرحلة ومن سجّله ومتى. التصحيح حدث جديد يحل محل القديم ولا يمسحه.</Hint></h2>
+                {audit.length === 0 && <p className="muted">لا شيء مسجّل على هذه الرحلة بعد.</p>}
+                <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
+              </div>}
         </div>}
       </main>
     </Shell>
