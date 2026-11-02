@@ -1,54 +1,60 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/lang";
+import type { TFn } from "@/lib/i18n";
 
 type Result = { ok: true } | { ok: false; message: string };
 
-function explain(msg: string): string {
-  if (msg.includes("employee profile required")) return "حسابك غير مربوط بملف موظف. اطلب من المدير إضافته أولاً.";
-  if (msg.includes("not allowed")) return "ليست لديك صلاحية الكتابة في هذه الشركة.";
-  if (msg.includes("already recorded")) return "هذه المرحلة مسجّلة من قبل. استخدم «صحّح» لتعديل وقتها.";
-  if (msg.includes("already answered")) return "هذا السؤال أُجيب عنه من قبل.";
-  if (msg.includes("future")) return "الوقت في المستقبل. اكتب الوقت الفعلي الذي حدث.";
-  if (msg.includes("actual time is required")) return "اكتب الوقت الفعلي (UTC).";
-  if (msg.includes("unknown step")) return "مرحلة غير معروفة.";
-  if (msg.includes("rotation is incomplete")) return "الرحلة بلا ساقَي وصول ومغادرة، فلا يمكن تسجيل مرحلة عليها.";
-  if (msg.includes("reason is required")) return "اكتب سبب التأخير بكلماتك (3 أحرف على الأقل).";
-  if (msg.includes("negative")) return "الدقائق لا تكون سالبة.";
-  return "تعذّر تنفيذ الطلب. حاول مرة أخرى.";
+function explain(msg: string, t: TFn): string {
+  if (msg.includes("employee profile required")) return t("fl.err.noEmployee");
+  if (msg.includes("not allowed")) return t("fl.err.notAllowed");
+  if (msg.includes("already recorded")) return t("fl.err.stepRecorded");
+  if (msg.includes("already answered")) return t("fl.err.answered");
+  if (msg.includes("future")) return t("fl.err.future");
+  if (msg.includes("actual time is required")) return t("fl.err.timeReq");
+  if (msg.includes("unknown step")) return t("fl.err.unknownStep");
+  if (msg.includes("rotation is incomplete")) return t("fl.err.incomplete");
+  if (msg.includes("reason is required")) return t("fl.err.reasonReq");
+  if (msg.includes("negative")) return t("fl.err.negative");
+  return t("fl.err.generic");
 }
 const refresh = () => { revalidatePath("/flights"); revalidatePath("/"); };
 /** The form's datetime-local value is read as UTC (fixed rule: times are UTC). */
 function utc(v: string): string | null { if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null; const d = new Date(v + ":00Z"); return Number.isNaN(+d) ? null : d.toISOString(); }
 
 export async function recordStep(flightId: string, step: string, at: string, note: string): Promise<Result> {
-  const t = utc(at); if (!t) return { ok: false, message: "اكتب الوقت الفعلي (UTC)." };
+  const { t: tr } = await getT();
+  const t = utc(at); if (!t) return { ok: false, message: tr("fl.err.timeReq") };
   const { error } = await (await createClient()).rpc("record_flight_step", { p_flight_id: flightId, p_step_code: step, p_occurred_at: t, p_note: note.trim() || null });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
 
 export async function answerCheckin(checkinId: string, answer: "yes" | "not_yet" | "not_applicable", at: string, note: string): Promise<Result> {
+  const { t: tr } = await getT();
   let t: string | null = null;
-  if (answer === "yes") { t = utc(at); if (!t) return { ok: false, message: "اكتب الوقت الفعلي (UTC)." }; }
+  if (answer === "yes") { t = utc(at); if (!t) return { ok: false, message: tr("fl.err.timeReq") }; }
   const { error } = await (await createClient()).rpc("answer_turnaround_checkin", { p_checkin_id: checkinId, p_answer: answer, p_actual_time: t, p_note: note.trim() || null });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
 
 export async function stateDelay(flightId: string, step: string, codeId: string, minutes: string, reason: string): Promise<Result> {
+  const { t: tr } = await getT();
   const m = minutes.trim() === "" ? null : Number(minutes);
-  if (m !== null && (!Number.isInteger(m) || m < 0)) return { ok: false, message: "الدقائق رقم صحيح لا يقل عن صفر." };
+  if (m !== null && (!Number.isInteger(m) || m < 0)) return { ok: false, message: tr("fl.err.minutesInt") };
   const { error } = await (await createClient()).rpc("state_flight_delay", { p_flight_id: flightId, p_step_code: step || null, p_delay_code_id: codeId || null, p_delay_minutes: m, p_reason_text: reason });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
 
 export async function correctStep(eventId: string, at: string, reason: string): Promise<Result> {
-  const t = utc(at); if (!t) return { ok: false, message: "اكتب الوقت الصحيح (UTC)." };
-  if (reason.trim().length < 3) return { ok: false, message: "اكتب سبب التصحيح." };
+  const { t: tr } = await getT();
+  const t = utc(at); if (!t) return { ok: false, message: tr("fl.err.correctTime") };
+  if (reason.trim().length < 3) return { ok: false, message: tr("fl.err.correctWhy") };
   const { error } = await (await createClient()).rpc("correct_flight_step", { p_event_id: eventId, p_new_time: t, p_reason: reason.trim() });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
 
@@ -59,25 +65,28 @@ export type Composed =
 
 /** Builds a message DRAFT only. Nothing is sent: the employee copies it and sends it from the company mailbox. */
 export async function composeFlightMessage(companyId: string, type: string, flightId: string, data: Record<string, string>): Promise<Composed> {
+  const { t: tr } = await getT();
   const clean: Record<string, string> = {};
   for (const [k, v] of Object.entries(data)) if (v.trim()) clean[k] = v.trim();
   const { data: r, error } = await (await createClient()).rpc("compose_message", { p_company_id: companyId, p_type: type, p_data: { ...clean, flight_id: flightId } });
-  if (error) return { status: "error", message: explain(error.message) };
+  if (error) return { status: "error", message: explain(error.message, tr) };
   const o = r as Record<string, any>;
   if (o.status === "ok") return { status: "ok", draft: String(o.draft ?? ""), warnings: (o.warnings ?? []).map(String), deviations: (o.deviations ?? []).map((d: unknown) => typeof d === "string" ? d : JSON.stringify(d)) };
   if (o.status === "missing") return { status: "missing", missing: o.missing ?? [] };
-  if (o.status === "unsupported") return { status: "error", message: `هذه الرسالة غير متاحة للبناء الآلي الآن${typeof o.reason === "string" ? ` (${o.reason})` : ""}.` };
-  return { status: "error", message: typeof o.note === "string" ? o.note : "تعذّر بناء الرسالة." };
+  if (o.status === "unsupported") return { status: "error", message: tr("fl.err.unsupported", { reason: typeof o.reason === "string" ? ` (${o.reason})` : "" }) };
+  return { status: "error", message: typeof o.note === "string" ? o.note : tr("fl.err.compose") };
 }
 
 /** Records that the employee sent the drafted message from the company mailbox. The system sends nothing. */
 export async function markMessageSent(draftId: string): Promise<Result> {
+  const { t: tr } = await getT();
   const { error } = await (await createClient()).rpc("mark_message_sent", { p_draft_id: draftId });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
 export async function rejectMessageDraft(draftId: string): Promise<Result> {
+  const { t: tr } = await getT();
   const { error } = await (await createClient()).rpc("review_message_draft", { p_draft_id: draftId, p_decision: "rejected" });
-  if (error) return { ok: false, message: explain(error.message) };
+  if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }

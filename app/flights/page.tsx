@@ -14,22 +14,24 @@ import FlightCard from "@/components/FlightCard";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
-import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
+import { getFlight, getFlightList, stepName, type FlightRow } from "@/lib/flights";
+import { getT } from "@/lib/lang";
+import { labelOf, type TFn } from "@/lib/i18n";
 
-const STATUS_AR: Record<string, string> = { scheduled: "مجدولة", delayed: "متأخرة", arrived: "وصلت", departed: "غادرت", cancelled: "ملغاة", diverted: "محوّلة" };
 const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 
-function FeedRow({ x, wait }: { x: FeedItem; wait?: boolean }) {
+function FeedRow({ x, wait, t }: { x: FeedItem; wait?: boolean; t: TFn }) {
   return (
     <li className={wait ? "wait" : undefined}><i className={`dot ${wait ? "warn" : x.tone}`} /><div>
       <b>{x.href ? <Link href={x.href}><bdi>{x.title}</bdi></Link> : <bdi>{x.title}</bdi>}</b>
-      <small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{wait ? " · الموعد" : ""}{x.detail ? <> · <bdi className="ltr">{x.detail}</bdi></> : null}</small>
+      <small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{wait ? ` · ${t("fl.due")}` : ""}{x.detail ? <> · <bdi className="ltr">{x.detail}</bdi></> : null}</small>
     </div></li>
   );
 }
 
 export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string }> }) {
   const sp = await searchParams;
+  const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
   const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "overview";
   const [d, all] = await Promise.all([getCommandData(), sp.id ? Promise.resolve([] as FlightRow[]) : getFlightList(tab)]);
@@ -37,108 +39,108 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const needle = (sp.q ?? "").trim().toLowerCase();
   const todayIso = new Date().toISOString().slice(0, 10);
   const list = all.filter((r) => (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.destination, r.registration, r.airline?.name].some((x) => (x ?? "").toLowerCase().includes(needle))) && (sp.day !== "today" || (r.sta ?? r.std ?? "").slice(0, 10) === todayIso));
-  const sum = summarize(all);
+  const sum = summarize(all, t);
   const lh = (o: { tab?: string; day?: string }) => { const p = new URLSearchParams(); const t = o.tab ?? tab; if (t === "done") p.set("tab", "done"); const dd = "day" in o ? o.day : sp.day; if (dd) p.set("day", dd); if (needle) p.set("q", sp.q ?? ""); const s = p.toString(); return `/flights${s ? `?${s}` : ""}`; };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
-  const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps) : null;
-  const feed = feedIn ? buildFeed(feedIn) : null; const next = feedIn ? nextStep(feedIn) : null;
+  const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
+  const feed = feedIn ? buildFeed(feedIn, t, lang) : null; const next = feedIn ? nextStep(feedIn, t) : null;
   const audit: FeedItem[] = sel ? [
-    ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: `${x.wasCorrected ? "صُحِّح وقت" : "سُجّل وقت"} المرحلة: ${x.nameAr}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
-    ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: `أُدخلت إفادة تأخير: ${x.reason}`, detail: [x.code, x.by].filter(Boolean).join(" · ") })),
-    ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: x.followup ? "سُجّل إرسال متابعة RQM" : "سُجّل إرسال RQM", detail: undefined })),
+    ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: t(x.wasCorrected ? "fl.audit.corrected" : "fl.audit.recorded", { name: stepName(x, lang) }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
+    ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: t("fl.audit.statement", { reason: x.reason }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
+    ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: t(x.followup ? "fl.audit.rqmFollow" : "fl.audit.rqm"), detail: undefined })),
   ].sort((a, b) => +new Date(b.at ?? 0) - +new Date(a.at ?? 0)) : [];
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
-  const views: [string, string][] = [["overview", `نظرة عامة${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["handling", "المناولة"], ["messages", `المراسلات${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `الإفادات${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", "سجل التدقيق"]];
+  const views: [string, string][] = [["overview", `${t("fl.view.overview")}${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["handling", t("fl.view.handling")], ["messages", `${t("fl.view.messages")}${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `${t("fl.view.delay")}${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", t("fl.view.audit")]];
 
   return (
     <Shell data={d}>
       <main className="page">
         {!sp.id && <>
-          <section className="fhero" aria-label="الرحلات"><h1>الرحلات</h1><p>كل الرحلات في مكان واحد مع متابعة الوكيل.</p></section>
+          <section className="fhero" aria-label={t("fl.title")}><h1>{t("fl.title")}</h1><p>{t("fl.subtitle")}</p></section>
           <div className="ffilters">
             <form method="get" action="/flights" className="grow" role="search">
               {tab === "done" && <input type="hidden" name="tab" value="done" />}{sp.day === "today" && <input type="hidden" name="day" value="today" />}
-              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder="ابحث برقم الرحلة أو الوجهة…" aria-label="بحث في الرحلات" />
+              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder={t("fl.search.ph")} aria-label={t("fl.search.aria")} />
             </form>
-            <Link className={`chip-link ${tab === "active" ? "on" : ""}`} href={lh({ tab: "active" })}>الحالية</Link>
-            <Link className={`chip-link ${tab === "done" ? "on" : ""}`} href={lh({ tab: "done" })}>المنتهية</Link>
-            <Link className={`chip-link ${sp.day === "today" ? "on" : ""}`} href={lh({ day: sp.day === "today" ? "" : "today" })}>اليوم</Link>
-            <Link className="btn gold sm" href="/flights/import">رفع برنامج الرحلات</Link>
+            <Link className={`chip-link ${tab === "active" ? "on" : ""}`} href={lh({ tab: "active" })}>{t("fl.tab.active")}</Link>
+            <Link className={`chip-link ${tab === "done" ? "on" : ""}`} href={lh({ tab: "done" })}>{t("fl.tab.done")}</Link>
+            <Link className={`chip-link ${sp.day === "today" ? "on" : ""}`} href={lh({ day: sp.day === "today" ? "" : "today" })}>{t("fl.today")}</Link>
+            <Link className="btn gold sm" href="/flights/import">{t("fl.import.btn")}</Link>
           </div>
-          {list.length === 0 && <section className="card"><p className="muted">{needle || sp.day ? "لا نتائج مطابقة." : tab === "active" ? "لا توجد رحلات حالية. ارفع برنامج الرحلات من الزر أعلاه." : "لا توجد رحلات منتهية."}</p></section>}
+          {list.length === 0 && <section className="card"><p className="muted">{needle || sp.day ? t("fl.none.match") : tab === "active" ? t("fl.none.active") : t("fl.none.done")}</p></section>}
           <ul className="flist">{list.map((r, i) => <FlightCard key={r.rotationId} r={r} hot={i === 0 && tab === "active"} href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} />)}</ul>
-          {tab === "active" && <section className="fsum" aria-label="ملخص">
-            <div><b className="ltr">{sum.today}</b><small>رحلات اليوم</small></div><div><b className="ltr">{sum.ok}</b><small>على الموعد</small></div>
-            <div><b className="ltr">{sum.late}</b><small>متأخرة</small></div><div><b className="ltr">{sum.soon}</b><small>قادمة قريباً</small></div>
-            <small className="muted">الحالة تُعرض فقط عند وجود دليل مسجّل</small>
+          {tab === "active" && <section className="fsum" aria-label={t("fl.sum.aria")}>
+            <div><b className="ltr">{sum.today}</b><small>{t("fl.sum.today")}</small></div><div><b className="ltr">{sum.ok}</b><small>{t("fl.sum.ok")}</small></div>
+            <div><b className="ltr">{sum.late}</b><small>{t("fl.sum.late")}</small></div><div><b className="ltr">{sum.soon}</b><small>{t("fl.sum.soon")}</small></div>
+            <small className="muted">{t("fl.sum.note")}</small>
           </section>}
         </>}
 
-        {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ كل الرحلات</Link>}
-        {sp.id && !sel && <section className="card"><p className="muted">لم أجد هذه الرحلة.</p></section>}
+        {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
+        {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
         {sp.id && sel && f && c && <div className="detail ws">
               <header className="idbar card">
                 {sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />}
                 <div className="idmain">
                   <div className="idtop"><b className="ltr idfn">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</b>
-                    <span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{STATUS_AR[f.status] ?? f.status}</span>
-                    {Number(f.sop_critical_open) > 0 && <span className="tag warn">مراحل حرجة مفتوحة: <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
+                    <span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{labelOf(lang, "fl.status", f.status)}</span>
+                    {Number(f.sop_critical_open) > 0 && <span className="tag warn">{t("fl.critOpen")} <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
                   <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
                 </div>
-                <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>اسأل الوكيل</Link>
+                <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
                 <dl className="idtimes">
-                  <div><dt>وصول</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}</dd></div>
-                  <div><dt>مغادرة</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}</dd></div>
-                  {c.arrival_delay_min !== null && c.arrival_delay_min !== undefined && Number(c.arrival_delay_min) !== 0 && <div><dt>تأخر الوصول</dt><dd className="ltr">{String(c.arrival_delay_min)} د</dd></div>}
-                  {c.planned_ground_minutes ? <div><dt>زمن الأرض المخطط</dt><dd className="ltr">{String(c.planned_ground_minutes)} د</dd></div> : null}
+                  <div><dt>{t("fl.arr")}</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}</dd></div>
+                  <div><dt>{t("fl.dep")}</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}</dd></div>
+                  {c.arrival_delay_min !== null && c.arrival_delay_min !== undefined && Number(c.arrival_delay_min) !== 0 && <div><dt>{t("fl.arrDelay")}</dt><dd className="ltr">{t("fl.min", { n: String(c.arrival_delay_min) })}</dd></div>}
+                  {c.planned_ground_minutes ? <div><dt>{t("fl.plannedGround")}</dt><dd className="ltr">{t("fl.min", { n: String(c.planned_ground_minutes) })}</dd></div> : null}
                 </dl>
               </header>
-              {!sel.canAct && <p role="alert" className="err">حسابك غير مربوط بملف موظف، فلا يمكنك تسجيل أوقات أو إفادات. اطلب من المدير إضافتك.</p>}
+              {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
               {next && feed && (
-                <section className={`card reco next ${next.tone}`} aria-label="الخطوة الجاية"><span className="eye" aria-hidden="true" /><div><small className="muted">الخطوة الجاية</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href.startsWith("#") ? `${vh("overview")}${next.href}` : next.href}>{next.action}</Link>}</section>
+                <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href.startsWith("#") ? `${vh("overview")}${next.href}` : next.href}>{next.action}</Link>}</section>
               )}
 
-              <div className="tabs views" role="tablist" aria-label="أقسام الرحلة">
+              <div className="tabs views" role="tablist" aria-label={t("fl.views.aria")}>
                 {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
               </div>
 
               {view === "overview" && next && feed && <>
                 {journey && <FlightJourney j={journey} />}
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
-                {sel.questions.length > 0 && <div className="card" id="questions"><h2>أسئلة الوكيل<Hint>لا يسأل الوكيل عن مرحلة إلا إذا اعتُمدت مهلتها. المراحل بلا مهلة معتمدة تُسجَّل يدوياً من تبويب المناولة.</Hint></h2>
+                {sel.questions.length > 0 && <div className="card" id="questions"><h2>{t("fl.q.title")}<Hint>{t("fl.q.hint")}</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
                 </div>}
-                <div className="card"><h2>خط الرحلة<Hint>إيميلات الرحلة والمسودات والمراحل وإفادات التأخير في خط واحد. لا يُعرض وقت إلا إذا كان مسجّلاً أو مخططاً.</Hint></h2>
-                  {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">لا أحداث على هذه الرحلة بعد.</p>}
+                <div className="card"><h2>{t("fl.feed.title")}<Hint>{t("fl.feed.hint")}</Hint></h2>
+                  {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
                   <ol className="vt">
-                    {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait />)}
-                    {feed.waiting.length > 0 && <li className="now" aria-label="الآن"><i /><span>الآن</span></li>}
-                    {feed.done.map((x) => <FeedRow key={x.id} x={x} />)}
+                    {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait t={t} />)}
+                    {feed.waiting.length > 0 && <li className="now" aria-label={t("fl.now")}><i /><span>{t("fl.now")}</span></li>}
+                    {feed.done.map((x) => <FeedRow key={x.id} x={x} t={t} />)}
                   </ol>
                 </div>
               </>}
 
-              {view === "handling" && <div className="card"><h2>مراحل المناولة</h2>
+              {view === "handling" && <div className="card"><h2>{t("fl.handling.title")}</h2>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
               </div>}
 
               {view === "messages" && <>
-                <div className="card"><h2>الإيميلات المرتبطة</h2>
-                  {sel.mails.length === 0 && <p className="muted">لا إيميلات مرتبطة بهذه الرحلة.</p>}
-                  <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? "إيميل"}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? "مسودة بانتظارك" : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
+                <div className="card"><h2>{t("fl.mails.title")}</h2>
+                  {sel.mails.length === 0 && <p className="muted">{t("fl.mails.none")}</p>}
+                  <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? t("fl.mail.fallback")}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? t("fl.mail.draftWaiting") : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
                 </div>
                 <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
                   legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />
               </>}
 
-              {view === "delay" && <div className="card"><h2>إفادات التأخير</h2>
+              {view === "delay" && <div className="card"><h2>{t("fl.delay.title")}</h2>
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
               </div>}
 
-              {view === "audit" && <div className="card"><h2>سجل التدقيق<Hint>كل ما سُجّل على هذه الرحلة ومن سجّله ومتى. التصحيح حدث جديد يحل محل القديم ولا يمسحه.</Hint></h2>
-                {audit.length === 0 && <p className="muted">لا شيء مسجّل على هذه الرحلة بعد.</p>}
+              {view === "audit" && <div className="card"><h2>{t("fl.audit.title")}<Hint>{t("fl.audit.hint")}</Hint></h2>
+                {audit.length === 0 && <p className="muted">{t("fl.audit.none")}</p>}
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
               </div>}
         </div>}

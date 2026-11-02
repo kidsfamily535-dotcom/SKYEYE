@@ -3,10 +3,12 @@ import { useState, useTransition } from "react";
 import { answerCheckin } from "@/app/flights/actions";
 import { fmtUtc } from "@/lib/format";
 import Menu from "@/components/Menu";
+import { useT } from "@/components/I18n";
 import type { Question } from "@/lib/flights";
 
 /** The agent's questions. "Yes" needs the real time typed by the employee: no time is ever guessed. */
 export default function FlightQuestions({ questions, canAct }: { questions: Question[]; canAct: boolean }) {
+  const { t } = useT();
   const [openId, setOpenId] = useState<string | null>(null);
   const [at, setAt] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -14,18 +16,18 @@ export default function FlightQuestions({ questions, canAct }: { questions: Ques
   const send = (id: string, a: "yes" | "not_yet" | "not_applicable") => start(async () => {
     const r = await answerCheckin(id, a, at, ""); setMsg(r.ok ? null : r.message); if (r.ok) { setOpenId(null); setAt(""); }
   });
-  if (questions.length === 0) return <p className="muted">لا توجد أسئلة مفتوحة من الوكيل الآن.</p>;
+  if (questions.length === 0) return <p className="muted">{t("fl.qs.none")}</p>;
   return (
     <ul className="list">
       {msg && <li role="alert" className="err">{msg}</li>}
       {questions.map((q) => (
         <li key={q.id} className="qrow">
           <i className={`dot ${q.status === "late" || q.status === "escalated" ? "late" : "warn"}`} />
-          <span><b>{q.text}</b><small className="muted"><span className="ltr">{q.step}</span> · الموعد <span className="ltr">{fmtUtc(q.dueAt)}</span>{q.status === "late" ? " · متأخر" : ""}{q.status === "in_progress" ? " · قلتَ «لسه»" : ""}</small></span>
+          <span><b>{q.text}</b><small className="muted"><span className="ltr">{q.step}</span> · {t("fl.due")} <span className="ltr">{fmtUtc(q.dueAt)}</span>{q.status === "late" ? ` · ${t("q.late")}` : ""}{q.status === "in_progress" ? ` · ${t("fl.qs.said")}` : ""}</small></span>
           {canAct && (openId === q.id
-            ? <div className="row"><label className="muted" htmlFor={`t-${q.id}`}>الوقت الفعلي (UTC)</label><input id={`t-${q.id}`} className="ltr" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
-                <button type="button" className="btn sm gold" disabled={pending || !at} onClick={() => send(q.id, "yes")}>سجّل</button><button type="button" className="btn ghost sm" onClick={() => setOpenId(null)}>رجوع</button></div>
-            : <div className="row"><button type="button" className="btn sm gold" onClick={() => { setOpenId(q.id); setAt(""); }}>تم</button><Menu><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_yet")}>لسه</button><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_applicable")}>لا ينطبق</button></Menu></div>)}
+            ? <div className="row"><label className="muted" htmlFor={`t-${q.id}`}>{t("fl.qs.actualTime")}</label><input id={`t-${q.id}`} className="ltr" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
+                <button type="button" className="btn sm gold" disabled={pending || !at} onClick={() => send(q.id, "yes")}>{t("fl.tl.record")}</button><button type="button" className="btn ghost sm" onClick={() => setOpenId(null)}>{t("fl.tl.back")}</button></div>
+            : <div className="row"><button type="button" className="btn sm gold" onClick={() => { setOpenId(q.id); setAt(""); }}>{t("fl.qs.done")}</button><Menu><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_yet")}>{t("fl.qs.notYet")}</button><button type="button" className="btn" disabled={pending} onClick={() => send(q.id, "not_applicable")}>{t("fl.qs.na")}</button></Menu></div>)}
         </li>
       ))}
     </ul>
