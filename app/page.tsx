@@ -26,17 +26,33 @@ export default async function CommandPage() {
 
   const TONE_AR: Record<string, string> = { late: "عاجل", warn: "مهم", info: "للعلم", ok: "تم" };
   const stat = (n: number | null | undefined, label: string, href: string, hot?: boolean) => (
-    <Link href={href} className="hstat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
+    <Link href={href} className="gl hstat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
+
+  const chip = (href: string, label: string) => <Link href={href} className="hchip">{label}</Link>;
 
   return (
     <Shell data={d}>
-      <main className="page">
-        <section className="fhero" aria-label="قيادتي">
-          <h1>{g.text}، فريق العمليات</h1>
-          <p><span className="ltr">{g.date}</span> · هذا ما يحدث الآن وما ينتظر قرارك.</p>
+      <main className="page home">
+        <section className="hhero" aria-label="قيادتي">
+          <div className="gl hradar">
+            <div className="ttl"><span className="livedot" aria-hidden="true" />الرادار الحي</div>
+            <Radar counts={c.radar} />
+          </div>
+          <div className="hhero-main">
+            <div className="gl hgreet">
+              <h1>{g.text}، فريق العمليات</h1>
+              <p><span className="ltr">{g.date}</span> · هذا ما يحدث الآن وما ينتظر قرارك.</p>
+            </div>
+            <div className="hchips">
+              {chip("/agent", "كلّم الوكيل")}
+              {chip("/inbox", "راجع المسودات")}
+              {chip("#attention", "شوف التنبيهات")}
+              {chip("/handover", "تسليم الوردية")}
+            </div>
+          </div>
         </section>
 
-        <section className="fsum four" aria-label="ملخص اليوم">
+        <section className="hstats" aria-label="ملخص اليوم">
           {stat(c.todayFlights, "رحلات اليوم", "/flights?day=today")}
           {stat(c.onGround, "طائرات على الأرض", "/flights")}
           {stat(attention, "تحتاج انتباهاً", "#attention", attention > 0)}
@@ -44,7 +60,7 @@ export default async function CommandPage() {
         </section>
 
         {reco && (
-          <section className="reco card" aria-label="توصية SKYEYE">
+          <section className="reco gl" aria-label="توصية SKYEYE">
             <span className="eye" aria-hidden="true" />
             <div><small className="muted">توصية SKYEYE</small><p>{reco}</p></div>
             {first?.href && <Link className="btn gold" href={first.href}>{first.action}</Link>}
@@ -54,8 +70,8 @@ export default async function CommandPage() {
         <div className="cols2">
           <section id="attention" aria-label="ما يحتاج انتباهك">
             <h2 className="sec">ما يحتاج انتباهك</h2>
-            {d.noMembership && <div className="card"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></div>}
-            {!d.noMembership && stream.length === 0 && <div className="card"><p className="muted">لا شيء يحتاج قرارك الآن.</p></div>}
+            {d.noMembership && <div className="card gl"><p className="muted">حسابك غير مرتبط بشركة بعد. اطلب من المسؤول إضافتك.</p></div>}
+            {!d.noMembership && stream.length === 0 && <div className="card gl"><p className="muted">لا شيء يحتاج قرارك الآن.</p></div>}
             <ul className="flist">{stream.map((x, i) => (
               <li key={x.id} className={`fcard ${i === 0 && x.tone === "late" ? "hot" : ""}`}>
                 <div className="arow">
@@ -67,7 +83,15 @@ export default async function CommandPage() {
             </ul>
           </section>
           <div className="side-col">
-            <section className="card glass"><h2>الرادار الحي</h2><Radar counts={c.radar} /></section>
+            <section className="card gl hqa">
+              <h2>إجراءات سريعة</h2>
+              <div className="stack">
+                <Link className="qa gold" href="/inbox?f=new">افتح الوارد<span aria-hidden="true">+</span></Link>
+                <Link className="qa" href="/flights?day=today">رحلات اليوم<span aria-hidden="true">‹</span></Link>
+                <Link className="qa" href="/handover">تقرير الوردية<span aria-hidden="true">‹</span></Link>
+                <Link className="qa" href="/agent">كلّم الوكيل<span aria-hidden="true">‹</span></Link>
+              </div>
+            </section>
           </div>
         </div>
       </main>

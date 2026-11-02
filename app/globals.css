@@ -179,3 +179,35 @@ h2.sec{margin:0 0 12px;font-size:18px;color:var(--gold)}
 .dock-row textarea{flex:1;min-height:46px;max-height:160px;resize:none;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:12px 14px;font:inherit;font-size:15px;line-height:1.5}
 .dock-note{padding:14px 20px;border-top:1px solid var(--line)}
 @media (max-width:720px){.chatshell{height:calc(100vh - 140px)}.dock-ctx .pick{max-width:100%}}
+
+/* ---- home redesign (hero + glass cards, after the "SKYEYE visual base" design) ---- */
+.nav{justify-content:flex-start;gap:12px}.nav svg{flex:none;color:var(--gold)}.nav.on svg{color:#1B2436}
+.nav.on{background:linear-gradient(145deg,#E6C77A,#B8913A)}.nav:not(.on):hover{background:rgba(255,255,255,.08)}
+.gl{border-radius:24px;background:rgba(11,21,48,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(230,199,122,.35);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.home .card.gl{padding:22px}
+.hhero{position:relative;display:flex;align-items:stretch;gap:24px;min-height:340px;border-radius:28px;overflow:hidden;border:1px solid rgba(230,199,122,.3);padding:24px;background:linear-gradient(180deg,rgba(11,21,48,.25),rgba(11,21,48,.82)),url(/bg-hero.jpg) center 40%/cover}
+.hradar{width:340px;flex:none;align-self:flex-start;padding:22px}
+.hradar .ttl,.hqa h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;margin:0}
+.hqa h2{color:var(--ink)}
+.livedot{width:10px;height:10px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:pulse 2.4s infinite;flex:none}
+.hradar .radar{margin-top:14px}.hradar .radar dl div{color:#E9E4D6}
+.hhero-main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;min-width:0}
+.hgreet{padding:18px 24px;align-self:flex-start;max-width:520px}
+.hgreet h1{margin:0;font-size:clamp(22px,2.6vw,30px);font-weight:700;line-height:1.4}.hgreet p{margin:6px 0 0;color:#E9E4D6;line-height:1.7}
+.hchips{display:flex;gap:10px;flex-wrap:wrap}
+.hchip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#F4EFE3;text-decoration:none;font-weight:500;font-size:14px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hchip:hover{background:rgba(255,255,255,.18)}
+.hchip:first-child{background:linear-gradient(145deg,#E6C77A,#B8913A);color:#0B1530;font-weight:700;border:0}.hchip:first-child:hover{filter:brightness(1.08)}
+.hstats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.hstats .hstat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:20px 12px;color:inherit;text-decoration:none;min-height:96px;justify-content:center}
+.hstats .hstat:hover{background:rgba(230,199,122,.1)}.hstats .hstat b{font-size:32px;font-weight:600}.hstats .hstat b.hot{color:var(--late)}.hstats .hstat small{color:#C9C4B6;font-size:13px}
+.home .reco.gl{display:flex;align-items:center;gap:16px;padding:18px 24px;border-color:rgba(230,199,122,.6)}
+.home .fcard{border-radius:20px;background:rgba(11,21,48,.62);border:1px solid rgba(230,199,122,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 12px 34px rgba(0,0,0,.3)}
+.home .fcard.hot{border-color:#E6C77A;box-shadow:0 0 0 1px rgba(230,199,122,.35),0 14px 38px rgba(0,0,0,.4)}
+.home .fstatus{border-radius:999px;padding:6px 14px;flex-direction:row;font-weight:600}
+.home .btn,.home .qa{border-radius:14px}
+.qa{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;min-height:48px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#F4EFE3;text-decoration:none;font-weight:500;font-size:15px}
+.qa:hover{background:rgba(255,255,255,.16)}.qa.gold{background:linear-gradient(145deg,#E6C77A,#B8913A);color:#0B1530;font-weight:700;border:0}.qa.gold:hover{filter:brightness(1.08)}
+@media (max-width:1100px){.hhero{flex-direction:column}.hradar{width:100%}.hstats{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.hhero{padding:16px;min-height:0}.hchip{flex:1;justify-content:center}}
+@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
