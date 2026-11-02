@@ -144,6 +144,222 @@ async function history(cmd: Cmd) {
   return rows.map((r) => `Q: ${String(r.instruction ?? "").slice(0, 400)}\nA: ${String(r.result.answer_ar).slice(0, 600)}`).join("\n---\n");
 }
 
+// ---------- weather on request only (METAR / TAF via the get-weather function) ----------
+// The agent never fetches weather by itself and never acts on it: it reads it out when an employee asks.
+// The reply is built by code (no model), so numbers and units can never be altered.
+const WEATHER = /(metar|\btaf\b|طقس|الطقس|weather)/i;
+const AR_AIRPORTS: [RegExp, string][] = [
+  [/برج العرب/, "HEBA"],
+  [/القاهر/, "HECA"],
+  [/شرم/, "HESH"],
+  [/غردق/, "HEGN"],
+  [/[اأ]قصر/, "HELX"],
+  [/[اأ]سوان/, "HESN"],
+  [/مرسى علم/, "HEMA"],
+  [/[اإ]سكندر/, "HEBA"],
+  [/سفنكس/, "HESX"],
+];
+
+async function resolveAirports(instruction: string, flight: any): Promise<string[]> {
+  const found = new Set<string>();
+  const toks = [...new Set(instruction.toUpperCase().match(/\b[A-Z]{3,4}\b/g) ?? [])];
+  if (toks.length) {
+    const list = toks.join(",");
+    const { data } = await sb.from("airports").select("icao_code,iata_code").or(`icao_code.in.(${list}),iata_code.in.(${list})`).limit(10);
+    for (const a of (data ?? []) as any[]) if (a.icao_code) found.add(a.icao_code);
+  }
+  for (const [re, icao] of AR_AIRPORTS) if (re.test(instruction)) found.add(icao);
+  if (!found.size && flight) {
+    for (const c of [flight.origin?.icao, flight.destination?.icao, flight.station?.iata]) if (c) found.add(c);
+  }
+  return [...found].slice(0, 4);
+}
+
+async function fetchWeather(airports: string[], instruction: string) {
+  const wantsTaf = /taf/i.test(instruction);
+  const wantsMetar = /metar/i.test(instruction);
+  const type = wantsTaf && !wantsMetar ? "taf" : wantsMetar && !wantsTaf ? "metar" : "both";
+  try {
+    const r = await fetch(`${SUPA_URL}/functions/v1/get-weather`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SRK}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ airports, type }),
+      signal: AbortSignal.timeout(12000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: `weather_http_${r.status}`, detail: j };
+    return j;
+  } catch (e) {
+    return { error: `weather_unavailable: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+function utc(s: unknown): string {
+  if (typeof s !== "string" || !s) return "غير مبلّغ";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "غير مبلّغ";
+  return d.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+}
+
+function windTxt(w: any): string {
+  if (!w || w.speed_kt == null) return "غير مبلّغ";
+  const dir = w.dir_deg == null ? "VRB" : `${w.dir_deg}°`;
+  const gust = w.gust_kt ? `، هبات حتى ${w.gust_kt} kt` : "";
+  return `${dir} بسرعة ${w.speed_kt} kt${gust}`;
+}
+
+// AWC returns visibility in statute miles (a number, or a string like "10+" / "6+").
+function visTxt(v: unknown): string {
+  if (v == null || v === "") return "غير مبلّغ";
+  const s = String(v);
+  const plus = s.includes("+");
+  const n = parseFloat(s);
+  if (isNaN(n)) return "غير مبلّغ";
+  const km = n * 1.609344;
+  if (plus) return `${km.toFixed(1)} كم أو أكثر (${s} SM)`;
+  if (km < 5) return `${Math.round((km * 1000) / 100) * 100} م (${s} SM)`;
+  return `${km.toFixed(1)} كم (${s} SM)`;
+}
+
+function cloudsTxt(c: any[] | undefined, raw?: string): string {
+  if (!c || !c.length) return /CAVOK/.test(raw ?? "") ? "لا سحب (CAVOK)" : "لا سحب مبلّغ عنها";
+  return c.map((x) => (x.base_ft_agl != null ? `${x.cover} عند ${x.base_ft_agl} قدم` : `${x.cover}`)).join("، ");
+}
+
+function formatWeather(w: any): string {
+  if (!w || w.error || !Array.isArray(w.results)) {
+    return `تعذّر جلب الطقس الآن (${w?.error ?? "لا رد من المصدر"}). راجع مصدر الأرصاد الرسمي.`;
+  }
+  const blocks: string[] = [];
+  for (const r of w.results) {
+    const L: string[] = [];
+    L.push(`مطار ${r.icao ?? r.input}`);
+    if (r.error) {
+      L.push(`تعذّر الجلب: ${r.error}`);
+      blocks.push(L.join("\n"));
+      continue;
+    }
+    if ("metar" in r) {
+      const m = r.metar;
+      if (!m) {
+        L.push(`METAR: غير متوفر من المصدر.${r.metar_note ? " " + r.metar_note : ""}`);
+      } else {
+        L.push(m.raw ?? "");
+        L.push(`- وقت الرصد: ${utc(m.observed_utc)}`);
+        L.push(`- الرياح: ${windTxt(m.wind)}`);
+        L.push(`- الرؤية: ${visTxt(m.visibility)}`);
+        L.push(`- السحب: ${cloudsTxt(m.clouds, m.raw)}`);
+        if (m.weather) L.push(`- ظواهر: ${m.weather}`);
+        L.push(`- الحرارة / نقطة الندى: ${m.temp_c ?? "غير مبلّغ"} °C / ${m.dewpoint_c ?? "غير مبلّغ"} °C`);
+        L.push(`- QNH: ${m.qnh_hpa != null ? Math.round(m.qnh_hpa) + " hPa" : "غير مبلّغ"}`);
+      }
+    }
+    if ("taf" in r) {
+      const t = r.taf;
+      if (!t) {
+        L.push(`TAF: غير متوفر من المصدر.${r.taf_note ? " " + r.taf_note : ""}`);
+      } else {
+        L.push(t.raw ?? "");
+        L.push(`- صدر: ${utc(t.issued_utc)} · صالح من ${utc(t.valid_from_utc)} إلى ${utc(t.valid_to_utc)}`);
+        for (const p of (t.periods ?? []).slice(0, 6)) {
+          const prob = p.probability ? ` PROB${p.probability}` : "";
+          L.push(`  ${p.change}${prob} ${utc(p.from_utc)} → ${utc(p.to_utc)}: رياح ${windTxt(p.wind)}، رؤية ${visTxt(p.visibility)}، سحب ${cloudsTxt(p.clouds)}${p.weather ? "، " + p.weather : ""}`);
+        }
+        if ((t.periods ?? []).length > 6) L.push(`  (+${t.periods.length - 6} فترات أخرى في سطر TAF الخام أعلاه)`);
+      }
+    }
+    blocks.push(L.join("\n"));
+  }
+  blocks.push("المصدر: NOAA AWC. للتأكيد الرسمي راجع جهة الأرصاد.");
+  return blocks.join("\n\n");
+}
+
+// ---------- aircraft tracking by registration (read-only, on request only) ----------
+// Uses the track-aircraft function (free community ADS-B). The reply is built by code, no model.
+const TRACK_WORDS = /(فين|مكان|موقع|اين|أين|تتبع|طيار|طائر|track|where|locate|aircraft|plane|registration|تسجيل)/i;
+const REG_PREFIXES = new Set(["SU", "HZ", "A6", "A7", "9K", "9H", "TC", "5A", "5B", "SX", "OD", "JY", "YI", "4X", "ST", "TS", "CN", "7T", "EI", "HB", "OE", "PH", "EC", "CS", "VP", "VQ", "VT", "XA", "LX", "9V", "A9", "4K"]);
+
+// A registration is letters after the dash (SU-GEK). Flight numbers such as UJ-8052 or EY-123 contain digits
+// and must NOT be read as registrations, so a dashed token with digits after the dash is ignored.
+function extractRegs(instruction: string): string[] {
+  const up = instruction.toUpperCase();
+  const out = new Set<string>();
+  for (const m of up.match(/\b[A-Z0-9]{1,2}-[A-Z]{2,5}\b/g) ?? []) out.add(m);
+  for (const m of up.match(/\bN\d{1,5}[A-Z]{0,2}\b/g) ?? []) out.add(m);
+  for (const m of up.match(/\b[A-Z0-9]{2}[A-Z]{3}\b/g) ?? []) {
+    if (REG_PREFIXES.has(m.slice(0, 2))) out.add(`${m.slice(0, 2)}-${m.slice(2)}`);
+  }
+  for (const m of up.matchAll(/\b([A-Z0-9]{2})\s([A-Z]{3})\b/g)) {
+    if (REG_PREFIXES.has(m[1])) out.add(`${m[1]}-${m[2]}`);
+  }
+  return [...out].slice(0, 3);
+}
+
+async function fetchTrack(regs: string[]) {
+  try {
+    const r = await fetch(`${SUPA_URL}/functions/v1/track-aircraft`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SRK}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ registrations: regs }),
+      signal: AbortSignal.timeout(40000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: `track_http_${r.status}`, detail: j };
+    return j;
+  } catch (e) {
+    return { error: `track_unavailable: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+async function ourFlightsFor(reg: string, companyId: string): Promise<string[]> {
+  const alt = reg.replace("-", "");
+  const { data } = await sb.from("flights").select("flight_number,flight_date,direction").eq("company_id", companyId)
+    .or(`registration.ilike.${reg},registration.ilike.${alt}`).order("flight_date", { ascending: false }).limit(3);
+  return ((data ?? []) as any[]).map((f) => `${f.flight_number} · ${f.flight_date} · ${f.direction === "arrival" ? "وصول" : "مغادرة"}`);
+}
+
+async function formatTrack(t: any, companyId: string): Promise<{ text: string; sources: string[] }> {
+  const sources: string[] = [];
+  if (!t || t.error || !Array.isArray(t.results)) {
+    return { text: `تعذّر الوصول لخدمة التتبع الآن (${t?.error ?? "لا رد"}). جرّب بعد شوية.`, sources };
+  }
+  const blocks: string[] = [];
+  for (const r of t.results) {
+    const L: string[] = [];
+    const ours = await ourFlightsFor(r.input, companyId);
+    if (r.status === "found") {
+      const a = r.aircraft;
+      sources.push(r.source);
+      L.push(`${a.registration ?? r.input}${a.type ? " (" + a.type + ")" : ""}${a.callsign ? " · كول ساين " + a.callsign : ""}`);
+      L.push(`- الحالة: ${a.on_ground ? "على الأرض" : "في الجو"}`);
+      if (a.lat != null && a.lon != null) L.push(`- الموقع: ${a.lat.toFixed(3)}, ${a.lon.toFixed(3)}`);
+      const n = a.nearest_reference_airport;
+      if (n) {
+        if (a.on_ground && n.dist_nm <= 10) L.push(`- قرب مطار ${n.name} (${n.icao}) — ${n.dist_nm} nm`);
+        else if (!a.on_ground && n.dist_nm <= 150) L.push(`- أقرب مطار مرجعي: ${n.name} (${n.icao}) على بعد ${n.dist_nm} nm`);
+      }
+      if (!a.on_ground) {
+        L.push(`- الارتفاع: ${a.altitude_ft != null ? a.altitude_ft + " ft" : "غير مبلّغ"}`);
+        const vr = a.vertical_rate_fpm;
+        if (vr != null && Math.abs(vr) >= 300) L.push(`- ${vr > 0 ? "صاعدة" : "هابطة"} (${vr} ft/min)`);
+      }
+      L.push(`- السرعة: ${a.ground_speed_kt != null ? a.ground_speed_kt + " kt" : "غير مبلّغ"} · الاتجاه: ${a.track_deg != null ? a.track_deg + "°" : "غير مبلّغ"}`);
+      L.push(`- آخر تحديث للموقع: ${a.last_position_age_s != null ? "قبل " + a.last_position_age_s + " ثانية" : "غير معروف"}${r.stale ? " — الموقع قديم، قد لا يكون حالياً" : ""}`);
+      if (a.emergency) L.push(`- تنبيه: الطائرة تبث حالة طوارئ (${a.emergency}). القرار للمسؤول المختص.`);
+      if (a.map_url) L.push(`- الخريطة: ${a.map_url}`);
+    } else if (r.status === "not_seen") {
+      L.push(`${r.input}: غير ظاهرة حالياً على شبكات ADS-B.`);
+      L.push("ممكن الترانسبوندر مقفول، أو على الأرض خارج التغطية، أو مش بتطير. ده مش معناه إنها مش موجودة.");
+    } else {
+      L.push(`${r.input}: تعذّر الوصول لمصادر التتبع حالياً (${(r.tried ?? []).map((x: any) => x.provider + ":" + x.result).join(" | ")}).`);
+    }
+    if (ours.length) L.push(`- في جدول شركتنا: ${ours.join("، ")}`);
+    blocks.push(L.join("\n"));
+  }
+  blocks.push(`المصدر: ADS-B مجتمعي${sources.length ? " (" + [...new Set(sources)].join(", ") + ")" : ""}. التغطية مش كاملة، للمعلومة فقط.`);
+  return { text: blocks.join("\n\n"), sources: [...new Set(sources)].map((s) => `ADS-B / ${s}`) };
+}
+
 // ---------- "prepare a message" requests are routed to compose_message (never to a model) ----------
 const PREPARE = /(جهز|جهّز|حضر|حضّر|اعمل|اكتب|اطلع|ولد|prepare|make|draft|write|generate|compose|create)/i;
 const SUBTYPES = ["AA", "AD", "ED", "EO", "EB", "NI"];
@@ -244,17 +460,22 @@ async function askLLM(cmd: Cmd, user: string) {
 async function answerQuestion(cmd: Cmd) {
   const instruction = String(cmd.instruction ?? "").trim();
   if (!instruction) throw new Error("instruction_required");
+  const isWeather = WEATHER.test(instruction);
+  const regs = isWeather ? [] : extractRegs(instruction);
+  const isTrack = regs.length > 0 && (TRACK_WORDS.test(instruction) || instruction.length <= 14);
+  const direct = isWeather || isTrack; // answered by code, never routed to compose_message or the model
+  const scope = cmd.target_type === "company" ? "company" : cmd.target_type;
 
   let flight: any = null;
   let company: any = null;
   if (cmd.target_type === "flight" && cmd.target_id) {
     flight = await flightContext(cmd.target_id, cmd.company_id);
     if (!flight) throw new Error("flight_not_found_in_company");
-    const type = await detectMessageType(instruction);
+    const type = direct ? null : await detectMessageType(instruction);
     if (type) return await composeFlow(cmd, type, flight);
   } else if (cmd.target_type === "company") {
     if (cmd.target_id !== cmd.company_id) throw new Error("company_target_mismatch");
-    const type = await detectMessageType(instruction);
+    const type = direct ? null : await detectMessageType(instruction);
     if (type) {
       return {
         kind: "answer",
@@ -263,7 +484,24 @@ async function answerQuestion(cmd: Cmd) {
         sources: [],
       };
     }
-    company = await companyContext(cmd.company_id, instruction);
+    company = direct ? null : await companyContext(cmd.company_id, instruction);
+  }
+
+  // Aircraft tracking by registration: read-only, formatted by code.
+  if (isTrack) {
+    const t = await fetchTrack(regs);
+    const f = await formatTrack(t, cmd.company_id);
+    return { kind: "answer", scope, answer_ar: f.text, sources: f.sources, provider: "code", model: "track-formatter" };
+  }
+
+  // Weather: fetched on request, formatted by code (no model), source = NOAA AWC only.
+  if (isWeather) {
+    const aps = await resolveAirports(instruction, flight);
+    if (!aps.length) {
+      return { kind: "answer", scope, answer_ar: "أنهي مطار تقصد؟ اكتب اسمه أو كوده، مثلًا HECA أو CAI.", sources: [] };
+    }
+    const w = await fetchWeather(aps, instruction);
+    return { kind: "answer", scope, answer_ar: formatWeather(w), sources: ["NOAA AWC / get-weather"], provider: "code", model: "weather-formatter" };
   }
 
   let refs = "";
@@ -287,7 +525,7 @@ async function answerQuestion(cmd: Cmd) {
     (refs ? `<reference>\n${refs}\n</reference>` : "");
 
   const out = await askLLM(cmd, user);
-  return { kind: "answer", scope: cmd.target_type === "company" ? "company" : cmd.target_type, answer_ar: out.text, provider: out.provider, model: out.model, sources };
+  return { kind: "answer", scope, answer_ar: out.text, provider: out.provider, model: out.model, sources };
 }
 
 const HANDLERS: Record<string, (c: Cmd) => Promise<unknown>> = {
