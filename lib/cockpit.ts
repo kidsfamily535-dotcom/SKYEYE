@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Decision, RadarCounts } from "@/lib/data";
+import { getT } from "@/lib/lang";
 
 export type Cockpit = {
   todayFlights: number | null; onGround: number | null; delayed: number | null;
@@ -13,6 +14,7 @@ const LATE_MS = 15 * 60 * 1000;
 /** Live picture computed only from recorded times (ATA/ATD) against the clock. Nothing is estimated beyond "past its scheduled time with nothing recorded". */
 export async function getCockpit(): Promise<Cockpit> {
   const sb = await createClient();
+  const { t: tr } = await getT();
   const now = Date.now(); const today = new Date(now).toISOString().slice(0, 10);
   const [fl, tasks, awaiting, emails, shift] = await Promise.all([
     sb.from("v_flight_file").select("rotation_id, flight_in, flight_out, date_in, date_out, sta, std, eta, ata, atd, status").limit(500),
@@ -33,9 +35,9 @@ export async function getCockpit(): Promise<Cockpit> {
   const todayFlights = rows.filter((r) => r.date_in === today || r.date_out === today).length;
 
   const flightDecisions: Decision[] = late.slice(0, 3).map((r) => {
-    const label = r.flight_in ?? r.flight_out ?? "رحلة";
-    return { id: `fl-${r.rotation_id}`, tone: "late", href: `/flights?id=${r.rotation_id}`, action: "افتح الرحلة",
-      text: `${label}: ${r.ata ? "تجاوزت موعد المغادرة ولم تُسجَّل" : "تجاوزت موعد الوصول ولم يُسجَّل"}` };
+    const label = r.flight_in ?? r.flight_out ?? tr("cockpit.flight");
+    return { id: `fl-${r.rotation_id}`, tone: "late", href: `/flights?id=${r.rotation_id}`, action: tr("cockpit.open"),
+      text: `${label}: ${r.ata ? tr("cockpit.lateDep") : tr("cockpit.lateArr")}` };
   });
   const ls = shift.data?.[0];
   return {

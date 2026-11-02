@@ -1,10 +1,10 @@
 import type { RadarCounts } from "@/lib/data";
+import { getT } from "@/lib/lang";
 
-const rows: [keyof RadarCounts, string][] = [
-  ["onGround", "على الأرض"], ["inbound", "وصول متوقع"], ["delayed", "تجاوزت موعدها"], ["awaitingMsg", "بانتظار رسالة"],
-];
+const rows: (keyof RadarCounts)[] = ["onGround", "inbound", "delayed", "awaitingMsg"];
 
-export default function Radar({ counts }: { counts: RadarCounts }) {
+export default async function Radar({ counts }: { counts: RadarCounts }) {
+  const { t } = await getT();
   return (
     <div className="radar">
       <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
@@ -14,7 +14,7 @@ export default function Radar({ counts }: { counts: RadarCounts }) {
         <defs><linearGradient id="sw" x1="0" x2="1"><stop offset="0" stopColor="#E3B964" stopOpacity="0" /><stop offset="1" stopColor="#E3B964" stopOpacity=".35" /></linearGradient></defs>
       </svg>
       <dl>
-        {rows.map(([k, label]) => (<div key={k}><dt>{label}</dt><dd className="ltr">{counts[k] ?? "—"}</dd></div>))}
+        {rows.map((k) => (<div key={k}><dt>{t(`radar.${k}` as const)}</dt><dd className="ltr">{counts[k] ?? "—"}</dd></div>))}
       </dl>
     </div>
   );
