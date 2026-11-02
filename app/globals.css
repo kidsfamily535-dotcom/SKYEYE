@@ -129,3 +129,14 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .fsum{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;align-items:center;border-radius:20px;border:1px solid var(--line);background:var(--panel);padding:14px 18px}.fsum>div{display:flex;flex-direction:column;align-items:center;gap:2px}.fsum b{font-size:28px}.fsum small{color:var(--muted)}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--gold);text-decoration:none;min-height:44px}
 @media (max-width:900px){.fcard-link{grid-template-columns:1fr auto;grid-template-areas:"s g" "i i" "r r" "t t"}.fstatus{grid-area:s;align-items:flex-start}.fid{grid-area:i}.froute{grid-area:r}.ftimes{grid-area:t}.fgo{grid-area:g}.fsum{grid-template-columns:repeat(2,1fr)}.fhero h1{font-size:26px}}
+/* ---- inbox: list + reader ---- */
+.imail{display:grid;grid-template-columns:400px 1fr;gap:20px;align-items:start}.ilist{display:flex;flex-direction:column;gap:12px}
+.isearch input{width:100%;min-height:46px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);padding:0 20px;font:inherit}
+.mlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.mrow a{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:inherit;text-decoration:none;min-height:72px}.mrow a:hover{background:rgba(227,185,100,.08)}
+.mrow.cur a{border-color:var(--gold);background:rgba(227,185,100,.14);box-shadow:0 0 0 1px rgba(227,185,100,.3)}
+.mtime{display:flex;flex-direction:column;align-items:center}.mtime small{color:var(--muted);font-size:11px}.mbody{display:flex;flex-direction:column;gap:2px;min-width:0}.mbody small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mflags{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ireader{display:flex;flex-direction:column;gap:16px;min-width:0}.itool{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ireturn{display:none}
+.mhead{display:flex;gap:14px;align-items:center}.mhead h2{margin:0 0 6px}
+@media (max-width:900px){.imail{grid-template-columns:1fr}.imail:not(.reading) .ireader{display:none}.imail.reading .ilist{display:none}.ireturn{display:inline-flex}}
