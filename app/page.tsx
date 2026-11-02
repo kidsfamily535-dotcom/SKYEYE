@@ -3,7 +3,6 @@ import Shell from "@/components/Shell";
 import Radar from "@/components/Radar";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
-import { fmtUtc } from "@/lib/format";
 
 const dash = (n: number | null) => (n ?? "—");
 const RANK: Record<string, number> = { late: 0, warn: 1, info: 2, ok: 3 };
@@ -24,7 +23,6 @@ export default async function CommandPage() {
   const reco = d.noMembership ? null
     : stream.length === 0 ? "لا شيء يحتاج قرارك الآن. أتابع البريد والرحلات وأنبّهك عند أي تغيير."
     : `لديك ${stream.length} ${stream.length === 1 ? "أمر يحتاج" : "أمور تحتاج"} متابعة. أقترح البدء بـ: ${short(first.text)}`;
-  const m = c.memory;
 
   return (
     <Shell data={d}>
@@ -65,7 +63,6 @@ export default async function CommandPage() {
           </div>
         </div>
 
-        {m.lastShift && <p className="muted">آخر تسليم وردية: «{m.lastShift.name}» — {m.lastShift.acknowledged ? "تم الاستلام" : "بانتظار الاستلام"} · <span className="ltr">{fmtUtc(m.lastShift.at)}</span> · <Link href="/handover">فتح</Link></p>}
       </main>
     </Shell>
   );

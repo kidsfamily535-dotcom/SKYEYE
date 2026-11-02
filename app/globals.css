@@ -110,3 +110,5 @@ p.ok{color:var(--ok);margin:0;font-weight:700}
 .top .grow{flex:1}
 @media (max-width:760px){.nav-sep{width:1px;height:auto;margin:6px 4px;flex:none}}
 .next.late{border-color:var(--late)}.next.ok{border-color:var(--line)}.next.ok .eye{background:var(--ok);animation:none}
+.bell{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.04)}.bell:hover{color:var(--ink);background:rgba(227,185,100,.14)}
+.badge{position:absolute;top:-6px;inset-inline-start:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--gold);color:#1B2436;font-size:12px;display:grid;place-items:center}

@@ -2,23 +2,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const main = [
-  { href: "/", label: "قيادتي" }, { href: "/inbox", label: "الوارد والمسودات" }, { href: "/flights", label: "الرحلات" },
-  { href: "/handover", label: "تقرير الوردية" },
+const items = [
+  { href: "/", label: "قيادتي" }, { href: "/inbox", label: "الوارد والمسودات" },
+  { href: "/flights", label: "الرحلات" }, { href: "/agent", label: "كلّم الوكيل" },
 ];
-const more = [{ href: "/agent", label: "كلّم الوكيل" }];
 
 export default function Nav() {
   const path = usePathname();
-  const link = (n: { href: string; label: string }) => {
-    const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
-    return <Link key={n.href} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>{n.label}</Link>;
-  };
   return (
     <nav>
-      {main.map(link)}
-      <span className="nav-sep" role="separator" />
-      {more.map(link)}
+      {items.map((n) => {
+        const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
+        return <Link key={n.href} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>{n.label}</Link>;
+      })}
     </nav>
   );
 }
