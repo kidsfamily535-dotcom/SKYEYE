@@ -45,7 +45,7 @@ export async function getCommandData(): Promise<CommandData> {
   ]);
   const shiftDecisions: Decision[] = (pendingShift.data ?? []).map((r) => ({ id: `shift-${r.id}`, tone: "warn", href: `/handover?id=${r.id}`, action: "افتح التقرير", text: (pendingShift.count ?? 1) > 1 ? `${pendingShift.count} تقارير وردية بانتظار الاستلام` : `تقرير وردية «${r.shift_name}» بانتظار الاستلام` }));
   const alertDecisions: Decision[] = (alerts.data ?? []).map((a) => ({
-    id: a.id, tone: a.severity === "high" ? "late" : "warn", href: `/requests?id=${a.source_id}`, action: "افتح الطلب",
+    id: a.id, tone: a.severity === "high" ? "late" : "warn", action: "",
     text: a.source_type === "request_stalled" ? "طلب راكد بلا حركة" : String(a.title).startsWith("Request overdue") ? "طلب تجاوز موعده" : "طلب يقترب موعده",
   }));
 

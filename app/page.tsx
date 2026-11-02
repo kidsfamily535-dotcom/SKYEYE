@@ -60,7 +60,7 @@ export default async function CommandPage() {
           <div className="side-col">
             <section className="card"><h2>طلباتك النشطة</h2>{d.requests.length === 0 && <p className="muted">لا توجد طلبات مفتوحة.</p>}
               <ul className="list">{d.requests.map((r) => (
-                <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span><Link href={`/requests?id=${r.id}`}>{r.title}</Link><small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
+                <li key={r.id}><b className="logo sm ltr">{r.airline}</b><span>{r.title}<small className="muted">{r.next}</small></span><em className={`tag ${r.tone}`}>{r.status}</em></li>))}</ul>
             </section>
           </div>
         </div>

@@ -23,7 +23,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
         {p && (
           <>
             {p.defs.length === 0
-              ? <section className="card"><p>لم تُعرَّف أي وردية بعد، فلا يُولَّد أي تقرير. {p.canAdmin ? <Link href="/settings">عرّف الوردية الأولى من الإعدادات</Link> : "اطلب من المسؤول تعريف الورديات."}</p></section>
+              ? <section className="card"><p>لم تُعرَّف أي وردية بعد، فلا يُولَّد أي تقرير. اطلب من المسؤول تعريف الورديات.</p></section>
               : p.nextReports[0] && <p className="muted">التقرير القادم لـ <bdi>{p.nextReports[0].name}</bdi> يُولَّد <span className="ltr">{fmtUtc(p.nextReports[0].generateAt)}</span> · تنتهي الوردية <span className="ltr">{fmtUtc(p.nextReports[0].shiftEnd)}</span></p>}
 
             <div className="inbox">
@@ -84,7 +84,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
                         const lv = p.live.get(q.id);
                         return (
                           <li key={q.id}><i className={`dot ${q.urgent ? "late" : "info"}`} /><span>
-                            <Link href={`/requests?id=${q.id}`}><bdi>{q.title}</bdi></Link>
+                            <bdi>{q.title}</bdi>
                             <small className="muted"><span className="ltr">{q.flightRef ?? "—"}</span> · {q.stageLabelAr ?? "—"}{q.urgent ? " · عاجل" : ""} · الموعد <span className="ltr">{fmtUtc(q.dueAt)}</span></small>
                             <small className="muted">المسؤول: {q.ownerName ?? "غير مسند"}</small>
                             {q.lastEventSummary && <small className="muted ltr">{q.lastEventSummary}</small>}

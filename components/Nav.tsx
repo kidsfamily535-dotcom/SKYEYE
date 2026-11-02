@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 
 const main = [
   { href: "/", label: "قيادتي" }, { href: "/inbox", label: "الوارد والمسودات" }, { href: "/flights", label: "الرحلات" },
-  { href: "/requests", label: "الطلبات" }, { href: "/handover", label: "تقرير الوردية" },
+  { href: "/handover", label: "تقرير الوردية" },
 ];
-const more = [{ href: "/agent", label: "كلّم الوكيل" }, { href: "/settings", label: "الإعدادات" }];
+const more = [{ href: "/agent", label: "كلّم الوكيل" }];
 
 export default function Nav() {
   const path = usePathname();
