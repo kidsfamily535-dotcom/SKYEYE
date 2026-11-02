@@ -162,3 +162,20 @@ h2.sec{margin:0 0 12px;font-size:18px;color:var(--gold)}
 .vt small{display:block}.vt b{font-weight:600}
 .mlist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}.mlist li{display:flex;gap:12px;align-items:flex-start}.mlist .dot{margin-top:6px}
 @media (max-width:720px){.idtimes{width:100%}}
+
+/* ---- live agent chat ---- */
+.chatshell{display:flex;flex-direction:column;padding:0;overflow:hidden;height:calc(100vh - 170px);min-height:460px}
+.chathead{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}.chathead h2{margin:0}
+.chatscroll{flex:1;overflow-y:auto;padding:8px 20px 16px}.chatscroll .empty{margin:24px 0;text-align:center;font-size:14px}
+.chatshell .chat{margin:8px 0 0}
+.bubble.me small:first-child{color:var(--gold)}
+.typing{display:inline-flex;gap:5px;padding:6px 2px}.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.1s infinite ease-in-out}.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none;opacity:.6}}
+.dock{border-top:1px solid var(--line);padding:12px 20px 16px;background:rgba(5,14,32,.55);display:flex;flex-direction:column;gap:10px}
+.dock-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.dock-ctx{display:flex;align-items:center;gap:8px;min-width:0}.dock-ctx .pick{max-width:260px;min-height:38px}
+.sugg{display:flex;gap:6px;flex-wrap:wrap}.sugg .btn{border-color:var(--line)}
+.dock-row{display:flex;gap:10px;align-items:flex-end}
+.dock-row textarea{flex:1;min-height:46px;max-height:160px;resize:none;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:12px 14px;font:inherit;font-size:15px;line-height:1.5}
+.dock-note{padding:14px 20px;border-top:1px solid var(--line)}
+@media (max-width:720px){.chatshell{height:calc(100vh - 140px)}.dock-ctx .pick{max-width:100%}}
