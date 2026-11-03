@@ -59,22 +59,41 @@ export async function correctStep(eventId: string, at: string, reason: string): 
 }
 
 export type Composed =
-  | { status: "ok"; draft: string; warnings: string[]; deviations: string[] }
+  | { status: "ok"; draftId: string; draft: string; warnings: string[]; deviations: string[] }
   | { status: "missing"; missing: { field: string; label: string; format: string }[] }
   | { status: "error"; message: string };
 
-/** Builds a message DRAFT only. Nothing is sent: the employee copies it and sends it from the company mailbox. */
+/** Builds a message DRAFT only (saved in message_drafts). Nothing is sent: the employee edits it, copies it and sends it from the company mailbox.
+ *  Values that look like JSON ({...} or [...]) are sent as JSON (delay codes, destinations, positions...). */
 export async function composeFlightMessage(companyId: string, type: string, flightId: string, data: Record<string, string>): Promise<Composed> {
   const { t: tr } = await getT();
-  const clean: Record<string, string> = {};
-  for (const [k, v] of Object.entries(data)) if (v.trim()) clean[k] = v.trim();
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    const s = v.trim(); if (!s) continue;
+    if (/^[\[{]/.test(s)) { try { clean[k] = JSON.parse(s); } catch { return { status: "error", message: tr("fl.err.json", { field: k }) }; } } else clean[k] = s;
+  }
   const { data: r, error } = await (await createClient()).rpc("compose_message", { p_company_id: companyId, p_type: type, p_data: { ...clean, flight_id: flightId } });
   if (error) return { status: "error", message: explain(error.message, tr) };
   const o = r as Record<string, any>;
-  if (o.status === "ok") return { status: "ok", draft: String(o.draft ?? ""), warnings: (o.warnings ?? []).map(String), deviations: (o.deviations ?? []).map((d: unknown) => typeof d === "string" ? d : JSON.stringify(d)) };
+  if (o.status === "ok") { refresh(); return { status: "ok", draftId: String(o.draft_id ?? ""), draft: String(o.draft ?? ""), warnings: (o.warnings ?? []).map(String), deviations: (o.deviations ?? []).map((d: unknown) => typeof d === "string" ? d : JSON.stringify(d)) }; }
   if (o.status === "missing") return { status: "missing", missing: o.missing ?? [] };
+  if (o.status === "invalid" && Array.isArray(o.invalid) && o.invalid.length) return { status: "error", message: o.invalid.map((d: unknown) => typeof d === "string" ? d : JSON.stringify(d)).join(" · ") };
   if (o.status === "unsupported") return { status: "error", message: tr("fl.err.unsupported", { reason: typeof o.reason === "string" ? ` (${o.reason})` : "" }) };
   return { status: "error", message: typeof o.note === "string" ? o.note : tr("fl.err.compose") };
+}
+
+export type SaveResult = { ok: true; deviations: string[]; warnings: string[] } | { ok: false; message: string };
+
+/** Saves the employee's edit of a draft; the database re-checks it against the GOM format and records before/after. */
+export async function saveMessageDraft(draftId: string, body: string): Promise<SaveResult> {
+  const { t: tr } = await getT();
+  const { data, error } = await (await createClient()).rpc("save_message_draft_edit", { p_draft_id: draftId, p_body: body });
+  if (error) return { ok: false, message: explain(error.message, tr) };
+  const o = data as Record<string, any>;
+  if (o.status === "closed") return { ok: false, message: tr("fl.err.draftClosed") };
+  if (o.status === "invalid") return { ok: false, message: tr("fl.err.emptyBody") };
+  refresh();
+  return { ok: true, deviations: (o.deviations ?? []).map(String), warnings: (o.warnings ?? []).map(String) };
 }
 
 /** Records that the employee sent the drafted message from the company mailbox. The system sends nothing. */
