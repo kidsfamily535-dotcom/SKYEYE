@@ -15,7 +15,14 @@ export default async function FlightCard({ r, href, hot }: { r: FlightRow; href:
   return (
     <li className={`fcard ${hot ? "hot" : ""}`}>
       <Link href={href} className="fcard-link" aria-label={t("fl.card.open", { flight: r.flightIn ?? r.flightOut ?? "" })}>
-        <span className={`fstatus ${s.tone}`}><b>{s.label}</b>{s.sub && <small>{s.sub}</small>}</span>
+        <span className={`fstatus ${s.tone}`}><b>{s.label}</b>{s.sub && <small>{s.sub}</small>}
+          {r.attn && (r.attn.alerts > 0 || r.attn.due) && <span className="amarks">
+            {/* علامة واحدة للتنبيهات بأعلى مستوى، حتى لو عليها أكتر من تنبيه */}
+            {r.attn.alerts > 0 && r.attn.level && <span className={`amark ${r.attn.level}`} role="img" aria-label={t("fl.attn.alertsAria", { n: r.attn.alerts, level: r.attn.level })}>{r.attn.level}{r.attn.alerts > 1 ? <small>×{r.attn.alerts}</small> : null}</span>}
+            {/* مهمة ED/NI: أيقونة صغيرة منفصلة وهادية، مش تنبيه */}
+            {r.attn.due && <span className={`amark task ${r.attn.due.isDue ? "now" : ""}`} role="img" aria-label={t(r.attn.due.isDue ? "fl.attn.dueAria" : "fl.attn.waitAria", { type: r.attn.due.type.replace(/^MVT-/, "") })}>{r.attn.due.type.replace(/^MVT-/, "")}</span>}
+          </span>}
+        </span>
         <span className="fid">
           {r.airline ? <Logo url={r.airline.logoUrl} code={r.airline.code} name={r.airline.name} size="md" /> : <b className="logo ltr">—</b>}
           <span><b className="ltr">{r.flightIn ?? "—"}</b><small className="muted"><bdi>{r.airline?.name ?? r.airline?.code ?? ""}</bdi>{r.flightOut ? <> · <span className="ltr">{r.flightOut}</span></> : null}</small></span>

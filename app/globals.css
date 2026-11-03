@@ -313,3 +313,19 @@ textarea,input,select{max-width:100%}
   .dock-ctx .pick{flex:1 1 160px;min-width:0;max-width:100%}
   .dock-row textarea{min-height:52px}
 }
+
+/* ===== علامات القائمة و«المطلوب الآن» (جلسة 4): هادئة، والإلحاح فقط من L3 وما فوق ===== */
+.amarks{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.amark{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;line-height:1;border-radius:99px;padding:5px 10px;border:1px solid currentColor;font-style:normal}
+.amark small{font-size:11px;font-weight:600}
+.amark.L1{color:var(--info)}.amark.L2{color:#F5D14B}.amark.L3{color:#FF9248}.amark.L4{color:var(--late);background:rgba(255,114,102,.12)}
+.amark.task{color:var(--info);font-weight:600}.amark.task.now{color:var(--gold)}
+.attncount{display:flex;align-items:center;gap:10px;margin:10px 0 0;font-size:16px}
+.nowbar ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.nowbar .nb{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
+.nowbar .nb>div{flex:1;display:flex;flex-direction:column;gap:3px;line-height:1.7}
+.nowbar .nb.L2{border-color:#F5D14B}.nowbar .nb.L3{border-color:#FF9248}.nowbar .nb.L4{border-color:var(--late)}
+.nowbar .lvl{font-size:12px;font-weight:700;border-radius:99px;padding:4px 10px;border:1px solid currentColor}
+.nowbar .lvl.L1{color:var(--info)}.nowbar .lvl.L2{color:#F5D14B}.nowbar .lvl.L3{color:#FF9248}.nowbar .lvl.L4{color:var(--late)}
+.card textarea.mono{width:100%;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:12px;font-size:14px;line-height:1.7;resize:vertical}
+.lockedopt{color:#7C8AA5}

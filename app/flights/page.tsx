@@ -4,7 +4,9 @@ import Logo from "@/components/Logo";
 import RqmDrafts from "@/components/RqmDrafts";
 import FlightQuestions from "@/components/FlightQuestions";
 import FlightTimeline from "@/components/FlightTimeline";
-import FlightActions from "@/components/FlightActions";
+import MessageComposer from "@/components/MessageComposer";
+import MessageDrafts from "@/components/MessageDrafts";
+import NowBar from "@/components/NowBar";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
@@ -14,7 +16,7 @@ import FlightCard from "@/components/FlightCard";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
-import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
+import { getFlight, getFlightList, needsAction } from "@/lib/flights";
 import { stepName } from "@/lib/step-name";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
@@ -30,13 +32,14 @@ function FeedRow({ x, wait, t }: { x: FeedItem; wait?: boolean; t: TFn }) {
   );
 }
 
-export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string }> }) {
+export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; tab?: string; view?: string; q?: string; day?: string; compose?: string }> }) {
   const sp = await searchParams;
   const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
   const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "overview";
-  const [d, all] = await Promise.all([getCommandData(), sp.id ? Promise.resolve([] as FlightRow[]) : getFlightList(tab)]);
-  const sel = sp.id ? await getFlight(sp.id) : null;
+  const d = await getCommandData();
+  const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
+  const attnCount = all.filter(needsAction).length;
   const needle = (sp.q ?? "").trim().toLowerCase();
   const todayIso = new Date().toISOString().slice(0, 10);
   const list = all.filter((r) => (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.destination, r.registration, r.airline?.name].some((x) => (x ?? "").toLowerCase().includes(needle))) && (sp.day !== "today" || (r.sta ?? r.std ?? "").slice(0, 10) === todayIso));
@@ -58,7 +61,9 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     <Shell data={d}>
       <main className="page">
         {!sp.id && <>
-          <section className="fhero" aria-label={t("fl.title")}><h1>{t("fl.title")}</h1><p>{t("fl.subtitle")}</p></section>
+          <section className="fhero" aria-label={t("fl.title")}><h1>{t("fl.title")}</h1><p>{t("fl.subtitle")}</p>
+            {tab === "active" && attnCount > 0 && <p role="status" className="attncount"><span className="amark L3">{attnCount}</span> {attnCount === 1 ? t("fl.attn.one") : t("fl.attn.many", { n: attnCount })}</p>}
+          </section>
           <div className="ffilters">
             <form method="get" action="/flights" className="grow" role="search">
               {tab === "done" && <input type="hidden" name="tab" value="done" />}{sp.day === "today" && <input type="hidden" name="day" value="today" />}
@@ -99,6 +104,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
+              <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("messages")}&compose=${encodeURIComponent(ty)}#compose`} />
+
               {next && feed && (
                 <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href.startsWith("#") ? `${vh("overview")}${next.href}` : next.href}>{next.action}</Link>}</section>
               )}
@@ -132,8 +139,9 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   {sel.mails.length === 0 && <p className="muted">{t("fl.mails.none")}</p>}
                   <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? t("fl.mail.fallback")}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? t("fl.mail.draftWaiting") : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
                 </div>
-                <FlightActions companyId={d.company.id} types={sel.messageTypes} canAct={sel.canAct}
-                  legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} />
+                <div id="compose"><MessageComposer key={sp.compose ?? "none"} companyId={d.company.id} messages={sel.panel.messages} delayCodes={sel.delayCodes} needed={sel.panel.needed} initialType={sp.compose} canAct={sel.canAct}
+                  legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} /></div>
+                <MessageDrafts drafts={sel.panel.drafts} canAct={sel.canAct} />
               </>}
 
               {view === "delay" && <div className="card"><h2>{t("fl.delay.title")}</h2>
