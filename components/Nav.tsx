@@ -9,11 +9,12 @@ const ICONS: Record<string, string> = {
   "/inbox": "M3 7l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z",
   "/flights": "M2 14l20-8-6 14-4-6z",
   "/agent": "M4 5h16v11H9l-5 4z",
+  "/mvt": "M9 12l2 2 4-4M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z",
 };
 
 const items: { href: string; label: Key }[] = [
   { href: "/", label: "nav.home" }, { href: "/inbox", label: "nav.inbox" },
-  { href: "/flights", label: "nav.flights" }, { href: "/agent", label: "nav.agent" },
+  { href: "/flights", label: "nav.flights" }, { href: "/mvt", label: "nav.mvt" }, { href: "/agent", label: "nav.agent" },
 ];
 
 export default function Nav() {
