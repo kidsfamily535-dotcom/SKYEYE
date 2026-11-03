@@ -329,3 +329,26 @@ textarea,input,select{max-width:100%}
 .nowbar .lvl.L1{color:var(--info)}.nowbar .lvl.L2{color:#F5D14B}.nowbar .lvl.L3{color:#FF9248}.nowbar .lvl.L4{color:var(--late)}
 .card textarea.mono{width:100%;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:12px;font-size:14px;line-height:1.7;resize:vertical}
 .lockedopt{color:#7C8AA5}
+
+/* ---- flight alerts: card, bell panel (components/AlertCard.tsx, AlertBell.tsx) ---- */
+.alist{display:flex;flex-direction:column;gap:14px}
+.acard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-width:0;border-inline-start-width:5px}
+.acard.lv-L1{border-inline-start-color:var(--info)}.acard.lv-L2{border-inline-start-color:var(--warn)}.acard.lv-L3,.acard.lv-L4{border-inline-start-color:var(--late)}
+.acard.st-resolved{opacity:.78}.acard.st-snoozed{border-style:dashed}
+.ahead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lvl{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:99px;font-size:13px;font-weight:700;border:1px solid currentColor}.lvl.late{color:var(--late)}.lvl.warn{color:var(--warn)}.lvl.info{color:var(--info)}
+.astate{font-size:13px;color:var(--muted)}
+.atitle{margin:2px 0 0;font-size:17px}
+.areason{margin:0;line-height:1.8}
+.aaction{margin:0;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:rgba(227,185,100,.1)}.aaction b{font-size:12px;color:var(--gold)}
+.ameta{margin:0;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.aresolved{margin:0;font-size:13px;color:var(--ok)}
+.alog{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13px}.alog li{display:flex;gap:12px;flex-wrap:wrap}.alog li bdi{color:var(--muted);flex:none}.alog em{font-style:normal;color:var(--muted)}
+.bellbox{position:relative}.bellbox>summary{list-style:none;cursor:pointer}.bellbox>summary::-webkit-details-marker{display:none}
+.bell.hot{color:var(--late);border-color:rgba(255,114,102,.55)}
+.bellpanel{position:absolute;inset-inline-end:0;top:calc(100% + 8px);z-index:30;width:min(380px,calc(100vw - 24px));padding:14px;border-radius:16px;border:1px solid var(--line);background:#0A1B3C;box-shadow:0 14px 36px rgba(0,0,0,.5)}
+.bellpanel h2{margin:0 0 8px;font-size:15px;color:var(--gold)}
+.bellpanel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.bellpanel li a{display:flex;gap:10px;align-items:flex-start;padding:10px 6px;border-radius:12px;color:var(--ink);text-decoration:none}.bellpanel li a:hover{background:rgba(227,185,100,.12)}
+.bellpanel .bt{display:flex;flex-direction:column;gap:2px;min-width:0}.bellpanel .bt small{color:var(--muted);font-size:12px}
+.bellpanel .lvl{min-height:24px;padding:0 8px;font-size:12px;flex:none}
