@@ -108,7 +108,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                   {primary ? <Link className="btn gold" href={primary.href}>{primary.label}</Link> : <p className="muted">{t("inbox.noAction")}</p>}
                   {sel.flightRotationId && primary?.href !== `/flights?id=${sel.flightRotationId}` && <Link className="btn" href={`/flights?id=${sel.flightRotationId}`}>{t("inbox.followTimeline")}</Link>}
                 </div>
-                <details><summary>{t("inbox.files")}</summary><OpenRequestForm key={sel.id} companyId={d.company.id} triageId={sel.id} messageId={sel.messageId} linked={files.linked} linkable={files.linkable} /></details>
+                <details><summary>{t("inbox.files")}</summary><OpenRequestForm key={sel.id} companyId={d.company.id} triageId={sel.id} messageId={sel.messageId} linked={files.linked} linkable={files.linkable} suggestComplaint={sel.category === "complaint"} /></details>
               </div>
 
               <div className="card" id="draft"><h2>{t("inbox.draft.title")}</h2>

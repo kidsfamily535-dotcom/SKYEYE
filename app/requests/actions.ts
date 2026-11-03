@@ -29,14 +29,14 @@ export async function setAlertStatus(companyId: string, alertId: string, status:
   refresh(); return { ok: true };
 }
 
-export async function openRequestFromEmail(input: { triageId: string; title: string; flightRef: string; flightDate: string; dueAt: string; urgent: boolean }): Promise<Result> {
+export async function openRequestFromEmail(input: { triageId: string; title: string; flightRef: string; flightDate: string; dueAt: string; urgent: boolean; requestType?: "permit" | "complaint" }): Promise<Result> {
   const title = input.title.trim();
   if (!title || title.length > 160) return { ok: false, message: (await getT()).t("req.err.title") };
   const date = /^\d{4}-\d{2}-\d{2}$/.test(input.flightDate) ? input.flightDate : null;
   let due: string | null = null;
   if (input.dueAt) { const d = new Date(input.dueAt + "Z"); if (Number.isNaN(+d)) return { ok: false, message: (await getT()).t("req.err.due") }; due = d.toISOString(); }
   const { data, error } = await (await createClient()).rpc("open_request_file", {
-    p_triage_id: input.triageId, p_request_type: "permit", p_title: title, p_flight_ref: input.flightRef.trim().toUpperCase() || null,
+    p_triage_id: input.triageId, p_request_type: input.requestType === "complaint" ? "complaint" : "permit", p_title: title, p_flight_ref: input.flightRef.trim().toUpperCase() || null,
     p_flight_date: date, p_due_at: due, p_urgent: input.urgent,
   });
   if (error) return { ok: false, message: await explain(error.message) };
