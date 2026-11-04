@@ -14,6 +14,8 @@ import Hint from "@/components/Hint";
 import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
 import FlightCard from "@/components/FlightCard";
 import FlightJourney from "@/components/FlightJourney";
+import OtpStand from "@/components/OtpStand";
+import { getOtp } from "@/lib/otp";
 import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
@@ -47,6 +49,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const lh = (o: { tab?: string; day?: string }) => { const p = new URLSearchParams(); const t = o.tab ?? tab; if (t === "done") p.set("tab", "done"); const dd = "day" in o ? o.day : sp.day; if (dd) p.set("day", dd); if (needle) p.set("q", sp.q ?? ""); const s = p.toString(); return `/flights${s ? `?${s}` : ""}`; };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
+  const otp = sel && f ? await getOtp(String(f.rotation_id), lang) : null;
   const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
   const feed = feedIn ? buildFeed(feedIn, t, lang) : null; const next = feedIn ? nextStep(feedIn, t) : null;
   const audit: FeedItem[] = sel ? [
@@ -115,6 +118,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>
 
               {view === "overview" && next && feed && <>
+                {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} airline={sel.airline} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
                 {journey && <FlightJourney j={journey} />}
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>{t("fl.q.title")}<Hint>{t("fl.q.hint")}</Hint></h2>
