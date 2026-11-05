@@ -16,6 +16,7 @@ import FlightCard from "@/components/FlightCard";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { summarize } from "@/lib/flight-status";
+import { groupFlights, dayShort } from "@/lib/flight-group";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
 import { stepName } from "@/lib/step-name";
 import { getT } from "@/lib/lang";
@@ -75,7 +76,12 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
             <Link className="btn gold sm" href="/flights/import">{t("fl.import.btn")}</Link>
           </div>
           {list.length === 0 && <section className="card"><p className="muted">{needle || sp.day ? t("fl.none.match") : tab === "active" ? t("fl.none.active") : t("fl.none.done")}</p></section>}
-          <ul className="flist">{list.map((r, i) => <FlightCard key={r.rotationId} r={r} hot={i === 0 && tab === "active"} href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} />)}</ul>
+          {groupFlights(list, tab, t).map((g, gi) => (
+            <section key={g.key} className={`fgroup ${g.tone}`} aria-label={g.label}>
+              <h2 className="fghead"><span className="ltr">{g.label}</span><small className="muted">{t("fl.grp.count", { n: g.count })}</small></h2>
+              <ul className="flist">{g.rows.map((r, i) => <FlightCard key={r.rotationId} r={r} hot={gi === 0 && i === 0 && tab === "active"} href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} />)}</ul>
+            </section>
+          ))}
           {tab === "active" && <section className="fsum" aria-label={t("fl.sum.aria")}>
             <div><b className="ltr">{sum.today}</b><small>{t("fl.sum.today")}</small></div><div><b className="ltr">{sum.ok}</b><small>{t("fl.sum.ok")}</small></div>
             <div><b className="ltr">{sum.late}</b><small>{t("fl.sum.late")}</small></div><div><b className="ltr">{sum.soon}</b><small>{t("fl.sum.soon")}</small></div>
@@ -96,8 +102,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 </div>
                 <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
                 <dl className="idtimes">
-                  <div><dt>{t("fl.arr")}</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}</dd></div>
-                  <div><dt>{t("fl.dep")}</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}</dd></div>
+                  <div><dt>{t("fl.arr")}</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}<small className="fday">{dayShort(f.ata ?? f.sta)}</small></dd></div>
+                  <div><dt>{t("fl.dep")}</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}<small className="fday">{dayShort(c.expected_std ?? f.std)}</small></dd></div>
                   {c.arrival_delay_min !== null && c.arrival_delay_min !== undefined && Number(c.arrival_delay_min) !== 0 && <div><dt>{t("fl.arrDelay")}</dt><dd className="ltr">{t("fl.min", { n: String(c.arrival_delay_min) })}</dd></div>}
                   {c.planned_ground_minutes ? <div><dt>{t("fl.plannedGround")}</dt><dd className="ltr">{t("fl.min", { n: String(c.planned_ground_minutes) })}</dd></div> : null}
                 </dl>

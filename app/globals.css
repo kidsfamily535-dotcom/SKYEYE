@@ -329,3 +329,13 @@ textarea,input,select{max-width:100%}
 .nowbar .lvl.L1{color:var(--info)}.nowbar .lvl.L2{color:#F5D14B}.nowbar .lvl.L3{color:#FF9248}.nowbar .lvl.L4{color:var(--late)}
 .card textarea.mono{width:100%;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:12px;font-size:14px;line-height:1.7;resize:vertical}
 .lockedopt{color:#7C8AA5}
+
+/* flights list: day groups, dates on times, planned ground chip */
+.fgroup{display:flex;flex-direction:column;gap:10px}
+.fghead{display:flex;align-items:baseline;gap:12px;margin:10px 4px 0;font-size:15px;font-weight:600;color:var(--gold)}
+.fghead small{font-weight:400;font-size:12px}
+.fgroup.attn .fghead{color:var(--warn)}.fgroup.stale .fghead{color:var(--muted)}
+.fgroup.attn .fcard{border-color:rgba(242,174,64,.45)}.fgroup.stale .fcard{opacity:.82}
+.fday{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.ftimes{align-items:center}.ftimes .fground{align-items:center;padding:4px 10px;border-radius:99px;border:1px dashed var(--line)}.ftimes .fground b{font-size:14px;color:var(--muted)}.ftimes .fground small{font-size:10px}
+.idtimes dd .fday{display:block}
