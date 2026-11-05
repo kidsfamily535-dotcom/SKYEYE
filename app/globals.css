@@ -497,3 +497,97 @@ textarea,input,select{max-width:100%}
 .card.paper-draft .btn{background:rgba(27,36,54,.06);color:#1B2436;border-color:rgba(120,92,30,.22)}.card.paper-draft .btn.gold{background:linear-gradient(90deg,#CFA24F,#EBC673);border:0}.card.paper-draft .btn.ghost{background:transparent;border-color:transparent}
 .card.paper-draft .err{color:#C0392B}
 @media (max-width:900px){.ix{grid-template-columns:1fr}.ix-rows{max-height:none}.ix-actions .ix-btn{min-width:100%}.ix-tool .grow{display:none}}
+
+/* ===== responsive audit (2026-11-05): fixes measured at 320 / 360 / 390 / 768 / 900 / 1024 / 1100 / 1280 ===== */
+/* real viewport height on phones (address bar) + long unbroken text (URLs, addresses) never widens a card */
+.app,.login{min-height:100vh;min-height:100dvh}
+.orig,.mono,.meta dd,.ix-body,.draft textarea,.bubble p{overflow-wrap:anywhere}
+pre.orig,.ix-paper,.ix-draftcard{max-width:100%;min-width:0}
+@media (min-width:1181px){.main{padding-inline:max(28px,env(safe-area-inset-left),env(safe-area-inset-right))}}
+@media (max-width:900px){.main{padding-inline:max(14px,env(safe-area-inset-left),env(safe-area-inset-right))}}
+@media (max-width:560px){.main{padding-inline:max(12px,env(safe-area-inset-left),env(safe-area-inset-right))}}
+
+/* narrow laptops / tablets landscape: a slimmer sidebar so the page keeps its room */
+@media (min-width:901px) and (max-width:1180px){
+  .app{grid-template-columns:210px minmax(0,1fr)}
+  .side{padding:20px 12px}
+  .main{padding:18px 20px 36px}
+  .nav{padding:0 12px}
+}
+
+/* wide screens only: list + reader (or list + detail) share a row; below that the list and the reader take turns */
+.inbox{grid-template-columns:minmax(280px,380px) minmax(0,1fr)}
+.imail.ix{grid-template-columns:minmax(300px,380px) minmax(0,1fr)}
+@media (max-width:1100px){.inbox{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1179px){
+  .imail.ix{grid-template-columns:minmax(0,1fr)}
+  .imail.ix:not(.reading) .ireader{display:none}
+  .imail.ix.reading .ilist{display:none}
+  .imail.ix .ireturn{display:inline-flex}
+  .ix-rows{max-height:none}
+}
+.ix-rows{max-height:calc(100vh - 360px);max-height:calc(100dvh - 360px)}
+@media (max-width:1179px){.ix-rows{max-height:none}}
+
+/* phones: search row wraps (it was 81px wide at 320px), tighter paper, full-width actions */
+@media (max-width:560px){
+  .ix-list{padding:12px;border-radius:20px}
+  .ix-search{flex-wrap:wrap}
+  .ix-search input[type=search]{flex:1 1 100%}
+  .ix-select{flex:1 1 0;max-width:none;min-width:0}
+  .ix-go{flex:none}
+  .ix-paper{padding:16px;border-radius:18px}
+  .ix-agent,.ix-actions{padding:14px}
+  .ix-tool{padding:10px;gap:8px}
+  .ix-tool .ix-btn,.ix-tool .btn{flex:1 1 calc(50% - 8px)}
+  .ix-tool .ix-btn.icon{flex:0 0 44px}
+  .ix-title{font-size:15px}
+}
+
+/* flights board */
+.fb-row{grid-template-columns:150px minmax(0,1.1fr) minmax(0,1.5fr) 70px 70px 130px 20px;gap:14px}
+@media (max-width:1280px){.fb-thumb{display:none}.fb-row{grid-template-columns:140px minmax(0,1.1fr) minmax(0,1.5fr) 70px 70px 20px}}
+/* below 1180 the row stacks into a card (the same layout phones already use) instead of overflowing */
+@media (max-width:1180px) and (min-width:761px){
+  .fb-row{grid-template-columns:1fr auto;grid-template-areas:"p c" "f f" "r r" "a b";gap:8px 12px;padding:12px 14px}
+  .fb-pill{grid-area:p;align-items:flex-start;text-align:start;flex-direction:row;flex-wrap:wrap;gap:6px;background:none;padding:0}.fb-row .fb-pill b{padding:2px 12px;border-radius:99px;background:rgba(0,0,0,.06)}
+  .fb-row.t-ok .fb-pill b{background:#d3f1e1}.fb-row.t-info .fb-pill b{background:#d3e4ff}.fb-row.t-warn .fb-pill b{background:#ffe2b3}.fb-row.t-late .fb-pill b{background:#ffd9d4}
+  .fb-chev{grid-area:c}.fb-fl{grid-area:f}.fb-rr{grid-area:r}.fb-tc.a{grid-area:a}.fb-tc.b{grid-area:b}.fb-tc{border:0;padding:0;flex-direction:row;gap:8px;align-items:baseline}
+}
+/* the view / tab switchers were clipped on phones (the "timeline" view was unreachable) */
+.fb-seg{max-width:100%}.fb-seg a,.fb-seg button{min-width:0}
+@media (max-width:560px){
+  .fb-bar .fb-seg{flex:1 1 100%}
+  .fb-bar .fb-seg a,.fb-bar .fb-seg button{flex:1;padding:0 6px;font-size:14px}
+  .fb-chip{flex:1 1 100%;justify-content:center}
+  .fb-meta .grow{display:none}
+  .fb-sel,.fb-grp{flex:1 1 100%}.fb-grp select{flex:1;min-width:0}
+}
+/* the bottom tab bar (z 50) used to sit on top of the flight sheet and hide its action buttons */
+@media (max-width:900px){
+  .fb-scrim{z-index:60}.fb-sheet{z-index:61}
+  .fb-sheet{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+}
+
+/* touch screens: every control at least 44px */
+@media (pointer:coarse){
+  .btn.sm,.fb-seg.sm a,.fb-seg.sm button,.ix-tabs .chip-link,.tabs a,.tabs button,.ws .tabs.views a{min-height:44px}
+  .hint>summary{width:32px;height:32px}
+  .dock-file-x{width:40px;height:40px}
+}
+
+/* English subjects inside the RTL list were cut from the start (you saw "...irmation at CAI"): each line takes the direction of its own text */
+.ix-title,.ix-sum{unicode-bidi:plaintext}
+
+/* phones: the first screen belongs to the content, not to chrome */
+@media (max-width:900px){
+  .page:has(.imail.reading) .fhero{display:none}            /* reading an email: no big page banner above it */
+  .ix-tool .ireturn{flex:1 1 100%;min-height:44px}           /* "back to list" gets its own full-width row */
+}
+@media (max-width:560px){
+  .fhero{padding:16px;min-height:0}.fhero h1{font-size:24px}.fhero p{font-size:14px}
+  .top{gap:6px}
+  .top .chip{padding:0 10px}
+  .user{gap:6px}.user .btn.ghost{padding:0 10px;min-height:40px}
+  .ix-paper h2{font-size:19px}
+}
