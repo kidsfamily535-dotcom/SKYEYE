@@ -1,0 +1,60 @@
+/* Home ("قيادتي"): next-step band + priority rows + quick tiles. Mobile-first; desktop re-arranges the same DOM order. */
+.page.hm{--paper:#FBF7EE;--paper2:#F1E8D4;--ink-d:#1B2436;--ink-m:#5B6577;--pline:rgba(120,92,30,.24);display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.hm>*{min-width:0}
+
+/* hero: greeting on the photo, radar as a compact glass chip */
+.hm-hero{display:flex;flex-direction:column;gap:14px;padding:22px 20px;border-radius:26px;border:1px solid rgba(230,199,122,.3);background:linear-gradient(180deg,rgba(6,18,42,.35),rgba(6,18,42,.9)),url(/bg-hero.jpg) center/cover;overflow:hidden}
+.hm-greet h1{margin:0;font-size:clamp(24px,6.4vw,38px);line-height:1.35;font-weight:700;color:#fff}
+.hm-greet p{margin:6px 0 0;color:#E4DFD0;line-height:1.7;max-width:46ch}
+.hm-radar{align-self:flex-start;max-width:100%;padding:12px 16px;border-radius:20px;background:rgba(11,21,48,.6);border:1px solid rgba(230,199,122,.3);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.hm-radar-ttl{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.hm-radar .radar{margin-top:8px;gap:14px}.hm-radar .radar svg{width:84px;height:84px;flex:none}.hm-radar .radar dl{gap:6px;min-width:120px}.hm-radar .radar dl div{font-size:13px;color:#E4DFD0;gap:14px}
+
+/* the one memorable element: the next-step band */
+.hm-next{display:grid;grid-template-columns:auto 1fr;gap:12px 14px;align-items:center;padding:16px;border-radius:22px;background:linear-gradient(180deg,#F8E7B8,#EDCB7C);color:var(--ink-d);border:1px solid #CFA24F;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.hm-next-ico{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:rgba(27,36,54,.9);color:#F2D187}
+.hm-next-text h2{margin:0;font-size:15px;color:#6B4A0E}.hm-next-text p{margin:2px 0 0;font-size:17px;line-height:1.7;font-weight:600}
+.hm-go{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:50px;padding:0 22px;border-radius:14px;background:var(--ink-d);color:#F8E7B8;font-weight:700;text-decoration:none;font-size:16px}
+.hm-go:hover{background:#0F1726}
+
+/* quick tiles: four across on a phone, like the mobile mock */
+.hm-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.hm-tile{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:12px 4px;min-height:92px;border-radius:18px;background:rgba(11,21,48,.7);border:1px solid rgba(230,199,122,.3);color:var(--ink);text-decoration:none;text-align:center;font-size:12.5px;line-height:1.35;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.hm-tile:hover{background:rgba(227,185,100,.14)}
+.hm-tile.gold{background:linear-gradient(145deg,#E6C77A,#B8913A);color:#0B1530;font-weight:700;border:0}
+.hm-tile-ico{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.08);color:var(--gold)}.hm-tile.gold .hm-tile-ico{background:rgba(11,21,48,.14);color:#0B1530}
+.hm-badge{position:absolute;top:-6px;inset-inline-start:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#FF7266;color:#1B2436;font-size:12px;font-style:normal;font-weight:700;display:grid;place-items:center}
+
+.hm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hm-stat{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:18px;background:rgba(11,21,48,.62);border:1px solid rgba(230,199,122,.25);color:inherit;text-decoration:none;min-height:84px;justify-content:center}
+.hm-stat:hover{background:rgba(227,185,100,.1)}.hm-stat b{font-size:30px;font-weight:600;line-height:1.1}.hm-stat b.hot{color:#FF7266}.hm-stat small{color:#C9C4B6;font-size:13px}
+
+/* priority rows: cream cards, icon tile at the start, one gold action */
+.hm-list h2{margin:0 0 10px;font-size:19px;color:var(--gold)}
+.hm-list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.hm-empty{margin:0;padding:18px;border-radius:18px;background:rgba(11,21,48,.62);border:1px solid rgba(230,199,122,.25);color:#D5DFEE}
+.hm-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 12px;align-items:center;padding:12px 14px;border-radius:18px;background:linear-gradient(180deg,var(--paper),var(--paper2));border:1px solid var(--pline);color:var(--ink-d);box-shadow:0 4px 14px rgba(0,0,0,.22)}
+.hm-row.hot{border-color:#E0584B;box-shadow:0 0 0 2px rgba(224,88,75,.35),0 8px 22px rgba(0,0,0,.3)}
+.hm-row-ico{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(27,36,54,.07)}
+.hm-row.late .hm-row-ico{background:rgba(224,88,75,.14);color:#C0392B}.hm-row.warn .hm-row-ico{background:rgba(242,174,64,.2);color:#A8620A}.hm-row.info .hm-row-ico{background:rgba(43,95,184,.12);color:#2B5FB8}.hm-row.ok .hm-row-ico{background:rgba(20,130,95,.14);color:#14825F}
+.hm-row-text{display:flex;flex-direction:column;gap:2px;min-width:0;line-height:1.55}.hm-row-text b{font-weight:600;font-size:15.5px}.hm-row-text small{color:var(--ink-m);font-size:12.5px}
+.hm-act{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:12px;background:rgba(27,36,54,.07);border:1px solid var(--pline);color:var(--ink-d);text-decoration:none;font-weight:600}
+.hm-act:hover{background:rgba(207,162,79,.25)}.hm-act.gold{background:linear-gradient(90deg,#CFA24F,#EBC673);border:0;font-weight:700}
+
+/* wider than a phone: actions sit at the end of the row instead of below it */
+@media (min-width:600px){
+  .hm-hero{flex-direction:row;align-items:flex-end;justify-content:space-between;padding:28px 28px;min-height:210px}
+  .hm-radar{align-self:flex-end}
+  .hm-next{grid-template-columns:auto 1fr auto;padding:18px 22px}.hm-go{grid-column:auto}
+  .hm-tile{font-size:14px;min-height:104px}
+  .hm-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .hm-row{grid-template-columns:auto minmax(0,1fr) auto}.hm-act{grid-column:auto;min-height:44px}
+}
+/* desktop: list on the main side, tiles and stats beside it */
+@media (min-width:1100px){
+  .page.hm{grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);grid-template-areas:"hero hero" "next next" "list tiles" "list stats";gap:20px;align-items:start}
+  .hm-hero{grid-area:hero}.hm-next{grid-area:next}.hm-list{grid-area:list}.hm-tiles{grid-area:tiles;grid-template-columns:repeat(2,minmax(0,1fr))}.hm-stats{grid-area:stats;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hm-tile{flex-direction:row;justify-content:flex-start;text-align:start;padding:14px 16px;min-height:72px;font-size:15px}
+}
+@media (max-width:359px){.hm-tile{font-size:11.5px}.hm-greet h1{font-size:22px}}
+@media (prefers-reduced-motion:reduce){.hm-radar .sweep{animation:none}}
