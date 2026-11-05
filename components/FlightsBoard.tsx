@@ -29,7 +29,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   const [airline, setAirline] = useState("");
   const [station, setStation] = useState("");
   const [st, setSt] = useState<Status>("all");
-  const [view, setView] = useState<View>("bays");
+  const [view, setView] = useState<View>("list");
   const [group, setGroup] = useState<Group>("day");
   const [win, setWin] = useState<"all" | "roll">("all");
   const [dayF, setDayF] = useState<"all" | "today">("all");
@@ -90,9 +90,6 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
             <Link className="btn gold" href={importHref}><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg>{L.importBtn}</Link>
             <Link className="btn" href="/agent">{L.askAgent}</Link>
           </div></div>
-        <div className="fb-kpis" role="group" aria-label={L.kAria}>
-          {kpis.map(([k, label, n]) => <button key={k} type="button" className={`fb-kpi k-${k} ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(st === k && k !== "all" ? "all" : k)}><b className="ltr">{n}</b><small>{label}</small></button>)}
-        </div>
       </section>
 
       <div className="fb-bar">
@@ -102,7 +99,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
         </div>
         <button type="button" className={`fb-chip ${dayF === "today" ? "on" : ""}`} aria-pressed={dayF === "today"} onClick={() => setDayF(dayF === "today" ? "all" : "today")}>{L.today}<small className="ltr">{rows.filter((r) => r.dayKey === todayKey && !r.stale).length}</small></button>
         <div className="fb-seg" role="group" aria-label={L.viewAria}>
-          {([["bays", L.vBays], ["time", L.vTime], ["list", L.vList]] as [View, string][]).map(([v, l]) => <button key={v} type="button" className={view === v ? "on" : ""} aria-pressed={view === v} onClick={() => setView(v)}>{l}</button>)}
+          {([["list", L.vList], ["bays", L.vBays], ["time", L.vTime]] as [View, string][]).map(([v, l]) => <button key={v} type="button" className={view === v ? "on" : ""} aria-pressed={view === v} onClick={() => setView(v)}>{l}</button>)}
         </div>
       </div>
 
@@ -125,7 +122,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
 
       {list.length === 0 && <section className="card"><p className="muted">{rows.length === 0 ? (tab === "active" ? L.noneActive : L.noneDone) : L.noneMatch}</p></section>}
 
-      {groups.map((g) => (
+      {groups.map((g, gi) => (
         <section key={g.key} className="fb-group" aria-label={g.name}>
           <h2 className="fb-gh"><span className="ltr">{g.name}</span><small>{fill(L.count, { n: g.rows.length })}</small>{g.rows.some((r) => r.attn) && <span className="amark L3">{g.rows.filter((r) => r.attn).length}</span>}</h2>
 
@@ -152,10 +149,24 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
               </button>); })}
           </div>}
 
-          {view === "list" && <ul className="fb-rows">{g.rows.map((r) => (
-            <li key={r.id}><button type="button" className={`fb-row t-${r.tone} ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)}>
-              <span className="fb-st">{r.label}</span><Logo url={r.logoUrl} code={r.airlineCode} name={r.airlineName} /><b className="ltr">{r.flightIn ?? "—"}</b><span className="ltr fb-rt">{r.origin ?? "—"} › {r.station ?? "—"} › {r.dest ?? "—"}</span><span className="ltr fb-t2">{hm(r.arr)} → {hm(r.dep)}</span><Mark r={r} /></button></li>))}</ul>}
+          {view === "list" && <ul className="fb-rows">{g.rows.map((r, ri) => (
+            <li key={r.id}><button type="button" className={`fb-row t-${r.tone} ${ri === 0 && gi === 0 && r.attn ? "hot" : ""} ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)} aria-label={`${r.flightIn ?? r.flightOut ?? ""} ${r.label}`}>
+              <span className="fb-pill"><b>{r.label}</b>{r.sub && <small>{r.sub}</small>}<Mark r={r} /></span>
+              <span className="fb-fl"><span><b className="ltr">{r.flightIn ?? "—"}</b><small>{r.airlineName}{r.flightOut ? <span className="ltr"> · {r.flightOut}</span> : null}</small></span><Logo url={r.logoUrl} code={r.airlineCode} name={r.airlineName} size="md" /></span>
+              <span className="fb-rr ltr"><span><b>{r.origin ?? "—"}</b></span><i aria-hidden="true">✈</i><span><b>{r.station ?? "—"}</b></span><i aria-hidden="true">✈</i><span><b>{r.dest ?? "—"}</b></span>{r.reg && <small>{r.reg}</small>}</span>
+              <span className="fb-tc a ltr"><small>STA</small><b>{hm(r.arr)}</b></span>
+              <span className="fb-tc b ltr"><small>STD</small><b>{hm(r.dep)}</b></span>
+              <span className="fb-thumb" aria-hidden="true"><svg viewBox="0 0 200 80"><path d="M20 40L26 28C30 24 40 22 60 22H150C172 22 188 32 194 42C188 50 172 56 150 56H40C28 56 22 50 20 40Z" /><path d="M24 30L12 4H34L58 24Z" /><path d="M92 44H128L108 68H88Z" /></svg></span>
+              <span className="fb-chev" aria-hidden="true">‹</span>
+            </button></li>))}</ul>}
         </section>))}
+
+      {rows.length > 0 && <section className="fb-sum" aria-label={L.kAria}>
+        <div className="fb-kpis" role="group" aria-label={L.kAria}>
+          {kpis.map(([k, label, n]) => <button key={k} type="button" className={`fb-kpi k-${k} ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(st === k && k !== "all" ? "all" : k)}><b className="ltr">{n}</b><small>{label}</small></button>)}
+        </div>
+        <button type="button" className="btn gold fb-all" onClick={reset}>{L.showAll}</button>
+      </section>}
 
       {cur && <>
         <div className="fb-scrim" onClick={() => setSel(null)} aria-hidden="true" />
