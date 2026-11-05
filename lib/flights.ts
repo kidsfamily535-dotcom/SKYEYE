@@ -35,7 +35,8 @@ type Raw = Record<string, any>;
 
 export async function getFlightList(tab: "active" | "done", companyId: string): Promise<FlightRow[]> {
   const sb = await createClient();
-  const q = sb.from("v_flight_file").select("*");
+  // قائمة خفيفة: بدون أعمدة sop_* لأنها تأخذ ~9 ثوانٍ (انتهاء مهلة الاستعلام) وتجعل القائمة فاضية؛ العدّادات موجودة في صفحة الرحلة نفسها
+  const q = sb.from("v_flight_file").select("company_id, rotation_id, flight_in, flight_out, date_in, date_out, registration, origin, station, destination, sta, std, eta, ata, atd, status");
   const { data } = tab === "active"
     ? await q.is("atd", null).neq("status", "cancelled").order("sta", { ascending: true, nullsFirst: false }).limit(200)
     : await q.or("atd.not.is.null,status.eq.cancelled").order("std", { ascending: false, nullsFirst: false }).limit(50);
