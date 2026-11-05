@@ -36,8 +36,9 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   const [station, setStation] = useState("");
   const [st, setSt] = useState<Status>("all");
   const [view, setView] = useState<View>("bays");
-  const [group, setGroup] = useState<Group>("station");
+  const [group, setGroup] = useState<Group>("day");
   const [win, setWin] = useState<"all" | "roll">("all");
+  const [dayF, setDayF] = useState<"all" | "today">("all");
   const [sel, setSel] = useState<string | null>(null);
   useEffect(() => { setNow(Date.now()); const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, []);
   useEffect(() => { if (!sel) return; const k = (e: KeyboardEvent) => e.key === "Escape" && setSel(null); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [sel]);
@@ -48,18 +49,19 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   const kpi = useMemo(() => ({ all: rows.length, attn: rows.filter((r) => r.attn).length, late: rows.filter((r) => r.tone === "late").length, ground: rows.filter((r) => r.code === "onGround").length, soon: rows.filter((r) => r.code === "soon").length, ok: rows.filter((r) => r.code === "onTime").length }), [rows]);
 
   const needle = q.trim().toLowerCase();
-  const list = useMemo(() => rows.filter((r) => (!airline || r.airlineCode === airline) && (!station || (r.station ?? "—") === station) && matches(r, st) && (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.dest, r.reg, r.airlineName, r.airlineCode].some((x) => (x ?? "").toLowerCase().includes(needle)))), [rows, airline, station, st, needle]);
+  const todayKey = new Date(now).toISOString().slice(0, 10); const tomKey = new Date(now + 86400000).toISOString().slice(0, 10);
+  const list = useMemo(() => rows.filter((r) => (dayF === "all" || (r.dayKey === todayKey && !r.stale)) && (!airline || r.airlineCode === airline) && (!station || (r.station ?? "—") === station) && matches(r, st) && (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.dest, r.reg, r.airlineName, r.airlineCode].some((x) => (x ?? "").toLowerCase().includes(needle)))), [rows, airline, station, st, needle, dayF, todayKey]);
 
   const groups = useMemo(() => {
-    const key = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineCode : r.dayKey);
-    const name = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineName : r.dayLabel);
+    const key = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineCode : r.stale ? "~stale" : r.dayKey);
+    const name = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineName : r.stale ? L.stale : r.dayKey === todayKey ? `${L.today} · ${r.dayLabel}` : r.dayKey === tomKey ? `${L.tomorrow} · ${r.dayLabel}` : r.dayLabel);
     const m = new Map<string, { key: string; name: string; rows: BoardRow[] }>();
     list.forEach((r) => { const k = key(r); const g = m.get(k) ?? { key: k, name: name(r), rows: [] }; g.rows.push(r); m.set(k, g); });
     const out = [...m.values()];
     out.forEach((g) => g.rows.sort((a, b) => Number(b.attn) - Number(a.attn) || (a.arr ?? 9e15) - (b.arr ?? 9e15)));
     out.sort((a, b) => group === "day" ? a.key.localeCompare(b.key) : b.rows.filter((r) => r.attn).length - a.rows.filter((r) => r.attn).length || b.rows.length - a.rows.length);
     return out;
-  }, [list, group]);
+  }, [list, group, todayKey, tomKey, L]);
 
   const [lo, hi] = useMemo(() => {
     if (win === "roll") return [now - 2 * 3600e3, now + 10 * 3600e3];
@@ -71,8 +73,8 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   const ticks = useMemo(() => { const out: number[] = []; const span = (hi - lo) / 3600e3; const step = span > 30 ? 6 : span > 14 ? 3 : 1; for (let t = Math.ceil(lo / 3600e3 / step) * step * 3600e3; t <= hi; t += step * 3600e3) out.push(t); return out; }, [lo, hi]);
 
   const cur = sel ? rows.find((r) => r.id === sel) ?? null : null;
-  const anyFilter = !!(airline || station || st !== "all" || needle);
-  const reset = () => { setAirline(""); setStation(""); setSt("all"); setQ(""); };
+  const anyFilter = !!(dayF !== "all" || airline || station || st !== "all" || needle);
+  const reset = () => { setDayF("all"); setAirline(""); setStation(""); setSt("all"); setQ(""); };
 
   const minsLine = (r: BoardRow) => {
     if (r.code === "departed" || r.code === "cancelled") return r.atd ? `${L.atd} ${hm(r.atd)}` : "";
@@ -104,6 +106,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
         <div className="fb-seg" role="group" aria-label={L.tabAria}>
           <Link className={tab === "active" ? "on" : ""} href={activeHref}>{L.tabActive}</Link><Link className={tab === "done" ? "on" : ""} href={doneHref}>{L.tabDone}</Link>
         </div>
+        <button type="button" className={`fb-chip ${dayF === "today" ? "on" : ""}`} aria-pressed={dayF === "today"} onClick={() => setDayF(dayF === "today" ? "all" : "today")}>{L.today}<small className="ltr">{rows.filter((r) => r.dayKey === todayKey && !r.stale).length}</small></button>
         <div className="fb-seg" role="group" aria-label={L.viewAria}>
           {([["bays", L.vBays], ["time", L.vTime], ["list", L.vList]] as [View, string][]).map(([v, l]) => <button key={v} type="button" className={view === v ? "on" : ""} aria-pressed={view === v} onClick={() => setView(v)}>{l}</button>)}
         </div>

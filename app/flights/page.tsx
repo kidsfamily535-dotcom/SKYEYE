@@ -51,6 +51,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     clear: t("fl.b.clear"), groupBy: t("fl.b.groupBy"), gStation: t("fl.b.gStation"), gAirline: t("fl.b.gAirline"), gDay: t("fl.b.gDay"), winAria: t("fl.b.winAria"), wAll: t("fl.b.wAll"), wRoll: t("fl.b.wRoll"),
     left: t("fl.b.left", { d: "{d}" }), over: t("fl.b.over", { d: "{d}" }), inT: t("fl.b.inT", { d: "{d}" }), agoT: t("fl.b.agoT", { d: "{d}" }), atd: t("fl.b.atd"),
     groundMin: t("fl.b.groundMin", { n: "{n}" }), close: t("fl.b.close"), from: t("fl.b.from"), to: t("fl.b.to"), station: t("fl.b.station"), eta: t("fl.b.eta"),
+    today: t("fl.grp.today"), tomorrow: t("fl.grp.tomorrow"), stale: t("fl.grp.stale"),
     steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
   };
   const f = sel?.file; const c = sel?.clock;
