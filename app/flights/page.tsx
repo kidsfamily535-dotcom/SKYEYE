@@ -12,11 +12,11 @@ import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
 import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
-import FlightCard from "@/components/FlightCard";
+import FlightsBoard from "@/components/FlightsBoard";
+import { toBoardRows } from "@/lib/flight-board";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
-import { summarize } from "@/lib/flight-status";
-import { groupFlights, dayShort } from "@/lib/flight-group";
+import { dayShort } from "@/lib/flight-group";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
 import { stepName } from "@/lib/step-name";
 import { getT } from "@/lib/lang";
@@ -40,12 +40,19 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "overview";
   const d = await getCommandData();
   const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
-  const attnCount = all.filter(needsAction).length;
-  const needle = (sp.q ?? "").trim().toLowerCase();
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const list = all.filter((r) => (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.destination, r.registration, r.airline?.name].some((x) => (x ?? "").toLowerCase().includes(needle))) && (sp.day !== "today" || (r.sta ?? r.std ?? "").slice(0, 10) === todayIso));
-  const sum = summarize(all, t);
-  const lh = (o: { tab?: string; day?: string }) => { const p = new URLSearchParams(); const t = o.tab ?? tab; if (t === "done") p.set("tab", "done"); const dd = "day" in o ? o.day : sp.day; if (dd) p.set("day", dd); if (needle) p.set("q", sp.q ?? ""); const s = p.toString(); return `/flights${s ? `?${s}` : ""}`; };
+  const board = sp.id ? [] : toBoardRows(all, tab, t);
+  const L = {
+    title: t("fl.title"), subtitle: t("fl.subtitle"), importBtn: t("fl.import.btn"), askAgent: t("fl.askAgent"), search: t("fl.search.ph"),
+    tabActive: t("fl.tab.active"), tabDone: t("fl.tab.done"), kAll: t("fl.b.kAll"), kAttn: t("fl.grp.attn"), kLate: t("fl.sum.late"), kGround: t("fl.cs.onGround"), kSoon: t("fl.sum.soon"), kOk: t("fl.sum.ok"),
+    count: t("fl.grp.count", { n: "{n}" }), noneActive: t("fl.none.active"), noneDone: t("fl.none.done"), noneMatch: t("fl.none.match"),
+    vHandling: t("fl.view.handling"), vMessages: t("fl.view.messages"), vDelay: t("fl.view.delay"),
+    kAria: t("fl.b.kAria"), tabAria: t("fl.b.tabAria"), viewAria: t("fl.b.viewAria"), vBays: t("fl.b.vBays"), vTime: t("fl.b.vTime"), vList: t("fl.b.vList"),
+    airlines: t("fl.b.airlines"), allAirlines: t("fl.b.allAirlines"), stations: t("fl.b.stations"), allStations: t("fl.b.allStations"), results: t("fl.b.results", { n: "{n}", m: "{m}" }),
+    clear: t("fl.b.clear"), groupBy: t("fl.b.groupBy"), gStation: t("fl.b.gStation"), gAirline: t("fl.b.gAirline"), gDay: t("fl.b.gDay"), winAria: t("fl.b.winAria"), wAll: t("fl.b.wAll"), wRoll: t("fl.b.wRoll"),
+    left: t("fl.b.left", { d: "{d}" }), over: t("fl.b.over", { d: "{d}" }), inT: t("fl.b.inT", { d: "{d}" }), agoT: t("fl.b.agoT", { d: "{d}" }), atd: t("fl.b.atd"),
+    groundMin: t("fl.b.groundMin", { n: "{n}" }), close: t("fl.b.close"), from: t("fl.b.from"), to: t("fl.b.to"), station: t("fl.b.station"), eta: t("fl.b.eta"),
+    steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
+  };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
@@ -61,33 +68,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d}>
       <main className="page">
-        {!sp.id && <>
-          <section className="fhero" aria-label={t("fl.title")}><h1>{t("fl.title")}</h1><p>{t("fl.subtitle")}</p>
-            {tab === "active" && attnCount > 0 && <p role="status" className="attncount"><span className="amark L3">{attnCount}</span> {attnCount === 1 ? t("fl.attn.one") : t("fl.attn.many", { n: attnCount })}</p>}
-          </section>
-          <div className="ffilters">
-            <form method="get" action="/flights" className="grow" role="search">
-              {tab === "done" && <input type="hidden" name="tab" value="done" />}{sp.day === "today" && <input type="hidden" name="day" value="today" />}
-              <input type="search" name="q" defaultValue={sp.q ?? ""} placeholder={t("fl.search.ph")} aria-label={t("fl.search.aria")} />
-            </form>
-            <Link className={`chip-link ${tab === "active" ? "on" : ""}`} href={lh({ tab: "active" })}>{t("fl.tab.active")}</Link>
-            <Link className={`chip-link ${tab === "done" ? "on" : ""}`} href={lh({ tab: "done" })}>{t("fl.tab.done")}</Link>
-            <Link className={`chip-link ${sp.day === "today" ? "on" : ""}`} href={lh({ day: sp.day === "today" ? "" : "today" })}>{t("fl.today")}</Link>
-            <Link className="btn gold sm" href="/flights/import">{t("fl.import.btn")}</Link>
-          </div>
-          {list.length === 0 && <section className="card"><p className="muted">{needle || sp.day ? t("fl.none.match") : tab === "active" ? t("fl.none.active") : t("fl.none.done")}</p></section>}
-          {groupFlights(list, tab, t).map((g, gi) => (
-            <section key={g.key} className={`fgroup ${g.tone}`} aria-label={g.label}>
-              <h2 className="fghead"><span className="ltr">{g.label}</span><small className="muted">{t("fl.grp.count", { n: g.count })}</small></h2>
-              <ul className="flist">{g.rows.map((r, i) => <FlightCard key={r.rotationId} r={r} hot={gi === 0 && i === 0 && tab === "active"} href={`/flights?id=${r.rotationId}${tab === "done" ? "&tab=done" : ""}`} />)}</ul>
-            </section>
-          ))}
-          {tab === "active" && <section className="fsum" aria-label={t("fl.sum.aria")}>
-            <div><b className="ltr">{sum.today}</b><small>{t("fl.sum.today")}</small></div><div><b className="ltr">{sum.ok}</b><small>{t("fl.sum.ok")}</small></div>
-            <div><b className="ltr">{sum.late}</b><small>{t("fl.sum.late")}</small></div><div><b className="ltr">{sum.soon}</b><small>{t("fl.sum.soon")}</small></div>
-            <small className="muted">{t("fl.sum.note")}</small>
-          </section>}
-        </>}
+        {!sp.id && <FlightsBoard rows={board} L={L} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
 
         {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}

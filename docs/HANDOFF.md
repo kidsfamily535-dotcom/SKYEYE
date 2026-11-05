@@ -388,3 +388,9 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - ترويسة صفحة الرحلة: تاريخ تحت وقت الوصول والمغادرة.
 - مفاتيح ترجمة جديدة `fl.grp.*` و`fl.card.ground` (عربي وإنجليزي). لا تغيير في القاعدة.
 - **اختُبر:** `tsc --noEmit` و`next build` نجحا، ومنطق التجميع جُرّب على بيانات وهمية (حالية ومنتهية وبلا تاريخ). **لم يُختبر:** الشكل في المتصفح بحساب حقيقي.
+
+## Flights board redesign (branch `flights-board`)
+- `/flights` list replaced by `components/FlightsBoard.tsx` (client) fed by `lib/flight-board.ts` (server mapper, same data as before: getFlightList + cardStatus + needsAction, no new queries).
+- Three views on the same rows: Apron (bay cards), Timeline (lanes on a time axis), List; instant filters (airline, station, status via the KPI tiles, search), group by station/airline/day, preview sheet (bottom sheet on mobile) with links to the flight file tabs. Detail page `/flights?id=` unchanged.
+- Strings: `fl.b.*` in lib/i18n.ts (ar + en). CSS: `.fb-*` block at the end of app/globals.css.
+- NOT done: per-flight file upload (needs a storage bucket + table + RLS; the existing upload is the schedule import at /flights/import); not visually tested in a browser with real data (tsc + next build pass only); aircraft type is not in the list data so it is not shown.
