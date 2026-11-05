@@ -439,3 +439,7 @@ textarea,input,select{max-width:100%}
 .fb-chev{grid-area:c}.fb-fl{grid-area:f}.fb-rr{grid-area:r}.fb-tc.a{grid-area:a}.fb-tc.b{grid-area:b}.fb-tc{border:0;padding:0;flex-direction:row;gap:8px;align-items:baseline}
 .fb-sum{padding:10px}.fb-all{flex:1}
 }
+
+.fb-sel{min-width:150px;max-width:100%;min-height:44px;border-radius:99px;padding:0 14px}.fb-sel option{color:#06122A}
+.fb-meta{gap:10px}
+@media (max-width:760px){.fb-sel{flex:1;min-width:120px}}

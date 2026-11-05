@@ -103,15 +103,11 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
         </div>
       </div>
 
-      <div className="fb-chips" aria-label={L.airlines}>
-        <button type="button" className={`fb-chip ${!airline ? "on" : ""}`} aria-pressed={!airline} onClick={() => setAirline("")}>{L.allAirlines}</button>
-        {airlines.map(([a, n]) => <button key={a} type="button" className={`fb-chip ${airline === a ? "on" : ""}`} aria-pressed={airline === a} onClick={() => setAirline(airline === a ? "" : a)}><span className="ltr">{a}</span><small>{n}</small></button>)}
-      </div>
-      <div className="fb-chips" aria-label={L.stations}>
-        <button type="button" className={`fb-chip ${!station ? "on" : ""}`} aria-pressed={!station} onClick={() => setStation("")}>{L.allStations}</button>
-        {stations.map(([a, n]) => <button key={a} type="button" className={`fb-chip ${station === a ? "on" : ""}`} aria-pressed={station === a} onClick={() => setStation(station === a ? "" : a)}><span className="ltr">{a}</span><small>{n}</small></button>)}
-      </div>
       <div className="fb-meta">
+        <select className="pick fb-sel" value={airline} onChange={(e) => setAirline(e.target.value)} aria-label={L.airlines}>
+          <option value="">{L.allAirlines}</option>{airlines.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
+        <select className="pick fb-sel" value={station} onChange={(e) => setStation(e.target.value)} aria-label={L.stations}>
+          <option value="">{L.allStations}</option>{stations.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
         <span role="status">{fill(L.results, { n: list.length, m: rows.length })}</span>
         {anyFilter && <button type="button" className="fb-link" onClick={reset}>{L.clear}</button>}
         <span className="grow" />
@@ -152,7 +148,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
           {view === "list" && <ul className="fb-rows">{g.rows.map((r, ri) => (
             <li key={r.id}><button type="button" className={`fb-row t-${r.tone} ${ri === 0 && gi === 0 && r.attn ? "hot" : ""} ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)} aria-label={`${r.flightIn ?? r.flightOut ?? ""} ${r.label}`}>
               <span className="fb-pill"><b>{r.label}</b>{r.sub && <small>{r.sub}</small>}<Mark r={r} /></span>
-              <span className="fb-fl"><span><b className="ltr">{r.flightIn ?? "—"}</b><small>{r.airlineName}{r.flightOut ? <span className="ltr"> · {r.flightOut}</span> : null}</small></span><Logo url={r.logoUrl} code={r.airlineCode} name={r.airlineName} size="md" /></span>
+              <span className="fb-fl"><span><b className="ltr">{r.flightIn ?? "—"}</b><small><bdi>{r.airlineName}</bdi>{r.flightOut ? <bdi className="ltr"> · {r.flightOut}</bdi> : null}</small></span><Logo url={r.logoUrl} code={r.airlineCode} name={r.airlineName} size="md" /></span>
               <span className="fb-rr ltr"><span><b>{r.origin ?? "—"}</b></span><i aria-hidden="true">✈</i><span><b>{r.station ?? "—"}</b></span><i aria-hidden="true">✈</i><span><b>{r.dest ?? "—"}</b></span>{r.reg && <small>{r.reg}</small>}</span>
               <span className="fb-tc a ltr"><small>STA</small><b>{hm(r.arr)}</b></span>
               <span className="fb-tc b ltr"><small>STD</small><b>{hm(r.dep)}</b></span>
