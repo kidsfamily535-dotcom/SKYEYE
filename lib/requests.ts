@@ -3,6 +3,8 @@ import { getT } from "@/lib/lang";
 
 
 export type Stage = { type: string; code: string; order: number; labelAr: string; labelEn: string; waitingOn: string; nextAr: string | null; nextEn: string | null; terminal: boolean };
+/** شارات مؤقتة في public/airlines (ليست الشعارات الرسمية)؛ أي شعار مرفوع للشركة في التخزين له الأولوية */
+const BUILTIN_LOGOS = new Set(["MS","QR","LH","ME","KU","EK","BA","EY","SV","TK","NE","G9","RJ","UJ","PC","XY"]);
 export type Airline = { code: string; name: string | null; logoUrl: string | null };
 export type RequestRow = {
   id: string; type: string; title: string; flightRef: string | null; flightDate: string | null; stage: string; stageLabelAr: string; waitingOn: string;
@@ -44,7 +46,7 @@ export async function resolveAirlines(refs: (string | null)[]): Promise<Map<stri
     const key = p.iata ?? p.icao; if (!key || out.has(key)) continue;
     const row = rows.find((r) => (p.iata ? r.iata_code === p.iata : r.icao_code === p.icao));
     const logo = row ? (ca.data ?? []).find((c) => c.airline_id === row.id)?.logo_path ?? null : null;
-    out.set(key, { code: key, name: row?.name ?? null, logoUrl: logo ? (logo.startsWith("/") ? logo : urlOf.get(logo) ?? null) : null });
+    out.set(key, { code: key, name: row?.name ?? null, logoUrl: (logo ? (logo.startsWith("/") ? logo : urlOf.get(logo) ?? null) : null) ?? (row?.iata_code && BUILTIN_LOGOS.has(row.iata_code) ? `/airlines/${row.iata_code}.svg` : null) });
   }
   return out;
 }

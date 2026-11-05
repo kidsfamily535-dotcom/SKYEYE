@@ -14,12 +14,6 @@ const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w
 const dur = (m: number) => { const a = Math.abs(Math.round(m)); const h = Math.floor(a / 60); return h ? `${h}h ${String(a % 60).padStart(2, "0")}m` : `${a}m`; };
 const clamp = (n: number, a = 0, b = 100) => Math.max(a, Math.min(b, n));
 
-function Plane() {
-  return (
-    <svg viewBox="0 0 200 80" aria-hidden="true" className="fb-plane"><path d="M20 40L26 28C30 24 40 22 60 22H150C172 22 188 32 194 42C188 50 172 56 150 56H40C28 56 22 50 20 40Z" /><path d="M24 30L12 4H34L58 24Z" /><path d="M92 44H128L108 68H88Z" /><ellipse cx="112" cy="62" rx="14" ry="7" /><path d="M74 36H146" fill="none" strokeDasharray="3 5" /></svg>
-  );
-}
-
 function matches(r: BoardRow, st: Status) {
   if (st === "all") return true;
   if (st === "attn") return r.attn;
@@ -138,8 +132,8 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
           {view === "bays" && <ul className="fb-bays">{g.rows.map((r) => (
             <li key={r.id}><button type="button" className={`fb-bay t-${r.tone} ${r.code === "scheduled" || r.code === "soon" || r.code === "unknown" ? "far" : ""} ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)} aria-label={`${r.flightIn ?? r.flightOut ?? ""} ${r.reg ?? ""} ${r.label}`}>
               <span className="fb-top"><span className="fb-st">{r.label}{r.sub ? ` · ${r.sub}` : ""}</span><Mark r={r} /></span>
-              <span className="fb-stage"><Plane /></span>
-              <span className="fb-id"><Logo url={r.logoUrl} code={r.airlineCode} name={r.airlineName} /><span className="ltr"><b>{r.flightIn ?? "—"}</b>{r.flightOut ? <small> · {r.flightOut}</small> : null}</span></span>
+              <span className="fb-stage">{r.logoUrl ? <img className="fb-lg" src={r.logoUrl} alt={r.airlineName} /> : <b className="fb-lg fb-lgt ltr">{r.airlineCode}</b>}<small className="fb-an">{r.airlineName}</small></span>
+              <span className="fb-id"><span className="ltr"><b>{r.flightIn ?? "—"}</b>{r.flightOut ? <small> · {r.flightOut}</small> : null}</span></span>
               {r.reg && <span className="fb-reg ltr">{r.reg}</span>}
               <span className="fb-route ltr">{r.origin ?? "—"} › <b>{r.station ?? "—"}</b> › {r.dest ?? "—"}</span>
               <span className="fb-gr ltr" aria-hidden="true"><i style={{ width: `${prog(r)}%` }} /></span>
