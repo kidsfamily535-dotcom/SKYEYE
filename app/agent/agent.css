@@ -1,0 +1,43 @@
+/* Agent page: same "paper over dark glass" language as the inbox and home. Gold = what you said, cream = what the agent answered. */
+.page.ag{--paper:#FBF7EE;--paper2:#F1E8D4;--ink-d:#1B2436;--ink-m:#5B6577;--pline:rgba(120,92,30,.24);gap:14px}
+
+.ag-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:22px 20px;border-radius:26px;border:1px solid rgba(230,199,122,.3);background:linear-gradient(180deg,rgba(6,18,42,.35),rgba(6,18,42,.9)),url(/bg-hero.jpg) center/cover;min-height:130px}
+.ag-hero h1{margin:0;font-size:clamp(24px,6vw,34px);color:#fff;line-height:1.3}.ag-hero p{margin:6px 0 0;color:#E4DFD0;line-height:1.7;max-width:52ch;font-size:14.5px}
+.ag-online{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border-radius:999px;background:rgba(11,21,48,.65);border:1px solid rgba(74,222,128,.5);color:#8CF0B4;font-size:14px;white-space:nowrap;flex:none}
+
+.ag-shell{border-radius:26px;background:rgba(7,18,40,.74);border:1px solid rgba(230,199,122,.3);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.ag-shell .chatscroll{padding:16px 14px 12px}
+.ag-shell .chat{gap:16px}
+.ag-shell .bubble{max-width:min(86%,640px);padding:12px 14px;border-radius:20px;line-height:1.7;overflow-wrap:anywhere}
+.ag-shell .bubble.me{align-self:flex-start;background:linear-gradient(135deg,#F3D993,#E1B45A);border:1px solid #CFA24F;color:var(--ink-d);border-start-start-radius:6px}
+.ag-shell .bubble.me small,.ag-shell .bubble.me small.muted,.ag-shell .bubble.me small:first-child{color:#5C4210}
+.ag-shell .bubble.agent{align-self:flex-end;background:linear-gradient(180deg,var(--paper),var(--paper2));border:1px solid var(--pline);color:var(--ink-d);border-end-end-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+.ag-shell .bubble.agent .muted,.ag-shell .bubble.agent small{color:var(--ink-m)}
+.ag-shell .bubble.agent .err{color:#C0392B}
+.ag-shell .bubble.agent .raw{background:#fff;color:var(--ink-d);border:1px solid var(--pline);border-radius:12px;padding:10px 12px}
+.ag-shell .bubble.agent .tag{background:rgba(255,255,255,.7)}.ag-shell .bubble.agent .tag.ok{color:#14825F}.ag-shell .bubble.agent .tag.info{color:#2B5FB8}.ag-shell .bubble.agent .tag.late{color:#C0392B}
+.ag-shell .bubble.agent .btn{background:rgba(27,36,54,.06);color:var(--ink-d);border-color:var(--pline)}
+.ag-shell .typing i{background:var(--ink-m)}
+.ag-files{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.ag-files li{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 10px;border-radius:999px;background:rgba(27,36,54,.1);font-size:13px}.ag-files bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+
+/* composer */
+.ag-shell .dock{padding:12px 14px 14px;gap:10px;background:rgba(5,14,32,.7)}
+.ag-shell .dock-row{align-items:flex-end;gap:8px}
+.dock-clip{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--gold);cursor:pointer}.dock-clip:hover:not(:disabled){background:rgba(227,185,100,.18)}.dock-clip:disabled{opacity:.45;cursor:not-allowed}
+.ag-shell .dock-row textarea{min-width:0;min-height:48px;border-radius:14px}
+.dock-send{min-height:48px;min-width:72px;border-radius:14px}
+.dock-files{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.dock-file{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:4px 4px 4px 12px;padding-inline:12px 4px;border-radius:999px;background:rgba(251,247,238,.95);color:var(--ink-d);border:1px solid var(--pline);font-size:13px}
+.dock-file small{color:var(--ink-m)}.dock-file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.dock-file-x{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:0;background:rgba(27,36,54,.08);color:var(--ink-d);font-size:20px;line-height:1;cursor:pointer}.dock-file-x:hover:not(:disabled){background:rgba(192,57,43,.2)}
+.dock-hint{display:block;margin:0}
+.ag-shell .sugg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.ag-shell .sugg .btn{white-space:nowrap;flex:none;min-height:40px;border-radius:999px;background:rgba(255,255,255,.06)}
+
+@media (max-width:600px){
+  .ag-hero{flex-direction:column;align-items:flex-start;padding:18px 16px;min-height:0}
+  .ag-shell .bubble{max-width:94%}
+  .ag-shell .dock-top{flex-direction:column;align-items:stretch}
+  .dock-clip,.ag-shell .dock-row textarea,.dock-send{min-height:50px}.dock-clip{width:50px;height:50px}
+  .dock-hint{font-size:11.5px}
+}

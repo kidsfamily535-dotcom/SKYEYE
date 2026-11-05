@@ -15,11 +15,27 @@ function explain(msg: string, t: TFn): string {
 }
 const refresh = () => { revalidatePath("/agent"); };
 
-export async function sendToAgent(companyId: string, commandType: string, targetType: string, targetId: string, instruction: string): Promise<Result> {
+export type AgentFile = { path: string; name: string; size: number; type: string };
+const EXT = new Set(["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "png", "jpg", "jpeg", "webp", "eml", "msg", "ppt", "pptx"]);
+const MAX_FILES = 5, MAX_BYTES = 20 * 1024 * 1024;
+
+/** Only files the browser already stored under this company's own agent folder may be attached; anything else is dropped. */
+function cleanFiles(companyId: string, files: AgentFile[] | undefined): AgentFile[] {
+  if (!Array.isArray(files)) return [];
+  return files.slice(0, MAX_FILES).filter((f) =>
+    f && typeof f.path === "string" && f.path.startsWith(`${companyId}/agent/`) && !f.path.includes("..")
+    && typeof f.name === "string" && f.name.length > 0 && f.name.length <= 200
+    && Number.isFinite(f.size) && f.size >= 0 && f.size <= MAX_BYTES
+    && EXT.has((f.name.split(".").pop() ?? "").toLowerCase()),
+  ).map((f) => ({ path: f.path, name: f.name, size: f.size, type: typeof f.type === "string" ? f.type.slice(0, 100) : "" }));
+}
+
+export async function sendToAgent(companyId: string, commandType: string, targetType: string, targetId: string, instruction: string, files?: AgentFile[]): Promise<Result> {
   const { t } = await getT();
   const text = instruction.trim();
   if (text.length > 2000) return { ok: false, message: t("agent.e.long") };
-  const { error } = await (await createClient()).rpc("send_agent_command", { p_company_id: companyId, p_command_type: commandType, p_target_type: targetType, p_target_id: targetId, p_instruction: text || null, p_payload: {} });
+  const attached = cleanFiles(companyId, files);
+  const { error } = await (await createClient()).rpc("send_agent_command", { p_company_id: companyId, p_command_type: commandType, p_target_type: targetType, p_target_id: targetId, p_instruction: text || null, p_payload: attached.length ? { files: attached } : {} });
   if (error) return { ok: false, message: explain(error.message, t) };
   refresh(); return { ok: true };
 }

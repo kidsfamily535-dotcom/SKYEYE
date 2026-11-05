@@ -4,7 +4,7 @@ import type { Opt } from "@/lib/agent-labels";
 import { getT } from "@/lib/lang";
 export type { Opt };
 
-export type Cmd = { createdBy: string | null; senderName: string | null; mine: boolean; id: string; type: string; targetType: string; targetLabel: string | null; instruction: string | null; status: string; result: unknown; error: string | null; createdAt: string; claimedAt: string | null; finishedAt: string | null };
+export type Cmd = { createdBy: string | null; senderName: string | null; mine: boolean; id: string; type: string; targetType: string; targetLabel: string | null; instruction: string | null; files: { name: string; size: number }[]; status: string; result: unknown; error: string | null; createdAt: string; claimedAt: string | null; finishedAt: string | null };
 export type AgentPage = { companyId: string; canWrite: boolean; ctx: { type: string; id: string } | null; opts: { email: Opt[]; draft: Opt[]; request: Opt[]; flight: Opt[] }; commands: Cmd[]; active: number };
 
 /** The agent's answer, only from what it actually wrote into `result`. Unknown shapes are never interpreted. */
@@ -22,6 +22,13 @@ export function draftTextOf(result: unknown): string | null {
   const c = r.composed && typeof r.composed === "object" ? (r.composed as Record<string, unknown>) : null;
   for (const k of ["text", "body_text", "message", "body"]) if (c && typeof c[k] === "string" && c[k]) return c[k] as string;
   return null;
+}
+
+/** Files the employee attached to this message (names and sizes only, exactly as stored in the command payload). */
+export function filesOf(payload: unknown): { name: string; size: number }[] {
+  const r = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  if (!r || !Array.isArray(r.files)) return [];
+  return r.files.flatMap((f) => (f && typeof f === "object" && typeof (f as Record<string, unknown>).name === "string" ? [{ name: (f as { name: string }).name, size: Number((f as { size?: unknown }).size) || 0 }] : []));
 }
 
 /** Sources the agent cited (strings only, exactly as written). */
@@ -49,7 +56,7 @@ export async function getAgentPage(want?: { flight?: string }): Promise<AgentPag
     sb.from("email_reply_drafts").select("id, subject").eq("status", "draft").order("created_at", { ascending: false }).limit(30),
     sb.from("request_files").select("id, title, flight_ref").eq("status", "open").order("created_at", { ascending: false }).limit(30),
     sb.from("flights").select("id, flight_number, flight_date").order("flight_date", { ascending: false }).limit(30),
-    sb.from("agent_commands").select("id, command_type, target_type, target_id, instruction, status, result, error, created_at, claimed_at, finished_at, created_by").order("created_at", { ascending: false }).limit(40),
+    sb.from("agent_commands").select("id, command_type, target_type, target_id, instruction, payload, status, result, error, created_at, claimed_at, finished_at, created_by").order("created_at", { ascending: false }).limit(40),
   ]);
   const cl = [...(cmds.data ?? [])].reverse();
   const ids = (t: string) => [...new Set(cl.filter((c) => c.target_type === t).map((c) => c.target_id as string))];
@@ -80,7 +87,7 @@ export async function getAgentPage(want?: { flight?: string }): Promise<AgentPag
     if (wf) { ctx = { type: "flight", id: wf.id }; if (!flightOpts.some((o) => o.id === wf.id)) flightOpts.unshift({ id: wf.id, label: `${wf.flight_number ?? "—"} · ${wf.flight_date ?? "—"}` }); }
   }
 
-  const commands: Cmd[] = cl.map((c) => ({ createdBy: c.created_by ?? null, senderName: c.created_by ? nameOfUser.get(c.created_by) ?? null : null, mine: !!c.created_by && c.created_by === user.id, id: c.id, type: c.command_type, targetType: c.target_type, targetLabel: label.get(c.target_id) ?? null, instruction: c.instruction, status: c.status, result: c.result, error: c.error, createdAt: c.created_at, claimedAt: c.claimed_at, finishedAt: c.finished_at }));
+  const commands: Cmd[] = cl.map((c) => ({ createdBy: c.created_by ?? null, senderName: c.created_by ? nameOfUser.get(c.created_by) ?? null : null, mine: !!c.created_by && c.created_by === user.id, id: c.id, type: c.command_type, targetType: c.target_type, targetLabel: label.get(c.target_id) ?? null, instruction: c.instruction, files: filesOf(c.payload), status: c.status, result: c.result, error: c.error, createdAt: c.created_at, claimedAt: c.claimed_at, finishedAt: c.finished_at }));
   return {
     companyId: m.company_id, canWrite: m.role !== "viewer", ctx,
     opts: {
