@@ -18,6 +18,10 @@ const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 
 const day = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(5, 10) : "");
 const full = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16).replace("T", " ") + " UTC" : "—");
 
+/** Email bodies often arrive padded with NBSP, trailing spaces and runs of blank lines. Show them tidy; the stored message is untouched. */
+const cleanBody = (b: string | null | undefined) =>
+  (b ?? "").replace(/\r\n?/g, "\n").replace(/[\u00a0\u200b\u200c\u200d\ufeff]/g, " ").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ id?: string; q?: string; f?: string; fl?: string }> }) {
   const { t, lang } = await getT();
   const [d, all, sp] = await Promise.all([getCommandData(), getInbox(), searchParams]);
@@ -105,7 +109,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                     <dl className="meta ltr"><div><dt>From</dt><dd>{sel.message?.from}</dd></div><div><dt>To</dt><dd>{sel.message?.to.join(", ")}</dd></div>{sel.message?.cc.length ? <div><dt>Cc</dt><dd>{sel.message.cc.join(", ")}</dd></div> : null}<div><dt>Date</dt><dd>{whenOf(sel.message?.at ?? sel.createdAt)}</dd></div></dl>
                   </div>
                 </header>
-                <pre className="ltr orig ix-body">{sel.message?.body}</pre>
+                <pre className="ltr orig ix-body">{cleanBody(sel.message?.body)}</pre>
 
                 <section className="ix-agent" aria-label={t("inbox.summary")}>
                   <h3>{t("inbox.summary")}<Hint>{t("inbox.summary.hint")}</Hint></h3>

@@ -631,3 +631,24 @@ pre.orig,.ix-paper,.ix-draftcard{max-width:100%;min-width:0}
 .fb-otp{position:absolute;inset:auto 0 0 0;height:5px;background:rgba(20,35,63,.12)}
 .fb-otp i{display:block;height:100%;background:#3FBF7F}
 .fb-otp.warn i{background:#FF9248}.fb-otp.late i{background:#E5484D}
+
+/* ===== inbox tidy (2026-11-08): contain width, calmer email body, phone order ===== */
+html,body{max-width:100%;overflow-x:hidden}
+.app,.main,.page{max-width:100%;min-width:0}
+.main{overflow-x:clip}
+.imail,.ireader,.ix-reader,.ix-paper,.ix-draftcard,.ix-list{min-width:0;max-width:100%}
+.ix-body.orig{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;max-height:min(62vh,560px);overflow-y:auto;font-size:15px;line-height:1.7;border-bottom:1px solid var(--pline);padding-bottom:18px}
+.ix-paper .meta{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;row-gap:4px}
+.ix-paper .meta>div{display:contents}
+.ix-paper .meta dd{margin:0;min-width:0}
+.ix-draftcard .draft textarea{min-height:200px}
+@media (max-width:900px){
+  .ix-paper{display:flex;flex-direction:column}
+  .ix-paper>.ix-head{order:0}
+  .ix-paper>.ix-agent{order:1}
+  .ix-paper>.ix-actions{order:2}
+  .ix-paper>.ix-body{order:3;margin-top:14px;max-height:50vh}
+  .ix-paper>.ix-agent,.ix-paper>.ix-actions{margin-top:12px}
+  .ix-head{padding-bottom:10px}
+  .ix-paper h2{overflow-wrap:anywhere}
+}
