@@ -6,6 +6,9 @@ import FlightQuestions from "@/components/FlightQuestions";
 import FlightTimeline from "@/components/FlightTimeline";
 import MessageComposer from "@/components/MessageComposer";
 import MessageDrafts from "@/components/MessageDrafts";
+import MovementLibrary from "@/components/MovementLibrary";
+import DocsPanel from "@/components/DocsPanel";
+import { getCommandCenter } from "@/lib/command-center";
 import NowBar from "@/components/NowBar";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
@@ -37,10 +40,11 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
-  const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit"].includes(sp.view ?? "") ? sp.view : "overview";
+  const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit", "movement", "docs"].includes(sp.view ?? "") ? sp.view : "overview";
   const d = await getCommandData();
   const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
   const board = sp.id ? [] : toBoardRows(all, tab, t);
+  const cc = sel && (view === "movement" || view === "docs") ? await getCommandCenter(d.company.id, sel.arrivalLeg) : null;
   const L = {
     title: t("fl.title"), subtitle: t("fl.subtitle"), importBtn: t("fl.import.btn"), askAgent: t("fl.askAgent"), search: t("fl.search.ph"),
     tabActive: t("fl.tab.active"), tabDone: t("fl.tab.done"), kAll: t("fl.b.kAll"), kAttn: t("fl.grp.attn"), kLate: t("fl.sum.late"), kGround: t("fl.cs.onGround"), kSoon: t("fl.sum.soon"), kOk: t("fl.sum.ok"),
@@ -83,7 +87,11 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                     {Number(f.sop_critical_open) > 0 && <span className="tag warn">{t("fl.critOpen")} <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
                   <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
                 </div>
-                <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
+                <div className="idact">
+                  <Link className={`btn sm${view === "movement" ? " on" : ""}`} href={vh("movement")}>{t("fl.mv.btn")}</Link>
+                  <Link className={`btn sm${view === "docs" ? " on" : ""}`} href={vh("docs")}>{t("fl.doc.btn")}</Link>
+                  <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
+                </div>
                 <dl className="idtimes">
                   <div><dt>{t("fl.arr")}</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}<small className="fday">{dayShort(f.ata ?? f.sta)}</small></dd></div>
                   <div><dt>{t("fl.dep")}</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}<small className="fday">{dayShort(c.expected_std ?? f.std)}</small></dd></div>
@@ -132,6 +140,10 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} /></div>
                 <MessageDrafts drafts={sel.panel.drafts} canAct={sel.canAct} />
               </>}
+
+              {(view === "movement" || view === "docs") && cc && !cc.ok && <div className="card"><p role="alert" className="err">{t("fl.err.generic")}</p></div>}
+              {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} />}
+              {view === "docs" && cc?.ok && <DocsPanel cc={cc.data} />}
 
               {view === "delay" && <div className="card"><h2>{t("fl.delay.title")}</h2>
                 <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />

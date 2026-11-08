@@ -394,3 +394,13 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - Three views on the same rows: Apron (bay cards), Timeline (lanes on a time axis), List; instant filters (airline, station, status via the KPI tiles, search), group by station/airline/day, preview sheet (bottom sheet on mobile) with links to the flight file tabs. Detail page `/flights?id=` unchanged.
 - Strings: `fl.b.*` in lib/i18n.ts (ar + en). CSS: `.fb-*` block at the end of app/globals.css.
 - NOT done: per-flight file upload (needs a storage bucket + table + RLS; the existing upload is the schedule import at /flights/import); not visually tested in a browser with real data (tsc + next build pass only); aircraft type is not in the list data so it is not shown.
+
+## كارت الرحلة: «رسائل الحركة» و«جهّز مستند» (branch `feat/movement-library`، PR مفتوح، بانتظار مراجعة المالك)
+**قرارات المالك:** كارت الرحلة هو المركز؛ مفيش شاشة مستندات منفصلة. المكتبة خاصة بالموظف: يفتح رسالة ويعدّل ويحفظ، وممكن يجهّز رسالة ولا يبعتها. **لا زر «تم الإرسال»** في المكتبة (الإرسال من بريده بره البرنامج). الترتيب للسيناريو العادي فقط ولا شيء يُقفل بسببه.
+**الواجهة:** زرّان في ترويسة الرحلة (`?id=…&view=movement` و`view=docs`). المصدر دالة واحدة `public.flight_command_center(company, flight)` (استدعاؤها في `lib/command-center.ts`)، وفتح المسودة `public.open_message_draft` عبر server action `openMessageDraft` في `app/flights/actions.ts`، والحفظ عبر `saveMessageDraft` الموجودة (تسجّل كل تعديل).
+- `components/MovementLibrary.tsx`: رسائل نبعتها (مرتبة) / رسائل بنستلمها / باقي الرسائل. كل رسالة بحالتها: مفيش مسودة، مسودة جاهزة، عدّلها الموظف، واردة، داخلية. «دورها» تلميح فقط (أول رسالة صادرة بلا مسودة). لو ناقص بيانات: نموذج بالخانات الناقصة بالظبط والوكيل لا يخمّن.
+- `components/DocsPanel.tsx`: أنواع المستندات ونموذج الشركة/المحطة والملفات اللي اتجهزت. زر «جهّز» **معطّل**: لا توجد دالة تملأ Word، وأنواع المستندات الأربعة بلا نموذج (نماذج الاختبار سُحبت).
+- مفاتيح `fl.mv.*` و`fl.doc.*` (عربي وإنجليزي) وCSS `.mv-*` في آخر `globals.css`.
+**اختُبر:** `tsc --noEmit` و`next build` نجحا. شكل ردّ الدالة اتقرا من تشغيلها على رحلة تجريبية. **لم يُختبر:** الشاشة في المتصفح بمستخدم حقيقي، ولا فتح/حفظ مسودة من الواجهة نفسها (الدالتان اتجرّبتا في القاعدة بصلاحية موظف في الجلسة السابقة).
+**حدود معروفة:** ترتيب الرسائل `order_approved=false` (يظهر «الترتيب غير معتمد»)؛ PSM وDLA وMVT بلا بناء تلقائي فتظهر معطّلة؛ عناوين الرسائل وشرح الخانات عربي من القاعدة حتى في الواجهة الإنجليزية؛ الرسائل الواردة للعرض فقط.
+**التالي:** تجهيز Word من نموذج (رفع نموذج + دالة ملء + حفظ في `generated_documents`)، اعتماد ترتيب الرسائل، تنبيه «جاهز لك» في قيادتي، إدارة النماذج للمدير.
