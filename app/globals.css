@@ -627,3 +627,7 @@ pre.orig,.ix-paper,.ix-draftcard{max-width:100%;min-width:0}
 .fold>summary{cursor:pointer;font-weight:700;padding:4px 0}
 .fold[open]>summary{margin-bottom:10px}
 .vt li.wait>i.dot{background:transparent;border:2px solid currentColor}
+.fb-row{position:relative;overflow:hidden}
+.fb-otp{position:absolute;inset:auto 0 0 0;height:5px;background:rgba(20,35,63,.12)}
+.fb-otp i{display:block;height:100%;background:#3FBF7F}
+.fb-otp.warn i{background:#FF9248}.fb-otp.late i{background:#E5484D}

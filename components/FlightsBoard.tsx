@@ -78,6 +78,14 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   };
   const prog = (r: BoardRow) => (r.code === "departed" ? 100 : r.arr && r.dep && r.dep > r.arr && now >= r.arr ? clamp(((now - r.arr) / (r.dep - r.arr)) * 100) : 0);
 
+  /** OTP strip: elapsed since ATA against planned ground time (STD−STA). Only for aircraft on the ground with a known plan. */
+  const Otp = ({ r }: { r: BoardRow }) => {
+    if (!r.ata || r.atd || !r.ground || r.ground <= 0) return null;
+    const el = Math.max(0, (now - r.ata) / 60000); const left = r.ground - el;
+    const lv = left < 0 ? "late" : left <= 10 ? "warn" : "ok";
+    return <span className={`fb-otp ${lv}`} aria-hidden="true" title={`${Math.round(el)} / ${r.ground}`}><i style={{ width: `${clamp((el / r.ground) * 100)}%` }} /></span>;
+  };
+
   const Mark = ({ r }: { r: BoardRow }) => r.attn ? <span className="fb-mark">{r.alerts > 0 && r.level ? <span className={`amark ${r.level}`}>{r.level}{r.alerts > 1 ? <small>×{r.alerts}</small> : null}</span> : null}{r.dueType ? <span className={`amark task ${r.dueNow ? "now" : ""}`}>{r.dueType}</span> : null}</span> : null;
 
   const kpis: [Status, string, number][] = [["all", L.kAll, kpi.all], ["attn", L.kAttn, kpi.attn], ["late", L.kLate, kpi.late], ["ground", L.kGround, kpi.ground], ["soon", L.kSoon, kpi.soon], ["ok", L.kOk, kpi.ok]];
@@ -154,6 +162,7 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
               <span className="fb-tc b ltr"><small>STD</small><b>{hm(r.dep)}</b></span>
               <span className="fb-thumb" aria-hidden="true"><svg viewBox="0 0 200 80"><path d="M20 40L26 28C30 24 40 22 60 22H150C172 22 188 32 194 42C188 50 172 56 150 56H40C28 56 22 50 20 40Z" /><path d="M24 30L12 4H34L58 24Z" /><path d="M92 44H128L108 68H88Z" /></svg></span>
               <span className="fb-chev" aria-hidden="true">‹</span>
+              <Otp r={r} />
             </button></li>))}</ul>}
         </section>))}
 
