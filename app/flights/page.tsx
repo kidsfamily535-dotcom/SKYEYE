@@ -142,7 +142,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </>}
 
               {(view === "movement" || view === "docs") && cc && !cc.ok && <div className="card"><p role="alert" className="err">{t("fl.err.generic")}</p></div>}
-              {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} />}
+              {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} delayCodes={sel.delayCodes} />}
               {view === "docs" && cc?.ok && <DocsPanel cc={cc.data} />}
 
               {view === "delay" && <div className="card"><h2>{t("fl.delay.title")}</h2>

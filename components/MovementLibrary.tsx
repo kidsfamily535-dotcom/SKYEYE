@@ -1,10 +1,13 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { openMessageDraft, saveMessageDraft, type Opened } from "@/app/flights/actions";
 import { useT } from "@/components/I18n";
 import Hint from "@/components/Hint";
 import type { CcField, CcOther, CcStep, CommandCenter } from "@/lib/command-center";
+import type { DelayCode } from "@/lib/flights";
+
+const looksJson = (f: CcField) => /^\s*[\[{]/.test(f.format);
 
 /** The employee's private library of movement messages for this flight.
  *  Opening a message shows its draft in the GOM format (filled from what the agent knows) or asks for exactly what is missing.
@@ -49,26 +52,53 @@ function Editor({ panel, canAct, onSaved }: { panel: Extract<Panel, { kind: "dra
   );
 }
 
-function MissingForm({ fields, onSubmit, pending }: { fields: CcField[]; onSubmit: (v: Record<string, string>) => void; pending: boolean }) {
+/** Asks for exactly the values the database said are missing. The delay reason is picked from the IATA codes (up to two), never typed as JSON;
+ *  other JSON-shaped fields (load lists, positions) get a multi-line box. If no codes are loaded, the delay field falls back to plain text. */
+function MissingForm({ fields, delayCodes, onSubmit, pending }: { fields: CcField[]; delayCodes: DelayCode[]; onSubmit: (v: Record<string, string>) => void; pending: boolean }) {
   const { t } = useT();
   const [v, setV] = useState<Record<string, string>>({});
+  const [codes, setCodes] = useState<[string, string]>(["", ""]);
+  const iata = useMemo(() => delayCodes.filter((c) => c.scheme === "IATA"), [delayCodes]);
+  const pickCodes = (f: CcField) => f.field === "delay" && iata.length > 0;
+  const filled = (f: CcField) => (pickCodes(f) ? !!codes[0] : !!(v[f.field] ?? "").trim());
+  const submit = () => {
+    const values = { ...v };
+    const picked = codes.filter(Boolean);
+    if (picked.length) values.delay = JSON.stringify({ codes: picked });
+    onSubmit(values);
+  };
   return (
     <div className="mv-missing">
       <p className="muted">{t("fl.mv.missing")}</p>
-      {fields.map((f) => (
+      {fields.map((f) => pickCodes(f) ? (
+        <div key={f.field} className="mv-field" role="group" aria-label={t("fl.cmp.delayLabel")}>
+          <span>{t("fl.cmp.delayLabel")}</span>
+          <div className="row">
+            {[0, 1].map((i) => (
+              <select key={i} className="pick ltr" aria-label={i === 0 ? t("fl.cmp.delay1") : t("fl.cmp.delay2")} disabled={i === 1 && !codes[0]} value={codes[i]}
+                onChange={(e) => { const c: [string, string] = [...codes]; c[i] = e.target.value; setCodes(c); }}>
+                <option value="">{i === 0 ? t("fl.cmp.delayPick") : t("fl.cmp.delay2")}</option>
+                {iata.filter((c) => c.code !== codes[1 - i]).map((c) => <option key={c.id} value={c.code}>{`${c.code} — ${c.description}`}</option>)}
+              </select>
+            ))}
+          </div>
+        </div>
+      ) : (
         <label key={f.field} className="mv-field">
           <span>{f.label}</span>
-          <input className="ltr" dir="ltr" value={v[f.field] ?? ""} placeholder={f.format} onChange={(e) => setV({ ...v, [f.field]: e.target.value })} />
+          {looksJson(f)
+            ? <textarea className="ltr mono" dir="ltr" rows={4} value={v[f.field] ?? ""} placeholder={f.format} onChange={(e) => setV({ ...v, [f.field]: e.target.value })} />
+            : <input className="ltr" dir="ltr" value={v[f.field] ?? ""} placeholder={f.format} onChange={(e) => setV({ ...v, [f.field]: e.target.value })} />}
         </label>
       ))}
-      <button type="button" className="btn gold sm" disabled={pending || fields.some((f) => !(v[f.field] ?? "").trim())} onClick={() => onSubmit(v)}>{t("fl.mv.make")}</button>
+      <button type="button" className="btn gold sm" disabled={pending || fields.some((f) => !filled(f))} onClick={submit}>{t("fl.mv.make")}</button>
     </div>
   );
 }
 
-function Item({ id, openId, setOpenId, flightId, companyId, type, head, canAct, openable, existing }: {
+function Item({ id, openId, setOpenId, flightId, companyId, type, head, canAct, openable, existing, delayCodes }: {
   id: string; openId: string | null; setOpenId: (v: string | null) => void; flightId: string; companyId: string; type: string | null;
-  head: React.ReactNode; canAct: boolean; openable: boolean; existing: CcStep["draft"];
+  head: React.ReactNode; canAct: boolean; openable: boolean; existing: CcStep["draft"]; delayCodes: DelayCode[];
 }) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -89,7 +119,7 @@ function Item({ id, openId, setOpenId, flightId, companyId, type, head, canAct, 
         <div className="mv-body">
           {pending && <p className="muted">…</p>}
           {!pending && panel?.kind === "draft" && <Editor key={panel.id} panel={panel} canAct={canAct} onSaved={() => router.refresh()} />}
-          {!pending && panel?.kind === "missing" && (canAct ? <MissingForm fields={panel.fields} pending={pending} onSubmit={run} /> : <p className="muted">{panel.fields.map((f) => f.label).join(" · ")}</p>)}
+          {!pending && panel?.kind === "missing" && (canAct ? <MissingForm fields={panel.fields} delayCodes={delayCodes} pending={pending} onSubmit={run} /> : <p className="muted">{panel.fields.map((f) => f.label).join(" · ")}</p>)}
           {!pending && panel?.kind === "error" && <p role="alert" className="err">{panel.message}</p>}
         </div>
       )}
@@ -97,7 +127,7 @@ function Item({ id, openId, setOpenId, flightId, companyId, type, head, canAct, 
   );
 }
 
-export default function MovementLibrary({ cc, companyId, canAct }: { cc: CommandCenter; companyId: string; canAct: boolean }) {
+export default function MovementLibrary({ cc, companyId, canAct, delayCodes }: { cc: CommandCenter; companyId: string; canAct: boolean; delayCodes: DelayCode[] }) {
   const { t } = useT();
   const [openId, setOpenId] = useState<string | null>(null);
   const steps = cc.movement.steps;
@@ -110,6 +140,8 @@ export default function MovementLibrary({ cc, companyId, canAct }: { cc: Command
     if (s.state === "draft") return s.draft?.sent_at ? <span className="tag ok">{t("fl.mv.sent")}</span> : s.draft && s.draft.edits > 0 ? <span className="tag info">{t("fl.mv.edited")}</span> : <span className="tag ok">{t("fl.mv.ready")}</span>;
     if (s.state === "incoming") return <span className="tag">{t("fl.mv.incoming")}</span>;
     if (s.state === "internal") return <span className="tag">{t("fl.mv.internal")}</span>;
+    // An outgoing format with no builder yet (e.g. PSM, DLA) cannot be opened: say so instead of "no draft".
+    if (s.direction === "outgoing" && !s.composable) return <span className="tag muted">{t("fl.mv.manual")}</span>;
     return <span className="tag muted">{t("fl.mv.none")}</span>;
   };
   const stepHead = (s: CcStep) => (
@@ -127,7 +159,7 @@ export default function MovementLibrary({ cc, companyId, canAct }: { cc: Command
     <ol className="mv-list">
       {list.map((s) => (
         <Item key={`${prefix}-${s.seq}`} id={`${prefix}-${s.seq}`} openId={openId} setOpenId={setOpenId} flightId={s.for_flight_id} companyId={companyId}
-          type={s.format_type} canAct={canAct} existing={s.draft} head={stepHead(s)}
+          type={s.format_type} canAct={canAct} existing={s.draft} head={stepHead(s)} delayCodes={delayCodes}
           openable={s.direction === "outgoing" && s.composable && !!s.format_type} />
       ))}
     </ol>
@@ -147,7 +179,7 @@ export default function MovementLibrary({ cc, companyId, canAct }: { cc: Command
         <ol className="mv-list">
           {cc.movement.other_messages.map((o) => (
             <Item key={o.type} id={`o-${o.type}`} openId={openId} setOpenId={setOpenId} flightId={cc.flight.id} companyId={companyId} type={o.type}
-              canAct={canAct} existing={null} head={otherHead(o)} openable={o.composable} />
+              canAct={canAct} existing={null} head={otherHead(o)} openable={o.composable} delayCodes={delayCodes} />
           ))}
         </ol>
       </details>
