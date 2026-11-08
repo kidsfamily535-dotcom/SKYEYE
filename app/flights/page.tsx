@@ -10,6 +10,7 @@ import MovementLibrary from "@/components/MovementLibrary";
 import DocsPanel from "@/components/DocsPanel";
 import { getCommandCenter } from "@/lib/command-center";
 import NowBar from "@/components/NowBar";
+import OtpBlock from "@/components/OtpBlock";
 import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
@@ -40,7 +41,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
-  const view = sp.view === "timeline" ? "handling" : ["handling", "messages", "delay", "audit", "movement", "docs"].includes(sp.view ?? "") ? sp.view : "overview";
+  const view = sp.view === "movement" || sp.view === "docs" ? sp.view : "overview";
   const d = await getCommandData();
   const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
   const board = sp.id ? [] : toBoardRows(all, tab, t);
@@ -69,7 +70,6 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: t(x.followup ? "fl.audit.rqmFollow" : "fl.audit.rqm"), detail: undefined })),
   ].sort((a, b) => +new Date(b.at ?? 0) - +new Date(a.at ?? 0)) : [];
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
-  const views: [string, string][] = [["overview", `${t("fl.view.overview")}${sel && sel.questions.length ? ` (${sel.questions.length})` : ""}`], ["handling", t("fl.view.handling")], ["messages", `${t("fl.view.messages")}${sel && sel.mails.length ? ` (${sel.mails.length})` : ""}`], ["delay", `${t("fl.view.delay")}${sel && sel.statements.length ? ` (${sel.statements.length})` : ""}`], ["audit", t("fl.view.audit")]];
 
   return (
     <Shell data={d}>
@@ -101,15 +101,12 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
-              <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("messages")}&compose=${encodeURIComponent(ty)}#compose`} />
+              {view === "overview" && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: Date.now() }}
+                delayAction={<details className="otp-delay"><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />}
 
-              {next && feed && (
-                <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? vh("handling") : next.href.startsWith("#") ? `${vh("overview")}${next.href}` : next.href}>{next.action}</Link>}</section>
-              )}
-
-              <div className="tabs views" role="tablist" aria-label={t("fl.views.aria")}>
-                {views.map(([v, label]) => <Link key={v} role="tab" aria-selected={view === v} className={view === v ? "on" : ""} href={vh(v)}>{label}</Link>)}
-              </div>
+              {view === "overview" && (sel.panel.needed.length > 0
+                ? <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
+                : next && next.tone !== "ok" && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? "#handling" : next.href}>{next.action}</Link>}</section>)}
 
               {view === "overview" && next && feed && <>
                 {journey && <FlightJourney j={journey} />}
@@ -127,11 +124,11 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 </div>
               </>}
 
-              {view === "handling" && <div className="card"><h2>{t("fl.handling.title")}</h2>
+              {view === "overview" && <details id="handling" className="card fold"><summary>{t("fl.more.handling")}</summary>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
-              </div>}
+              </details>}
 
-              {view === "messages" && <>
+              {view === "overview" && <details className="card fold" open={!!sp.compose}><summary>{t("fl.more.messages")}{sel.mails.length ? ` (${sel.mails.length})` : ""}</summary>
                 <div className="card"><h2>{t("fl.mails.title")}</h2>
                   {sel.mails.length === 0 && <p className="muted">{t("fl.mails.none")}</p>}
                   <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? t("fl.mail.fallback")}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? t("fl.mail.draftWaiting") : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
@@ -139,20 +136,16 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <div id="compose"><MessageComposer key={sp.compose ?? "none"} companyId={d.company.id} messages={sel.panel.messages} delayCodes={sel.delayCodes} needed={sel.panel.needed} initialType={sp.compose} canAct={sel.canAct}
                   legs={[{ id: sel.arrivalLeg, label: String(f.flight_in ?? "arrival") }, { id: sel.departureLeg, label: String(f.flight_out ?? "departure") }]} /></div>
                 <MessageDrafts drafts={sel.panel.drafts} canAct={sel.canAct} />
-              </>}
+              </details>}
 
               {(view === "movement" || view === "docs") && cc && !cc.ok && <div className="card"><p role="alert" className="err">{t("fl.err.generic")}</p></div>}
               {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} delayCodes={sel.delayCodes} />}
               {view === "docs" && cc?.ok && <DocsPanel cc={cc.data} />}
 
-              {view === "delay" && <div className="card"><h2>{t("fl.delay.title")}</h2>
-                <DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} />
-              </div>}
-
-              {view === "audit" && <div className="card"><h2>{t("fl.audit.title")}<Hint>{t("fl.audit.hint")}</Hint></h2>
+              {view === "overview" && <details className="card fold"><summary>{t("fl.more.audit")}</summary>
                 {audit.length === 0 && <p className="muted">{t("fl.audit.none")}</p>}
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
-              </div>}
+              </details>}
         </div>}
       </main>
     </Shell>
