@@ -1,7 +1,9 @@
 :root{--bg:#06122A;--panel:rgba(9,24,52,.74);--ink:#F3F6FB;--muted:#A3B3CB;--gold:#E3B964;--line:rgba(227,185,100,.24);
 --late:#FF7266;--warn:#F2AE40;--info:#6CA6FF;--ok:#3DD6A0;--r:18px;--font:'IBM Plex Sans Arabic',system-ui,sans-serif}
 *{box-sizing:border-box}
-body{margin:0;font-family:var(--font);color:var(--ink);background:linear-gradient(rgba(6,18,42,.55),rgba(6,18,42,.9)),url(/bg-sky.jpg) center/cover fixed,var(--bg);min-height:100vh;font-variant-numeric:tabular-nums}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);min-height:100vh;font-variant-numeric:tabular-nums}
+/* one fixed background layer for every screen size (a body background-attachment:fixed repaints on scroll and iOS ignores it) */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(6,18,42,.55),rgba(6,18,42,.9)),url(/bg-sky.jpg) center/cover,var(--bg)}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .ltr{direction:ltr;unicode-bidi:isolate}.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}.muted{color:var(--muted);display:block;font-size:12px;margin-top:2px}
@@ -651,4 +653,10 @@ html,body{max-width:100%;overflow-x:hidden}
   .ix-paper>.ix-agent,.ix-paper>.ix-actions{margin-top:12px}
   .ix-head{padding-bottom:10px}
   .ix-paper h2{overflow-wrap:anywhere}
+}
+
+/* touch tablets (wider than 900px): same no-blur rule as phones, glass replaced by a near-solid panel */
+@media (hover:none) and (pointer:coarse){
+  *,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  :root{--panel:rgba(9,24,52,.92)}
 }
