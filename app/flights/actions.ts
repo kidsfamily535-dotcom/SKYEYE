@@ -109,3 +109,29 @@ export async function rejectMessageDraft(draftId: string): Promise<Result> {
   if (error) return { ok: false, message: explain(error.message, tr) };
   refresh(); return { ok: true };
 }
+
+export type Opened =
+  | { status: "ready"; draftId: string; body: string; warnings: string[]; existing: boolean }
+  | { status: "missing"; missing: { field: string; label: string; format: string }[] }
+  | { status: "error"; message: string };
+
+/** Opens the draft of one movement message from the flight card. Reuses the open draft if there is one; otherwise the database builds it from what the agent knows
+ *  and names exactly what is missing (it never guesses). Nothing is sent. Values that look like JSON ({...} or [...]) are sent as JSON. */
+export async function openMessageDraft(companyId: string, flightId: string, type: string, values: Record<string, string>): Promise<Opened> {
+  const { t: tr } = await getT();
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(values)) {
+    const s = v.trim(); if (!s) continue;
+    if (/^[\[{]/.test(s)) { try { clean[k] = JSON.parse(s); } catch { return { status: "error", message: tr("fl.err.json", { field: k }) }; } } else clean[k] = s;
+  }
+  const { data: r, error } = await (await createClient()).rpc("open_message_draft", { p_company_id: companyId, p_flight_id: flightId, p_type: type, p_values: clean });
+  if (error) return { status: "error", message: explain(error.message, tr) };
+  const o = (r ?? {}) as Record<string, any>;
+  if (o.status === "exists" && o.draft) return { status: "ready", draftId: String(o.draft.id), body: String(o.draft.body_text ?? ""), warnings: (o.draft.warnings ?? []).map(String), existing: true };
+  if (o.status === "ok") { refresh(); return { status: "ready", draftId: String(o.draft_id ?? ""), body: String(o.draft ?? ""), warnings: (o.warnings ?? []).map(String), existing: false }; }
+  if (o.status === "missing") return { status: "missing", missing: o.missing ?? [] };
+  if (o.status === "invalid" && Array.isArray(o.invalid) && o.invalid.length) return { status: "error", message: o.invalid.map((d: unknown) => typeof d === "string" ? d : JSON.stringify(d)).join(" · ") };
+  if (o.status === "unsupported") return { status: "error", message: tr("fl.err.unsupported", { reason: typeof o.reason === "string" ? ` (${o.reason})` : "" }) };
+  if (o.status === "not_found") return { status: "error", message: tr("fl.notFound") };
+  return { status: "error", message: typeof o.note === "string" ? o.note : tr("fl.err.compose") };
+}
