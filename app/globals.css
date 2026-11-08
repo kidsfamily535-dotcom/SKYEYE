@@ -626,3 +626,4 @@ pre.orig,.ix-paper,.ix-draftcard{max-width:100%;min-width:0}
 .nb-more{margin-top:8px}.nb-more>summary{cursor:pointer;font-size:14px;color:var(--gold,#E6C77A)}
 .fold>summary{cursor:pointer;font-weight:700;padding:4px 0}
 .fold[open]>summary{margin-bottom:10px}
+.vt li.wait>i.dot{background:transparent;border:2px solid currentColor}

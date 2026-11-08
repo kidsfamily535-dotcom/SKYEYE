@@ -63,7 +63,19 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
-  const feed = feedIn ? buildFeed(feedIn, t, lang) : null; const next = feedIn ? nextStep(feedIn, t) : null;
+  const feed = feedIn ? buildFeed(feedIn, t, lang) : null;
+  if (feed && f && c) {
+    const ev = (id: string, title: string, actual: unknown, expected: unknown): FeedItem | null => {
+      const at = (actual ?? expected) ? String(actual ?? expected) : null; if (!at) return null;
+      return { id, at, kind: "step", tone: actual ? "ok" : "info", title };
+    };
+    const arr = ev("ev-arr", t("fl.j.arrival"), f.ata, f.eta ?? f.sta);
+    const dep = ev("ev-dep", t("fl.j.departure"), f.atd, c.expected_std ?? f.std);
+    if (arr) (f.ata ? feed.done : feed.waiting).push(arr);
+    if (dep) (f.atd ? feed.done : feed.waiting).push(dep);
+    const ms = (x: FeedItem) => (x.at ? +new Date(x.at) : 0);
+    feed.waiting.sort((a, b) => ms(a) - ms(b)); feed.done.sort((a, b) => ms(b) - ms(a));
+  } const next = feedIn ? nextStep(feedIn, t) : null;
   const audit: FeedItem[] = sel ? [
     ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: t(x.wasCorrected ? "fl.audit.corrected" : "fl.audit.recorded", { name: stepName(x, lang) }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
     ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: t("fl.audit.statement", { reason: x.reason }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
@@ -114,7 +126,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>{t("fl.q.title")}<Hint>{t("fl.q.hint")}</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
                 </div>}
-                <div className="card"><h2>{t("fl.feed.title")}<Hint>{t("fl.feed.hint")}</Hint></h2>
+                <div className="card"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
                   {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
                   <ol className="vt">
                     {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait t={t} />)}
