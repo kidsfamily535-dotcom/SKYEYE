@@ -40,18 +40,6 @@ export default async function FlightJourney({ j }: { j: Journey }) {
         <span className={`tag ${j.overall}`}>{j.cancelled ? t("fl.j.cancelled") : t(LEVEL_KEY[j.overall])}</span>
       </div>
 
-      <div className={`dint lv-${d.level}`}>
-        <div className="dhead"><small className="muted">{t("fl.j.etdTitle")}</small><b>{d.headline}</b></div>
-        <dl className="jcells">
-          <Cell label={t("fl.j.std")} value={d.std ? hm(d.std) : null} />
-          <Cell label={t("fl.j.etd")} value={d.expected ? hm(d.expected) : null} strong />
-          <Cell label={t("fl.j.actual")} value={d.atd ? hm(d.atd) : null} strong />
-        </dl>
-        {d.action && <p className="dact">{d.action}</p>}
-      </div>
-
-      <h2>{t("fl.j.events")}<Hint>{t("fl.j.hint")}</Hint></h2>
-      <ul className="jrows">{j.rows.map((r) => <Row key={r.id} r={r} t={t} />)}</ul>
     </section>
   );
 }
