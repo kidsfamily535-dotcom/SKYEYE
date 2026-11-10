@@ -87,8 +87,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
                 </div>
                 <div className="idact">
-                  <Link className={`btn sm${view === "movement" ? " on" : ""}`} href={vh("movement")}>{t("fl.mv.btn")}</Link>
-                  <Link className={`btn sm${view === "docs" ? " on" : ""}`} href={vh("docs")}>{t("fl.doc.btn")}</Link>
+                  <Link className={`btn sm${view === "movement" ? " on" : ""}`} href={`${vh("movement")}#movement`}>{t("fl.mv.btn")}</Link>
+                  <Link className={`btn sm${view === "docs" ? " on" : ""}`} href={`${vh("docs")}#docs`}>{t("fl.doc.btn")}</Link>
                   <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
                 </div>
                 <dl className="idtimes">
@@ -100,13 +100,13 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
-              {view === "overview" && <FlightSectionNav t={t} items={[
+              {<FlightSectionNav t={t} items={[
                 { id: "sec-now", label: t("fl.now.title") }, { id: "sec-otp", label: t("fl.otp.title") }, { id: "sec-timeline", label: t("fl.tl.title") },
-                { id: "handling", label: t("fl.more.handling") }, { id: "messages", label: t("fl.more.messages") }, { id: "audit", label: t("fl.more.audit") },
+                { id: "handling", label: t("fl.more.handling") }, { id: "messages", label: t("fl.more.messages") }, { id: "movement", label: t("fl.mv.btn"), href: `${vh("movement")}#movement` }, { id: "docs", label: t("fl.doc.btn"), href: `${vh("docs")}#docs` }, { id: "audit", label: t("fl.more.audit") },
               ]} />}
 
               {/* 1) المطلوب الآن: كل ما ينتظر قراراً أو تصرفاً من الموظف في مكان واحد */}
-              {view === "overview" && <div id="sec-now" className="fsec">
+              {<div id="sec-now" className="fsec">
                 {sel.panel.needed.length > 0
                   ? <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
                   : next && next.tone !== "ok" && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? `${vh("overview")}&view=handling#handling` : next.href}>{next.action}</Link>}</section>}
@@ -117,14 +117,14 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>}
 
               {/* 2) الأرض: زمن الوقفة (OTP) ومرحلة الرحلة */}
-              {view === "overview" && <div id="sec-otp" className="fsec">
+              {<div id="sec-otp" className="fsec">
                 <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: Date.now() }}
                   delayAction={<details className="otp-delay" open={focus === "delay"}><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />
                 {journey && <FlightJourney j={journey} />}
               </div>}
 
               {/* 3) الخط الزمني: ترتيب الأحداث فقط (القادم ثم الذي تم) */}
-              {view === "overview" && feed && <div className="card" id="sec-timeline"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
+              {feed && <div className="card" id="sec-timeline"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
                 {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
                 <ol className="vt">
                   {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait t={t} />)}
@@ -134,11 +134,11 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>}
 
               {/* 4) التفاصيل المطوية: التسجيل اليدوي، المراسلات، التدقيق */}
-              {view === "overview" && <details id="handling" className="card fold" open={focus === "handling"}><summary>{t("fl.more.handling")}</summary>
+              {<details id="handling" className="card fold" open={focus === "handling"}><summary>{t("fl.more.handling")}</summary>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
               </details>}
 
-              {view === "overview" && <details id="messages" className="card fold" open={!!sp.compose || focus === "messages"}><summary>{t("fl.more.messages")}{sel.mails.length ? ` (${sel.mails.length})` : ""}</summary>
+              {<details id="messages" className="card fold" open={!!sp.compose || focus === "messages"}><summary>{t("fl.more.messages")}{sel.mails.length ? ` (${sel.mails.length})` : ""}</summary>
                 <div className="card"><h2>{t("fl.mails.title")}</h2>
                   {sel.mails.length === 0 && <p className="muted">{t("fl.mails.none")}</p>}
                   <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? t("fl.mail.fallback")}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? t("fl.mail.draftWaiting") : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
@@ -148,11 +148,21 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <MessageDrafts drafts={sel.panel.drafts} canAct={sel.canAct} />
               </details>}
 
-              {(view === "movement" || view === "docs") && cc && !cc.ok && <div className="card"><p role="alert" className="err">{t("fl.err.generic")}</p></div>}
-              {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} delayCodes={sel.delayCodes} />}
-              {view === "docs" && cc?.ok && <DocsPanel cc={cc.data} />}
+              {/* حركة الطائرة والمستندات: أقسام في نفس الملف. تُحمَّل بياناتها عند الفتح فقط (استعلام ثقيل) */}
+              {view === "movement"
+                ? <details id="movement" className="card fold" open><summary>{t("fl.mv.btn")}</summary>
+                    {cc && !cc.ok && <p role="alert" className="err">{t("fl.err.generic")}</p>}
+                    {cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} delayCodes={sel.delayCodes} />}
+                  </details>
+                : <Link id="movement" className="card fold fold-link" href={`${vh("movement")}#movement`}>{t("fl.mv.btn")} ›</Link>}
+              {view === "docs"
+                ? <details id="docs" className="card fold" open><summary>{t("fl.doc.btn")}</summary>
+                    {cc && !cc.ok && <p role="alert" className="err">{t("fl.err.generic")}</p>}
+                    {cc?.ok && <DocsPanel cc={cc.data} />}
+                  </details>
+                : <Link id="docs" className="card fold fold-link" href={`${vh("docs")}#docs`}>{t("fl.doc.btn")} ›</Link>}
 
-              {view === "overview" && <details id="audit" className="card fold"><summary>{t("fl.more.audit")}</summary>
+              {<details id="audit" className="card fold"><summary>{t("fl.more.audit")}</summary>
                 {audit.length === 0 && <p className="muted">{t("fl.audit.none")}</p>}
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
               </details>}

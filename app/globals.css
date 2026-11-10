@@ -688,3 +688,4 @@ label.btn.disabled{opacity:.45;pointer-events:none}
 #sec-now,#sec-otp,#sec-timeline,#handling,#messages,#audit,#questions,#rqm{scroll-margin-top:84px}
 .ws .tabs.views a{text-decoration:none}
 .fb-adv>summary{cursor:pointer;list-style:none}.fb-adv>summary::-webkit-details-marker{display:none}.fb-adv[open]{flex-basis:100%}.fb-adv[open]>summary{margin-bottom:8px}
+.fold-link{display:block;text-decoration:none;color:inherit;font-weight:700;padding:14px 18px}#movement,#docs{scroll-margin-top:84px}
