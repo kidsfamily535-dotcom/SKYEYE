@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Shell from "@/components/Shell";
-import { getCommandData } from "@/lib/data";
+import OwnerShell from "@/components/OwnerShell";
 import { COMPANY_TYPES, isPlatformAdmin, listPlans } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
@@ -10,11 +9,11 @@ import "../admin.css";
 
 export default async function NewCompanyPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   const sp = await searchParams;
-  const [{ t, lang }, d, owner, plans] = await Promise.all([getT(), getCommandData(), isPlatformAdmin(), listPlans()]);
+  const [{ t, lang }, owner, plans] = await Promise.all([getT(), isPlatformAdmin(), listPlans()]);
   if (!owner) notFound();
   const group = (aud: "handler" | "airline") => plans.filter((p) => p.audience === aud);
   return (
-    <Shell data={d} bypass>
+    <OwnerShell>
       <main className="page admin">
         <section className="card">
           <div className="adm-head"><h2>{t("own.new.title")}</h2><Link className="btn sm" href="/admin">{t("own.back")}</Link></div>
@@ -42,6 +41,6 @@ export default async function NewCompanyPage({ searchParams }: { searchParams: P
           </form>
         </section>
       </main>
-    </Shell>
+    </OwnerShell>
   );
 }

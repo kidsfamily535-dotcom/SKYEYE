@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Shell from "@/components/Shell";
-import { getCommandData } from "@/lib/data";
+import OwnerShell from "@/components/OwnerShell";
 import { MODULES, ROLES, STATUSES, countryName, getBilling, getCompany, isForeign, listPlans, renewDays, renewTone, searchAirlines } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
@@ -14,7 +13,7 @@ const TONE: Record<string, string> = { trial: "info", active: "ok", suspended: "
 export default async function CompanyPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ err?: string; q?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   if (!UUID.test(id)) notFound();
-  const [{ t, lang }, d, r, plans, bill] = await Promise.all([getT(), getCommandData(), getCompany(id), listPlans(), getBilling(id)]);
+  const [{ t, lang }, r, plans, bill] = await Promise.all([getT(), getCompany(id), listPlans(), getBilling(id)]);
   if (r.status !== "ok") notFound();
   const c = r.data;
   const isHandler = c.business_types.some((b) => ["ground_handler", "cargo_terminal", "forwarder", "fbo"].includes(b));
@@ -29,7 +28,7 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
   const planLabel = (p: { name_ar: string; name_en: string }) => (lang === "ar" ? p.name_ar : p.name_en);
 
   return (
-    <Shell data={d} bypass>
+    <OwnerShell>
       <main className="page admin">
         <section className="fhero" aria-label={c.name}>
           <h1>{c.name}</h1>
@@ -158,6 +157,6 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
           <p className="muted"><small>{t("own.d.memberHint")}</small></p>
         </section>
       </main>
-    </Shell>
+    </OwnerShell>
   );
 }

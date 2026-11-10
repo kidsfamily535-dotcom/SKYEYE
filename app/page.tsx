@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/admin";
+import { inCompanyView } from "@/lib/mode";
 import Shell from "@/components/Shell";
 import Radar from "@/components/Radar";
 import ToneIcon from "@/components/ToneIcon";
@@ -25,6 +28,7 @@ type SP = { q?: string | string[]; k?: string | string[]; f?: string | string[];
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default async function CommandPage({ searchParams }: { searchParams: Promise<SP> }) {
+  if ((await isPlatformAdmin()) && !(await inCompanyView())) redirect("/admin");
   const sp = await searchParams;
   const q = one(sp.q).trim().slice(0, 80); const k = one(sp.k); const fk = one(sp.fk); const f = one(sp.f).trim().slice(0, 80);
   const kind = isLibKind(k) ? k : null;

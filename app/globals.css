@@ -694,3 +694,6 @@ label.btn.disabled{opacity:.45;pointer-events:none}
 @media (max-width:760px){.fb-row{grid-template-columns:1fr auto;gap:8px 12px}}
 
 .fl-cats{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.fl-cats .chip{cursor:pointer;color:var(--ink);gap:8px}.fl-cats .chip.on{background:linear-gradient(90deg,#CFA24F,#EBC673);color:#1B2436;font-weight:700;border:0}
+
+.viewas{margin:0;padding:10px 20px;background:rgba(227,185,100,.14);border-bottom:1px solid var(--gold);color:var(--gold);font-size:14px}
+.top form{margin:0}

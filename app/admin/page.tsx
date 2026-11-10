@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Shell from "@/components/Shell";
-import { getCommandData } from "@/lib/data";
+import OwnerShell from "@/components/OwnerShell";
 import { countryName, listCompanies, listPlans, renewDays, renewTone } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
@@ -11,13 +10,13 @@ const utc = (iso: string | null) => (iso ? `${iso.slice(0, 16).replace("T", " ")
 const TONE: Record<string, string> = { trial: "info", active: "ok", suspended: "late" };
 
 export default async function AdminPage() {
-  const [{ t, lang }, d, r] = await Promise.all([getT(), getCommandData(), listCompanies()]);
+  const [{ t, lang }, r] = await Promise.all([getT(), listCompanies()]);
   if (r.status === "denied") notFound();
   const plans = await listPlans();
   const planName = (c: string | null) => { const p = plans.find((x) => x.code === c); return p ? (lang === "ar" ? p.name_ar : p.name_en) : "—"; };
   const rl = (n: number | null) => (n === null ? "—" : n < 0 ? t("own.b.late", { n: -n }) : n === 0 ? t("own.b.today") : t("own.b.in", { n }));
   return (
-    <Shell data={d} bypass>
+    <OwnerShell>
       <main className="page admin">
         <section className="fhero" aria-label={t("own.title")}>
           <h1>{t("own.title")}</h1><p>{t("own.sub")}</p>
@@ -46,6 +45,6 @@ export default async function AdminPage() {
           </div>
         )}
       </main>
-    </Shell>
+    </OwnerShell>
   );
 }
