@@ -42,60 +42,58 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
   const stat = (n: number | null | undefined, label: string, href: string, hot?: boolean) => (
     <Link href={href} className="hm-stat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
 
-  const tile = (href: string, icon: string, label: string, badge?: number | null, gold?: boolean) => (
-    <Link href={href} className={`hm-tile ${gold ? "gold" : ""}`}>
-      <span className="hm-tile-ico"><ToneIcon name={icon} size={24} />{badge ? <i className="hm-badge ltr">{badge}</i> : null}</span>
-      <span>{label}</span>
-    </Link>);
+  const rest = stream.slice(1);
+  const SHOW = 3;
+  const row = (x: Decision, i: number) => (
+    <li key={x.id} className={`hm-row ${x.tone}`}>
+      <span className="hm-row-ico"><ToneIcon name={x.tone} /></span>
+      <span className="hm-row-text"><b><bdi>{x.text}</bdi></b><small>{t(`tone.${x.tone}` as Key)}</small></span>
+      {x.href ? <Link className="hm-act" href={x.href}>{x.action}</Link> : null}
+    </li>);
 
   return (
     <Shell data={d}>
       <main className="page hm">
         <section className="hm-hero" aria-label={t("nav.home")}>
-          <div className="hm-greet">
-            <h1>{t("home.title", { greet: t(g.key) })}</h1>
-            <p><span className="ltr">{g.date}</span> · {t("home.subtitle")}</p>
+          <div className="hm-hero-top">
+            <div className="hm-greet">
+              <h1>{t("home.title", { greet: t(g.key) })}</h1>
+              <p><span className="ltr">{g.date}</span> · {t("home.subtitle")}</p>
+            </div>
+            <div className="hm-radar">
+              <div className="hm-radar-ttl"><span className="livedot" aria-hidden="true" />{t("home.radar")}</div>
+              <Radar counts={c.radar} />
+            </div>
           </div>
-          <div className="hm-radar">
-            <div className="hm-radar-ttl"><span className="livedot" aria-hidden="true" />{t("home.radar")}</div>
-            <Radar counts={c.radar} />
+          <div className="hm-stats" role="group" aria-label={t("home.stats.aria")}>
+            {stat(c.todayFlights, t("home.stat.today"), "/flights?day=today")}
+            {stat(c.onGround, t("home.stat.ground"), "/flights")}
+            {stat(attention, t("home.stat.attention"), "#attention", attention > 0)}
+            {stat(d.counts.inboxToReview, t("home.stat.emails"), "/inbox?f=new")}
           </div>
         </section>
 
+        {d.noMembership && <p className="hm-empty">{t("home.noMembership")}</p>}
+
         {reco && (
-          <section className="hm-next" aria-label={t("home.reco.title")}>
+          <section id="attention" className={`hm-next ${first?.tone ?? "ok"}`} aria-label={t("home.reco.title")}>
             <span className="hm-next-ico" aria-hidden="true"><ToneIcon name={first?.tone ?? "ok"} size={26} /></span>
             <div className="hm-next-text"><h2>{t("home.reco.title")}</h2><p>{reco}</p></div>
             {first?.href && <Link className="hm-go" href={first.href}>{first.action}</Link>}
           </section>
         )}
 
-        <nav className="hm-tiles" aria-label={t("home.qa")}>
-          {tile("/inbox?f=new", "inbox", t("home.qa.inbox"), d.noMembership ? null : d.counts.inboxToReview, true)}
-          {tile("/flights?day=today", "flights", t("home.stat.today"))}
-          {tile("/handover", "shift", t("home.qa.shift"))}
-          {tile("/agent", "agent", t("nav.agent"))}
-        </nav>
-
-        <section className="hm-stats" aria-label={t("home.stats.aria")}>
-          {stat(c.todayFlights, t("home.stat.today"), "/flights?day=today")}
-          {stat(c.onGround, t("home.stat.ground"), "/flights")}
-          {stat(attention, t("home.stat.attention"), "#attention", attention > 0)}
-          {stat(d.counts.inboxToReview, t("home.stat.emails"), "/inbox?f=new")}
-        </section>
-
-        <section id="attention" className="hm-list" aria-label={t("home.attention")}>
-          <h2>{t("home.attention")}</h2>
-          {d.noMembership && <p className="hm-empty">{t("home.noMembership")}</p>}
-          {!d.noMembership && stream.length === 0 && <p className="hm-empty">{t("home.nothing")}</p>}
-          <ul>{stream.map((x, i) => (
-            <li key={x.id} className={`hm-row ${x.tone} ${i === 0 && x.tone === "late" ? "hot" : ""}`}>
-              <span className="hm-row-ico"><ToneIcon name={x.tone} /></span>
-              <span className="hm-row-text"><b><bdi>{x.text}</bdi></b><small>{t(`tone.${x.tone}` as Key)}</small></span>
-              {x.href ? <Link className={`hm-act ${i === 0 ? "gold" : ""}`} href={x.href}>{x.action}</Link> : null}
-            </li>))}
-          </ul>
-        </section>
+        {rest.length > 0 && (
+          <section className="hm-list" aria-label={t("home.attention")}>
+            <h2>{t("home.attention")} <span className="hm-count ltr">{rest.length}</span></h2>
+            <ul>{rest.slice(0, SHOW).map(row)}</ul>
+            {rest.length > SHOW && (
+              <details className="hm-more">
+                <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
+                <ul>{rest.slice(SHOW).map(row)}</ul>
+              </details>)}
+          </section>
+        )}
 
         <LibraryPanel data={lib} q={q} kind={kind} open={open} />
       </main>
