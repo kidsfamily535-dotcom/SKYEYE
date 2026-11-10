@@ -23,6 +23,7 @@ import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { dayShort } from "@/lib/flight-group";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
+import { getFlightFileNo } from "@/lib/library";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
 
@@ -63,6 +64,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
   };
   const f = sel?.file; const c = sel?.clock;
+  const fileNo = f?.rotation_id ? await getFlightFileNo(String(f.rotation_id)) : null;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
   const feed = feedIn && f && c ? withEndpoints(buildFeed(feedIn, t, lang), f, c, t) : null;
@@ -89,6 +91,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <div className="idact">
                   <Link className={`btn sm${view === "movement" ? " on" : ""}`} href={`${vh("movement")}#movement`}>{t("fl.mv.btn")}</Link>
                   <Link className={`btn sm${view === "docs" ? " on" : ""}`} href={`${vh("docs")}#docs`}>{t("fl.doc.btn")}</Link>
+                  {fileNo && <Link className="btn sm" href={`/?f=${encodeURIComponent(fileNo)}&fk=flight#library`}>{t("fl.libFile")}</Link>}
                   <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
                 </div>
                 <dl className="idtimes">

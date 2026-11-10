@@ -43,3 +43,10 @@ export async function getLibrary(q: string, kind: LibKind | null, open: { no: st
   }
   return { rows, detail, canWrite };
 }
+
+/** Number of the library file that belongs to a flight rotation (null when none exists yet). Row-level security limits it to the member's company. */
+export async function getFlightFileNo(rotationId: string): Promise<string | null> {
+  const sb = await createClient();
+  const { data } = await sb.from("library_files").select("file_no").eq("file_kind", "flight").eq("flight_key", rotationId).limit(1).maybeSingle();
+  return (data?.file_no as string | undefined) ?? null;
+}
