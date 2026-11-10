@@ -27,7 +27,7 @@ export async function getCommandData(): Promise<CommandData> {
   const { data: { user } } = await sb.auth.getUser();
   const empty: CommandData = {
     noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "" },
-    shadowMode: true, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
+    shadowMode: false, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
     radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [],
   };
   if (!user) return empty;
@@ -56,7 +56,7 @@ export async function getCommandData(): Promise<CommandData> {
     noMembership: false,
     company: { id: co.id, name: co.name, kind: t("data.kind"), logoPath: co.logo_path },
     user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? (ROLE_KEY[m.role] ? t(ROLE_KEY[m.role]) : "") },
-    shadowMode: true, // the agent sends nothing yet; becomes a per-company setting in session 7
+    shadowMode: false, // shadow-mode label retired; the agent still never sends: every message is a draft a person sends
     counts: { inboxToReview: inbox.count ?? 0, draftsWaiting: drafts.count ?? 0, urgentAlerts: (urgent.count ?? 0) + (alerts.data ?? []).filter((a) => a.severity === "high").length },
     radar: empty.radar, // flights/radar are wired in session 5
     decisions: [...shiftDecisions, ...alertDecisions, ...(triage.data ?? []).map((x) => ({ id: x.id, tone: urgencyTone(x.urgency), text: x.summary ?? t("data.email.new"), action: x.needs_reply ? t("data.email.reviewDraft") : t("data.email.open"), href: `/inbox?id=${x.id}` }))],

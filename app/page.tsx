@@ -57,8 +57,9 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
         <section className="hm-hero" aria-label={t("nav.home")}>
           <div className="hm-hero-top">
             <div className="hm-greet">
+              <p className="hm-eyebrow"><span className="ltr">{g.date}</span></p>
               <h1>{t("home.title", { greet: t(g.key) })}</h1>
-              <p><span className="ltr">{g.date}</span> · {t("home.subtitle")}</p>
+              <p>{t("home.subtitle")}</p>
             </div>
             <div className="hm-radar">
               <div className="hm-radar-ttl"><span className="livedot" aria-hidden="true" />{t("home.radar")}</div>
