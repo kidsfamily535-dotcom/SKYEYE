@@ -541,3 +541,9 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - لا يحتاج مفتاح service role (المالك قرر عدم إضافته). الدوال: `company_invite_member`, `company_cancel_invite`, `company_pending_invites`, `claim_my_invite` (migration `company_invites`، اختُبرت داخل معاملة تراجعت).
 - **لم تُجرَّب في المتصفح بعد.** شرط أمني: يجب أن يكون «Confirm email» مفعّلاً في Supabase Auth والتسجيل مفتوحاً؛ وإلا يستطيع من يعرف إيميل موظف أن يسجّل به قبله.
 - المؤجّل: إعدادات المناولة لـ SSAIR (نطاق الخدمات Annex A، الأسعار، SLA) تنتظر أرقاماً من عقود SSAIR. جدول `turnaround_milestone_templates` فيه 168 قالباً لا 141 (راجع الفرق).
+
+## نوع الرحلة (فرع feat/flight-type)
+- القاعدة: `flights.operator_type` يقبل commercial/private/cargo/medevac، و`flights.type_source` (schedule / agent_suggested / employee_confirmed). رحلة medevac تستخدم مسار المعالم الخاص (private) كاملاً. جدولا `flight_type_signals` (مسودة) و`flight_type_suggestions` موجودان لكن لا شيء يقرأهما بعد (الكاشف لم يُبنَ).
+- الواجهة: شارة النوع (خاصة / شحن / إسعاف) على بطاقات لوحة الرحلات وفي رأس ملف الرحلة، ورحلة الإسعاف تُرتَّب أول القائمة دائماً. التجارية بلا شارة.
+- تنبيه: `supabase/migrations/manual_eta_and_status_sync.sql` يحوي نسخة قديمة من `generate_turnaround_checkins` بدون medevac؛ لا تُعد تشغيله وإلا يسقط الإسعاف إلى المسار العادي.
+- لم يُختبر في المتصفح (نجح فحص TypeScript فقط).

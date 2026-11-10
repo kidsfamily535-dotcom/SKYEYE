@@ -15,6 +15,7 @@ export type BoardRow = {
   attn: boolean; level: string | null; alerts: number; dueType: string | null; dueNow: boolean;
   stepsTotal: number; stepsDone: number; critical: number;
   dayKey: string; dayLabel: string; stale: boolean;
+  ftype: "commercial" | "private" | "cargo" | "medevac";
 };
 
 const ms = (s: string | null) => (s ? +new Date(s) : null);
@@ -33,7 +34,7 @@ export function toBoardRows(rows: FlightRow[], tab: "active" | "done", t: TFn, n
       attn: needsAction(r), level: r.attn?.level ?? null, alerts: r.attn?.alerts ?? 0,
       dueType: r.attn?.due ? r.attn.due.type.replace(/^MVT-/, "") : null, dueNow: !!r.attn?.due?.isDue,
       stepsTotal: r.stepsTotal ?? 0, stepsDone: r.stepsRecorded ?? 0, critical: r.criticalOpen ?? 0,
-      dayKey: dk || "none", dayLabel: dk ? dayLabel(dk) : "—", stale: r.stale,
+      dayKey: dk || "none", dayLabel: dk ? dayLabel(dk) : "—", stale: r.stale, ftype: r.flightType,
     };
   });
 }

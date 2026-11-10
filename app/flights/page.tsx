@@ -61,6 +61,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     groundMin: t("fl.b.groundMin", { n: "{n}" }), close: t("fl.b.close"), from: t("fl.b.from"), to: t("fl.b.to"), station: t("fl.b.station"), eta: t("fl.b.eta"),
     today: t("fl.grp.today"), tomorrow: t("fl.grp.tomorrow"), stale: t("fl.grp.stale"),
     showAll: t("fl.b.showAll"), more: t("fl.b.more"),
+    ft_private: t("fl.ft.private"), ft_cargo: t("fl.ft.cargo"), ft_medevac: t("fl.ft.medevac"),
     steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
   };
   const f = sel?.file; const c = sel?.clock;
@@ -85,6 +86,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <div className="idmain">
                   <div className="idtop"><b className="ltr idfn">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</b>
                     <span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{labelOf(lang, "fl.status", f.status)}</span>
+                    {sel.flightType !== "commercial" && <span className={`ftype ft-${sel.flightType}`} title={sel.typeSource === "agent_suggested" ? t("fl.ft.suggested") : sel.typeSource === "employee_confirmed" ? t("fl.ft.confirmed") : undefined}>{t(`fl.ft.${sel.flightType}`)}</span>}
                     {Number(f.sop_critical_open) > 0 && <span className="tag warn">{t("fl.critOpen")} <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
                   <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
                 </div>

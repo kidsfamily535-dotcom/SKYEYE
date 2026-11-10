@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { airlinePrefix, resolveAirlines, type Airline } from "@/lib/requests";
 
+export type FlightType = "commercial" | "private" | "cargo" | "medevac";
+const TYPE_RANK: Record<FlightType, number> = { commercial: 0, cargo: 1, private: 2, medevac: 3 };
+const asType = (v: unknown): FlightType => (v === "private" || v === "cargo" || v === "medevac" ? v : "commercial");
+/** نوع الدوران = أعلى نوع بين ساقيه (إسعاف ثم خاصة ثم شحن ثم تجارية) */
+const topType = (types: unknown[]): FlightType => types.map(asType).reduce<FlightType>((m, t) => (TYPE_RANK[t] > TYPE_RANK[m] ? t : m), "commercial");
+
 export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;
   sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string;
@@ -9,6 +15,8 @@ export type FlightRow = {
   stale: boolean;
   /** علامة واحدة للرحلة: أعلى مستوى تنبيه مفتوح، ومهمة ED/NI إن وُجدت (من flights_attention) */
   attn: Attn | null;
+  /** نوع الرحلة: تجارية / خاصة / شحن / إسعاف */
+  flightType: FlightType;
 };
 export type Attn = { level: string | null; alerts: number; due: { type: string; isDue: boolean; at: string | null } | null };
 const LV: Record<string, number> = { L1: 1, L2: 2, L3: 3, L4: 4 };
@@ -47,11 +55,14 @@ export async function getFlightList(tab: "active" | "done", companyId: string): 
   const rows = tab === "active"
     ? [...all.filter((r) => !isStale(r)), ...all.filter(isStale).reverse()]
     : all;
-  const [airlines, { data: legsData }, { data: attnData }] = await Promise.all([
+  const [airlines, { data: legsData }, { data: attnData }, { data: typeData }] = await Promise.all([
     resolveAirlines(rows.map((r) => r.flight_in ?? r.flight_out)),
     sb.from("v_ground_clock").select("rotation_id, arrival_leg_id, departure_leg_id").limit(2000),
     sb.rpc("flights_attention", { p_company_id: companyId }),
+    // الرحلات غير التجارية فقط (قليلة): تكفي لمعرفة نوع كل دوران
+    sb.from("flights").select("id, operator_type").neq("operator_type", "commercial").limit(2000),
   ]);
+  const nonCommercial = new Map<string, unknown>(((typeData ?? []) as Raw[]).map((x) => [x.id, x.operator_type]));
   const legsOf = new Map<string, string[]>(((legsData ?? []) as Raw[]).map((g) => [g.rotation_id, [g.arrival_leg_id, g.departure_leg_id]]));
   const attnRows = (attnData ?? []) as Raw[];
   const attnOf = (rotationId: string): Attn | null => {
@@ -66,7 +77,7 @@ export async function getFlightList(tab: "active" | "done", companyId: string): 
   const out = rows.map((r) => {
     const p = airlinePrefix(r.flight_in ?? r.flight_out); const key = p.iata ?? p.icao;
     return {
-      stale: isStale(r), attn: attnOf(r.rotation_id),
+      stale: isStale(r), attn: attnOf(r.rotation_id), flightType: topType((legsOf.get(r.rotation_id) ?? []).map((id) => nonCommercial.get(id))),
       rotationId: r.rotation_id, flightIn: r.flight_in, flightOut: r.flight_out, registration: r.registration, origin: r.origin, station: r.station, destination: r.destination,
       sta: r.sta, std: r.std, eta: r.eta, ata: r.ata, atd: r.atd, status: r.status,
       stepsTotal: r.sop_steps_total === null ? null : Number(r.sop_steps_total), stepsRecorded: r.sop_steps_recorded === null ? null : Number(r.sop_steps_recorded),
@@ -74,7 +85,8 @@ export async function getFlightList(tab: "active" | "done", companyId: string): 
     };
   });
   // الرحلات المحتاجة تصرف فوق (الأعلى مستوى أولاً)؛ باقي الرحلات هادية وبترتيبها
-  const rank = (r: FlightRow) => (needsAction(r) ? 10 - (LV[r.attn?.level ?? ""] ?? 0) : 99);
+  // رحلة الإسعاف دائماً في أعلى القائمة، قبل أي تنبيه
+  const rank = (r: FlightRow) => (r.flightType === "medevac" ? 0 : needsAction(r) ? 10 - (LV[r.attn?.level ?? ""] ?? 0) : 99);
   return tab === "active" ? out.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r) - rank(b.r) || a.i - b.i).map((x) => x.r) : out;
 }
 
@@ -103,6 +115,9 @@ export async function getFlight(rotationId: string, companyId: string) {
   ]);
   if (!f || !clock) return null;
   const legs = [clock.arrival_leg_id, clock.departure_leg_id] as string[];
+  const { data: legTypes } = await sb.from("flights").select("operator_type, type_source").in("id", legs);
+  const flightType = topType((legTypes ?? []).map((x: Raw) => x.operator_type));
+  const typeSource: string = (legTypes ?? []).find((x: Raw) => asType(x.operator_type) === flightType)?.type_source ?? "schedule";
   const [tl, qs, st, dcs, pArr, pDep, mem] = await Promise.all([
     sb.from("v_flight_timeline").select("*").in("flight_id", legs).order("track_order").order("seq"),
     sb.from("turnaround_checkins").select("id, step_code, question_ar, due_at, status, note").eq("flight_id", clock.departure_leg_id).in("status", ["asked", "in_progress", "late", "escalated"]).order("due_at"),
@@ -149,7 +164,7 @@ export async function getFlight(rotationId: string, companyId: string) {
 
   return {
     file: f as Raw, clock: clock as Raw, arrivalLeg: clock.arrival_leg_id as string, departureLeg: clock.departure_leg_id as string,
-    steps, questions, statements, delayCodes, panel, mails, rqms, canAct: !!me,
+    steps, questions, statements, delayCodes, panel, mails, rqms, canAct: !!me, flightType, typeSource,
     airline: key ? airlines.get(key) ?? { code: key, name: null, logoUrl: null } : null,
   };
 }
