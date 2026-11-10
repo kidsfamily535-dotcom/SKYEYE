@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Res } from "@/lib/admin";
 
 export type Member = { membership_id: string; role: string; email: string | null; full_name: string | null; role_title: string | null; me: boolean };
+export type Invite = { id: string; email: string; full_name: string; role: string; created_at: string; expires_at: string };
 export const TEAM_ROLES = ["admin", "operator", "viewer"] as const;
 
 /** Company team for the company's own admin. The database function refuses anyone who is not owner/admin of an active company. */
@@ -45,4 +46,12 @@ export async function getDraftPolicies(companyId: string): Promise<{ rows: Polic
     for (const x of e.data ?? []) { if (x.status === "approved") approved.escalation_policies++; else if (x.status === "draft") out.push({ table: "escalation_policies", id: x.id, title: `${x.from_level} → ${x.escalate_to_level ?? "—"}`, minutes: x.ack_minutes ?? null, hours: null, extra: x.escalate_to_role ?? "" }); }
   } catch { /* empty list */ }
   return { rows: out, approved };
+}
+
+/** Pending invitations of the caller's own company. The database function refuses anyone who is not owner/admin. */
+export async function getInvites(): Promise<Invite[]> {
+  try {
+    const { data, error } = await (await createClient()).rpc("company_pending_invites");
+    return error ? [] : ((data ?? []) as Invite[]);
+  } catch { return []; }
 }

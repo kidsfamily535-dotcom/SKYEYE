@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useT } from "@/components/I18n";
@@ -18,6 +19,8 @@ export default function LoginPage() {
     const f = new FormData(e.currentTarget);
     const { error } = await createClient().auth.signInWithPassword({ email: String(f.get("email")), password: String(f.get("password")) });
     if (error) { setError(t("login.error")); setBusy(false); return; }
+    // Links this person to their company when an admin invited this confirmed email. Harmless if there is no invitation.
+    await createClient().rpc("claim_my_invite");
     await syncLanguageAfterLogin().catch(() => {});
     router.replace("/"); router.refresh();
   }
@@ -31,6 +34,7 @@ export default function LoginPage() {
         <label>{t("login.password")}<input name="password" type="password" required autoComplete="current-password" className="ltr" /></label>
         {error && <p role="alert" className="err">{error}</p>}
         <button className="btn gold" disabled={busy}>{busy ? t("login.busy") : t("login.submit")}</button>
+        <p className="muted"><Link href="/signup">{t("login.noAccount")}</Link></p>
       </form>
     </main>
   );

@@ -2,23 +2,23 @@ import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import { getCommandData } from "@/lib/data";
 import { countryName, listPlans } from "@/lib/admin";
-import { getDraftPolicies, getProfile, getTeam, TEAM_ROLES, type PolicyTable } from "@/lib/settings";
+import { getDraftPolicies, getInvites, getProfile, getTeam, TEAM_ROLES, type PolicyTable } from "@/lib/settings";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
-import { approvePolicy, removeMember, setRole } from "./actions";
+import { approvePolicy, cancelInvite, inviteMember, removeMember, setRole } from "./actions";
 import "../admin/admin.css";
 
 const TONE: Record<string, string> = { trial: "info", active: "ok", suspended: "late" };
 const GROUP: Record<PolicyTable, "set.pol.alert" | "set.pol.request" | "set.pol.escalation"> = { flight_alert_rules: "set.pol.alert", request_policies: "set.pol.request", escalation_policies: "set.pol.escalation" };
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ err?: string; inv?: string }> }) {
   const sp = await searchParams;
   const [{ t, lang }, d] = await Promise.all([getT(), getCommandData()]);
   const team = await getTeam();
   const suspended = d.access.status === "suspended";
   if (team.status === "denied" && !suspended) notFound();
   const ready = team.status === "ok" && !d.noMembership;
-  const [profile, pol, plans] = ready ? await Promise.all([getProfile(d.company.id), getDraftPolicies(d.company.id), listPlans()]) : [null, null, []];
+  const [profile, pol, plans, invites] = ready ? await Promise.all([getProfile(d.company.id), getDraftPolicies(d.company.id), listPlans(), getInvites()]) : [null, null, [], []];
   const plan = plans.find((p) => p.code === profile?.plan);
   const planName = plan ? (lang === "ar" ? plan.name_ar : plan.name_en) : "—";
   const unit = (m: number | null, h: number | null) => (m !== null ? t("set.min", { n: m }) : h !== null ? t("set.hours", { n: h }) : "—");
@@ -28,6 +28,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <main className="page admin">
         <section className="fhero" aria-label={t("set.title")}><h1>{t("set.title")}</h1><p>{t("set.sub")}</p></section>
         {(sp.err || team.status === "error") && <p role="alert" className="err">{t("set.err")}</p>}
+        {sp.inv && <p role="status" className="muted">{t("set.inv.ok")}</p>}
 
         {ready && profile && (
           <section className="card">
@@ -77,6 +78,32 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {ready && (
+          <section className="card">
+            <h2>{t("set.inv.title")}</h2>
+            <p className="muted"><small>{t("set.inv.note")}</small></p>
+            <form action={inviteMember} className="adm-inline">
+              <label>{t("set.inv.name")}<input name="name" required maxLength={120} /></label>
+              <label>{t("set.inv.email")}<input name="email" type="email" required maxLength={254} className="ltr" /></label>
+              <label>{t("set.inv.role")}<select name="role" defaultValue="operator">{TEAM_ROLES.map((r) => <option key={r} value={r}>{labelOf(lang, "set.role", r)}</option>)}</select></label>
+              <button className="btn sm gold">{t("set.inv.send")}</button>
+            </form>
+            <h3>{t("set.inv.pending")}</h3>
+            {invites.length === 0 ? <p className="muted">{t("set.inv.none")}</p> : (
+              <ul className="list">
+                {invites.map((i) => (
+                  <li key={i.id}>
+                    <span className="grow"><b>{i.full_name}</b> <small className="muted ltr">{i.email}</small></span>
+                    <em className="tag info">{labelOf(lang, "set.role", i.role)}</em>
+                    <em className="tag muted ltr">{t("set.inv.expires", { date: i.expires_at.slice(0, 10) })}</em>
+                    <form action={cancelInvite}><input type="hidden" name="id" value={i.id} /><button className="btn sm danger">{t("set.inv.cancel")}</button></form>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 
