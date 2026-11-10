@@ -3,12 +3,11 @@ import UtcClock from "./UtcClock";
 import Link from "next/link";
 import type { CommandData } from "@/lib/data";
 import { countPendingReports } from "@/lib/shifts";
-import { isPlatformAdmin } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import LangSwitch from "./LangSwitch";
 
 export default async function Shell({ data, children }: { data: CommandData; children: React.ReactNode }) {
-  const [pending, owner] = await Promise.all([countPendingReports().catch(() => 0), isPlatformAdmin()]);
+  const pending = await countPendingReports().catch(() => 0);
   const { t } = await getT();
   return (
     <div className="app">
@@ -23,7 +22,6 @@ export default async function Shell({ data, children }: { data: CommandData; chi
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9" /><path d="M10 19.5a2 2 0 0 0 4 0" /></svg>
             {pending > 0 && <b className="badge">{pending}</b>}
           </Link>
-          {owner && <Link href="/admin" className="chip" title={t("shell.admin")}>{t("shell.admin")}</Link>}
           <LangSwitch />
           <UtcClock />
           {data.shadowMode && <span className="chip shadow">{t("shell.shadow")}</span>}

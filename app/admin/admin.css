@@ -1,6 +1,0 @@
-.admin .adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
-.admin .adm-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.admin .adm-head h2{margin:0}
-.admin .adm-who{display:flex;flex-direction:column;gap:2px;min-width:0}
-.admin .list li{flex-wrap:wrap}
-.admin .list form{margin:0}
