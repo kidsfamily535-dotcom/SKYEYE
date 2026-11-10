@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import OwnerShell from "@/components/OwnerShell";
-import { MODULES, ROLES, STATUSES, countryName, getBilling, getCompany, isForeign, listPlans, renewDays, renewTone, searchAirlines } from "@/lib/admin";
+import { COMPANY_TYPES, MODULES, ROLES, STATUSES, countryName, getBilling, getCompany, isForeign, listPlans, renewDays, renewTone, searchAirlines } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
-import { addAirline, addMember, removeAirline, renewCompany, setBilling, setModule, setPlan, setStatus } from "../actions";
+import { addAirline, addMember, setTypes, removeAirline, renewCompany, setBilling, setModule, setPlan, setStatus } from "../actions";
 import "../admin.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -41,6 +41,16 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
           <div><Link className="btn sm" href="/admin">{t("own.back")}</Link></div>
         </section>
         {sp.err && <p role="alert" className="err">{t("own.err")}</p>}
+
+        <section className="card">
+          <h2>{t("own.types.title")}</h2>
+          <p className="muted"><small>{t("own.types.note")}</small></p>
+          <form action={setTypes} className="adm-inline">
+            <input type="hidden" name="id" value={c.id} />
+            {COMPANY_TYPES.map((x) => <label key={x}><span><input type="checkbox" name="types" value={x} defaultChecked={c.business_types.includes(x)} /> {labelOf(lang, "own.type", x)}</span></label>)}
+            <button className="btn">{t("own.types.save")}</button>
+          </form>
+        </section>
 
         <section className="card">
           <h2>{t("own.d.plan")}</h2>

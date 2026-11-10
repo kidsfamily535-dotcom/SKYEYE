@@ -20,7 +20,8 @@ export default async function Shell({ data, children, module }: { data: CommandD
   const mods = data.access.modules;
   const suspended = data.access.status === "suspended";
   const off = !suspended && !!module && mods !== null && !mods.includes(module);
-  const hidden = mods === null ? [] : Object.entries(NAV_MODULE).filter(([, m]) => !mods.includes(m)).map(([h]) => h);
+  const hiddenByPlan = mods === null ? [] : Object.entries(NAV_MODULE).filter(([, m]) => !mods.includes(m)).map(([h]) => h);
+  const hidden = ["owner", "admin"].includes(data.user.roleCode) ? hiddenByPlan : [...hiddenByPlan, "/settings"];
   return (
     <div className="app">
       <aside className="side" aria-label={t("nav.aria")}>

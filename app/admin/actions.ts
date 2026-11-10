@@ -44,6 +44,11 @@ export async function setModule(f: FormData): Promise<void> {
   if (!one(m, MODULES)) back(id, false);
   back(id, await run("admin_set_company_module", { p_company: id, p_module: m, p_enabled: s(f, "enabled") === "true" }));
 }
+export async function setTypes(f: FormData): Promise<void> {
+  const id = s(f, "id"); if (!UUID.test(id)) redirect("/admin");
+  const types = f.getAll("types").map(String).filter((x) => one(x, COMPANY_TYPES));
+  back(id, types.length > 0 && await run("admin_set_company_types", { p_company: id, p_types: types }));
+}
 export async function addAirline(f: FormData): Promise<void> {
   const id = s(f, "id"); const a = s(f, "airline"); if (!UUID.test(id)) redirect("/admin");
   back(id, UUID.test(a) && await run("admin_add_company_airline", { p_company: id, p_airline: a }));

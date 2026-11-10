@@ -8,12 +8,13 @@ const ICONS: Record<string, string> = {
   "/": "M3 11l9-7 9 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1z",
   "/inbox": "M3 7l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z",
   "/flights": "M2 14l20-8-6 14-4-6z",
+  "/settings": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
   "/agent": "M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.8L3 21l1.9-5.4A8.4 8.4 0 1 1 21 11.5zM8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01",
 };
 
 const items: { href: string; label: Key }[] = [
   { href: "/", label: "nav.home" }, { href: "/inbox", label: "nav.inbox" },
-  { href: "/flights", label: "nav.flights" }, { href: "/agent", label: "nav.agent" },
+  { href: "/flights", label: "nav.flights" }, { href: "/agent", label: "nav.agent" }, { href: "/settings", label: "nav.settings" },
 ];
 
 export default function Nav({ hidden = [] }: { hidden?: string[] }) {

@@ -9,7 +9,7 @@ export type RadarCounts = { onGround: number | null; inbound: number | null; del
 export type CommandData = {
   noMembership: boolean;
   company: { id: string; name: string; kind: string; logoPath: string | null };
-  user: { name: string; role: string };
+  user: { name: string; role: string; roleCode: string };
   shadowMode: boolean;
   counts: { inboxToReview: number | null; draftsWaiting: number | null; urgentAlerts: number | null };
   radar: RadarCounts;
@@ -28,7 +28,7 @@ export async function getCommandData(): Promise<CommandData> {
   const { t } = await getT();
   const { data: { user } } = await sb.auth.getUser();
   const empty: CommandData = {
-    noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "" },
+    noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "", roleCode: "" },
     shadowMode: false, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
     radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [], access: { status: null, modules: null },
   };
@@ -63,7 +63,7 @@ export async function getCommandData(): Promise<CommandData> {
   return {
     noMembership: false,
     company: { id: co.id, name: co.name, kind: t("data.kind"), logoPath: co.logo_path },
-    user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? (ROLE_KEY[m.role] ? t(ROLE_KEY[m.role]) : "") },
+    user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? (ROLE_KEY[m.role] ? t(ROLE_KEY[m.role]) : ""), roleCode: m.role },
     shadowMode: false, // shadow-mode label retired; the agent still never sends: every message is a draft a person sends
     counts: { inboxToReview: inbox.count ?? 0, draftsWaiting: drafts.count ?? 0, urgentAlerts: (urgent.count ?? 0) + (alerts.data ?? []).filter((a) => a.severity === "high").length },
     radar: empty.radar, // flights/radar are wired in session 5
