@@ -118,3 +118,4 @@
 .lib-entries time{color:#D5DFEE;font-size:12px}.lib-etype{font-weight:700;color:var(--gold);font-size:12.5px}.lib-esum{min-width:0;overflow-wrap:anywhere}.lib-esum small{color:#D5DFEE}
 @media (max-width:599px){.lib-entries li{grid-template-columns:minmax(0,1fr) auto}.lib-esum{grid-column:1/-1}.lib-row{grid-template-columns:minmax(0,1fr) auto}.lib-no{grid-column:1/-1}}
 @media (min-width:1100px){.lib-grid.has-detail{grid-template-columns:minmax(260px,.8fr) minmax(0,1.4fr);align-items:start}}
+.lib-docs-top{border-color:rgba(230,199,122,.5);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}

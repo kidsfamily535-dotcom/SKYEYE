@@ -21,6 +21,8 @@ export default async function LibraryPanel({ data, q, kind, open }: Props) {
   const { t, lang } = await getT();
   const kindName = (k: string) => labelOf(lang, "lib.kind", k);
   return (
+    <>
+    <Link href="/files" className="lib-docs lib-docs-top"><span className="lib-docs-ico"><ToneIcon name="files" size={22} /></span><span><b>{t("lib.docs")}</b><small>{t("lib.docs.sub")}</small></span></Link>
     <details id="library" className="hm-lib" open={Boolean(q || kind || open)}>
       <summary className="lib-sum">
         <span className="lib-sum-ico" aria-hidden="true"><ToneIcon name="files" size={22} /></span>
@@ -30,7 +32,6 @@ export default async function LibraryPanel({ data, q, kind, open }: Props) {
       <div className="lib-body">
       <div className="lib-head">
         <p>{t("lib.sub")}</p>
-        <Link href="/files" className="lib-docs"><span className="lib-docs-ico"><ToneIcon name="files" size={22} /></span><span><b>{t("lib.docs")}</b><small>{t("lib.docs.sub")}</small></span></Link>
       </div>
 
       {!data && <p className="hm-empty">{t("home.noMembership")}</p>}
@@ -106,5 +107,6 @@ export default async function LibraryPanel({ data, q, kind, open }: Props) {
       </>)}
       </div>
     </details>
+    </>
   );
 }
