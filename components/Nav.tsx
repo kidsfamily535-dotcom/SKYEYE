@@ -8,7 +8,7 @@ const ICONS: Record<string, string> = {
   "/": "M3 11l9-7 9 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1z",
   "/inbox": "M3 7l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z",
   "/flights": "M2 14l20-8-6 14-4-6z",
-  "/agent": "M4 5h16v11H9l-5 4z",
+  "/agent": "M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.8L3 21l1.9-5.4A8.4 8.4 0 1 1 21 11.5zM8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01",
 };
 
 const items: { href: string; label: Key }[] = [
