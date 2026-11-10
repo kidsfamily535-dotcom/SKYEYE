@@ -135,3 +135,12 @@ export async function openMessageDraft(companyId: string, flightId: string, type
   if (o.status === "not_found") return { status: "error", message: tr("fl.notFound") };
   return { status: "error", message: typeof o.note === "string" ? o.note : tr("fl.err.compose") };
 }
+
+/** The employee confirms or rejects the type SKYEYE suggested for a flight (confirm applies it to both legs of the rotation). */
+export async function decideFlightType(suggestionId: string, decision: "confirm" | "reject"): Promise<Result> {
+  const { t: tr } = await getT();
+  const { error } = await (await createClient()).rpc("decide_flight_type_suggestion", { p_id: suggestionId, p_decision: decision });
+  if (error) return { ok: false, message: explain(error.message, tr) };
+  refresh();
+  return { ok: true };
+}

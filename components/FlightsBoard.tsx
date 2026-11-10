@@ -86,7 +86,8 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
     return <span className={`fb-otp ${lv}`} aria-hidden="true" title={`${Math.round(el)} / ${r.ground}`}><i style={{ width: `${clamp((el / r.ground) * 100)}%` }} /></span>;
   };
 
-  const Mark = ({ r }: { r: BoardRow }) => r.attn ? <span className="fb-mark">{r.alerts > 0 && r.level ? <span className={`amark ${r.level}`}>{r.level}{r.alerts > 1 ? <small>×{r.alerts}</small> : null}</span> : null}{r.dueType ? <span className={`amark task ${r.dueNow ? "now" : ""}`}>{r.dueType}</span> : null}</span> : null;
+  const TypeTag = ({ r }: { r: BoardRow }) => r.ftype === "commercial" ? null : <span className={`ftype ft-${r.ftype}`}>{L[`ft_${r.ftype}`]}</span>;
+  const Mark = ({ r }: { r: BoardRow }) => <><TypeTag r={r} />{r.attn ? <span className="fb-mark">{r.alerts > 0 && r.level ? <span className={`amark ${r.level}`}>{r.level}{r.alerts > 1 ? <small>×{r.alerts}</small> : null}</span> : null}{r.dueType ? <span className={`amark task ${r.dueNow ? "now" : ""}`}>{r.dueType}</span> : null}</span> : null}</>;
 
   const kpis: [Status, string, number][] = [["all", L.kAll, kpi.all], ["attn", L.kAttn, kpi.attn], ["late", L.kLate, kpi.late], ["ground", L.kGround, kpi.ground], ["soon", L.kSoon, kpi.soon], ["ok", L.kOk, kpi.ok]];
 
