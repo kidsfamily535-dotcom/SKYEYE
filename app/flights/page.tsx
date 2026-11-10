@@ -15,14 +15,14 @@ import DelayForm from "@/components/DelayForm";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
-import { buildFeed, nextStep, type FeedItem } from "@/lib/flight-feed";
+import { buildFeed, buildAudit, nextStep, withEndpoints, type FeedItem } from "@/lib/flight-feed";
+import FlightSectionNav from "@/components/FlightSectionNav";
 import FlightsBoard from "@/components/FlightsBoard";
 import { toBoardRows } from "@/lib/flight-board";
 import FlightJourney from "@/components/FlightJourney";
 import { buildJourney } from "@/lib/flight-journey";
 import { dayShort } from "@/lib/flight-group";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
-import { stepName } from "@/lib/step-name";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
 
@@ -42,6 +42,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
   const view = sp.view === "movement" || sp.view === "docs" ? sp.view : "overview";
+  /** Old deep links (?view=handling|timeline|messages|delay) now open the matching section of the single flight file. */
+  const focus = sp.view === "handling" || sp.view === "timeline" ? "handling" : sp.view === "messages" ? "messages" : sp.view === "delay" ? "delay" : null;
   const d = await getCommandData();
   const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
   const board = sp.id ? [] : toBoardRows(all, tab, t);
@@ -57,30 +59,15 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
     left: t("fl.b.left", { d: "{d}" }), over: t("fl.b.over", { d: "{d}" }), inT: t("fl.b.inT", { d: "{d}" }), agoT: t("fl.b.agoT", { d: "{d}" }), atd: t("fl.b.atd"),
     groundMin: t("fl.b.groundMin", { n: "{n}" }), close: t("fl.b.close"), from: t("fl.b.from"), to: t("fl.b.to"), station: t("fl.b.station"), eta: t("fl.b.eta"),
     today: t("fl.grp.today"), tomorrow: t("fl.grp.tomorrow"), stale: t("fl.grp.stale"),
-    showAll: t("fl.b.showAll"),
+    showAll: t("fl.b.showAll"), more: t("fl.b.more"),
     steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
   };
   const f = sel?.file; const c = sel?.clock;
   const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
-  const feed = feedIn ? buildFeed(feedIn, t, lang) : null;
-  if (feed && f && c) {
-    const ev = (id: string, title: string, actual: unknown, expected: unknown): FeedItem | null => {
-      const at = (actual ?? expected) ? String(actual ?? expected) : null; if (!at) return null;
-      return { id, at, kind: "step", tone: actual ? "ok" : "info", title };
-    };
-    const arr = ev("ev-arr", t("fl.j.arrival"), f.ata, f.eta ?? f.sta);
-    const dep = ev("ev-dep", t("fl.j.departure"), f.atd, c.expected_std ?? f.std);
-    if (arr) (f.ata ? feed.done : feed.waiting).push(arr);
-    if (dep) (f.atd ? feed.done : feed.waiting).push(dep);
-    const ms = (x: FeedItem) => (x.at ? +new Date(x.at) : 0);
-    feed.waiting.sort((a, b) => ms(a) - ms(b)); feed.done.sort((a, b) => ms(b) - ms(a));
-  } const next = feedIn ? nextStep(feedIn, t) : null;
-  const audit: FeedItem[] = sel ? [
-    ...sel.steps.filter((x) => x.state === "recorded" && x.actualAt).map((x) => ({ id: `a-${x.track}-${x.code}`, at: x.actualAt, kind: "step" as const, tone: x.wasCorrected ? "warn" as const : "ok" as const, title: t(x.wasCorrected ? "fl.audit.corrected" : "fl.audit.recorded", { name: stepName(x, lang) }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
-    ...sel.statements.map((x) => ({ id: `a-st-${x.id}`, at: x.at, kind: "statement" as const, tone: "warn" as const, title: t("fl.audit.statement", { reason: x.reason }), detail: [x.code, x.by].filter(Boolean).join(" · ") })),
-    ...sel.rqms.filter((x) => x.sentAt).map((x) => ({ id: `a-rq-${x.id}`, at: x.sentAt, kind: "draft" as const, tone: "info" as const, title: t(x.followup ? "fl.audit.rqmFollow" : "fl.audit.rqm"), detail: undefined })),
-  ].sort((a, b) => +new Date(b.at ?? 0) - +new Date(a.at ?? 0)) : [];
+  const feed = feedIn && f && c ? withEndpoints(buildFeed(feedIn, t, lang), f, c, t) : null;
+  const next = feedIn ? nextStep(feedIn, t) : null;
+  const audit: FeedItem[] = sel ? buildAudit(sel, t, lang) : [];
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
 
   return (
@@ -113,34 +100,45 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
-              {view === "overview" && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: Date.now() }}
-                delayAction={<details className="otp-delay"><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />}
+              {view === "overview" && <FlightSectionNav t={t} items={[
+                { id: "sec-now", label: t("fl.now.title") }, { id: "sec-otp", label: t("fl.otp.title") }, { id: "sec-timeline", label: t("fl.tl.title") },
+                { id: "handling", label: t("fl.more.handling") }, { id: "messages", label: t("fl.more.messages") }, { id: "audit", label: t("fl.more.audit") },
+              ]} />}
 
-              {view === "overview" && (sel.panel.needed.length > 0
-                ? <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
-                : next && next.tone !== "ok" && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? "#handling" : next.href}>{next.action}</Link>}</section>)}
-
-              {view === "overview" && next && feed && <>
-                {journey && <FlightJourney j={journey} />}
-                <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
+              {/* 1) المطلوب الآن: كل ما ينتظر قراراً أو تصرفاً من الموظف في مكان واحد */}
+              {view === "overview" && <div id="sec-now" className="fsec">
+                {sel.panel.needed.length > 0
+                  ? <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
+                  : next && next.tone !== "ok" && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? `${vh("overview")}&view=handling#handling` : next.href}>{next.action}</Link>}</section>}
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>{t("fl.q.title")}<Hint>{t("fl.q.hint")}</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
                 </div>}
-                <div className="card"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
-                  {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
-                  <ol className="vt">
-                    {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait t={t} />)}
-                    {feed.waiting.length > 0 && <li className="now" aria-label={t("fl.now")}><i /><span>{t("fl.now")}</span></li>}
-                    {feed.done.map((x) => <FeedRow key={x.id} x={x} t={t} />)}
-                  </ol>
-                </div>
-              </>}
+                <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
+              </div>}
 
-              {view === "overview" && <details id="handling" className="card fold"><summary>{t("fl.more.handling")}</summary>
+              {/* 2) الأرض: زمن الوقفة (OTP) ومرحلة الرحلة */}
+              {view === "overview" && <div id="sec-otp" className="fsec">
+                <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: Date.now() }}
+                  delayAction={<details className="otp-delay" open={focus === "delay"}><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />
+                {journey && <FlightJourney j={journey} />}
+              </div>}
+
+              {/* 3) الخط الزمني: ترتيب الأحداث فقط (القادم ثم الذي تم) */}
+              {view === "overview" && feed && <div className="card" id="sec-timeline"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
+                {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
+                <ol className="vt">
+                  {[...feed.waiting].reverse().map((x) => <FeedRow key={x.id} x={x} wait t={t} />)}
+                  {feed.waiting.length > 0 && <li className="now" aria-label={t("fl.now")}><i /><span>{t("fl.now")}</span></li>}
+                  {feed.done.map((x) => <FeedRow key={x.id} x={x} t={t} />)}
+                </ol>
+              </div>}
+
+              {/* 4) التفاصيل المطوية: التسجيل اليدوي، المراسلات، التدقيق */}
+              {view === "overview" && <details id="handling" className="card fold" open={focus === "handling"}><summary>{t("fl.more.handling")}</summary>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
               </details>}
 
-              {view === "overview" && <details className="card fold" open={!!sp.compose}><summary>{t("fl.more.messages")}{sel.mails.length ? ` (${sel.mails.length})` : ""}</summary>
+              {view === "overview" && <details id="messages" className="card fold" open={!!sp.compose || focus === "messages"}><summary>{t("fl.more.messages")}{sel.mails.length ? ` (${sel.mails.length})` : ""}</summary>
                 <div className="card"><h2>{t("fl.mails.title")}</h2>
                   {sel.mails.length === 0 && <p className="muted">{t("fl.mails.none")}</p>}
                   <ul className="mlist">{sel.mails.map((m) => <li key={m.triageId}><i className={`dot ${m.status === "new" ? "info" : "ok"}`} /><div><b><Link href={`/inbox?id=${m.triageId}`}><bdi>{m.subject ?? t("fl.mail.fallback")}</bdi></Link></b><small className="muted">{[m.from, m.at ? fmtUtc(m.at) : null, m.draft?.status === "draft" ? t("fl.mail.draftWaiting") : null].filter(Boolean).join(" · ")}</small></div></li>)}</ul>
@@ -154,7 +152,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               {view === "movement" && cc?.ok && <MovementLibrary cc={cc.data} companyId={d.company.id} canAct={sel.canAct} delayCodes={sel.delayCodes} />}
               {view === "docs" && cc?.ok && <DocsPanel cc={cc.data} />}
 
-              {view === "overview" && <details className="card fold"><summary>{t("fl.more.audit")}</summary>
+              {view === "overview" && <details id="audit" className="card fold"><summary>{t("fl.more.audit")}</summary>
                 {audit.length === 0 && <p className="muted">{t("fl.audit.none")}</p>}
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
               </details>}

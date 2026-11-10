@@ -47,15 +47,15 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
   const list = useMemo(() => rows.filter((r) => (dayF === "all" || (r.dayKey === todayKey && !r.stale)) && (!airline || r.airlineCode === airline) && (!station || (r.station ?? "—") === station) && matches(r, st) && (!needle || [r.flightIn, r.flightOut, r.origin, r.station, r.dest, r.reg, r.airlineName, r.airlineCode].some((x) => (x ?? "").toLowerCase().includes(needle)))), [rows, airline, station, st, needle, dayF, todayKey]);
 
   const groups = useMemo(() => {
-    const key = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineCode : r.stale ? "~stale" : r.dayKey);
-    const name = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineName : r.stale ? L.stale : r.dayKey === todayKey ? `${L.today} · ${r.dayLabel}` : r.dayKey === tomKey ? `${L.tomorrow} · ${r.dayLabel}` : r.dayLabel);
+    const key = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineCode : tab === "active" && r.attn ? "!attn" : r.stale ? "~stale" : r.dayKey);
+    const name = (r: BoardRow) => (group === "station" ? r.station ?? "—" : group === "airline" ? r.airlineName : tab === "active" && r.attn ? L.kAttn : r.stale ? L.stale : r.dayKey === todayKey ? `${L.today} · ${r.dayLabel}` : r.dayKey === tomKey ? `${L.tomorrow} · ${r.dayLabel}` : r.dayLabel);
     const m = new Map<string, { key: string; name: string; rows: BoardRow[] }>();
     list.forEach((r) => { const k = key(r); const g = m.get(k) ?? { key: k, name: name(r), rows: [] }; g.rows.push(r); m.set(k, g); });
     const out = [...m.values()];
-    out.forEach((g) => g.rows.sort((a, b) => Number(b.attn) - Number(a.attn) || (a.arr ?? 9e15) - (b.arr ?? 9e15)));
+    out.forEach((g) => g.rows.sort((a, b) => Number(b.attn) - Number(a.attn) || (b.level ?? "").localeCompare(a.level ?? "") || (a.arr ?? 9e15) - (b.arr ?? 9e15)));
     out.sort((a, b) => group === "day" ? a.key.localeCompare(b.key) : b.rows.filter((r) => r.attn).length - a.rows.filter((r) => r.attn).length || b.rows.length - a.rows.length);
     return out;
-  }, [list, group, todayKey, tomKey, L]);
+  }, [list, group, tab, todayKey, tomKey, L]);
 
   const [lo, hi] = useMemo(() => {
     if (win === "roll") return [now - 2 * 3600e3, now + 10 * 3600e3];
@@ -100,6 +100,12 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
           </div></div>
       </section>
 
+      {rows.length > 0 && <section className="fb-sum" aria-label={L.kAria}>
+        <div className="fb-kpis" role="group" aria-label={L.kAria}>
+          {kpis.map(([k, label, n]) => <button key={k} type="button" className={`fb-kpi k-${k} ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(st === k && k !== "all" ? "all" : k)}><b className="ltr">{n}</b><small>{label}</small></button>)}
+        </div>
+      </section>}
+
       <div className="fb-bar">
         <input type="search" className="fb-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={L.search} aria-label={L.search} />
         <div className="fb-seg" role="group" aria-label={L.tabAria}>
@@ -112,16 +118,21 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
       </div>
 
       <div className="fb-meta">
-        <select className="pick fb-sel" value={airline} onChange={(e) => setAirline(e.target.value)} aria-label={L.airlines}>
-          <option value="">{L.allAirlines}</option>{airlines.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
-        <select className="pick fb-sel" value={station} onChange={(e) => setStation(e.target.value)} aria-label={L.stations}>
-          <option value="">{L.allStations}</option>{stations.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
         <span role="status">{fill(L.results, { n: list.length, m: rows.length })}</span>
         {anyFilter && <button type="button" className="fb-link" onClick={reset}>{L.clear}</button>}
         <span className="grow" />
-        <label className="fb-grp">{L.groupBy}
-          <select className="pick" value={group} onChange={(e) => setGroup(e.target.value as Group)}><option value="station">{L.gStation}</option><option value="airline">{L.gAirline}</option><option value="day">{L.gDay}</option></select></label>
-        {view === "time" && <div className="fb-seg sm" role="group" aria-label={L.winAria}><button type="button" className={win === "all" ? "on" : ""} aria-pressed={win === "all"} onClick={() => setWin("all")}>{L.wAll}</button><button type="button" className={win === "roll" ? "on" : ""} aria-pressed={win === "roll"} onClick={() => setWin("roll")}>{L.wRoll}</button></div>}
+        <details className="fb-adv" open={!!(airline || station)}>
+          <summary className="fb-link">{L.more}</summary>
+          <div className="fb-meta">
+            <select className="pick fb-sel" value={airline} onChange={(e) => setAirline(e.target.value)} aria-label={L.airlines}>
+              <option value="">{L.allAirlines}</option>{airlines.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
+            <select className="pick fb-sel" value={station} onChange={(e) => setStation(e.target.value)} aria-label={L.stations}>
+              <option value="">{L.allStations}</option>{stations.map(([a, n]) => <option key={a} value={a}>{a} ({n})</option>)}</select>
+            <label className="fb-grp">{L.groupBy}
+              <select className="pick" value={group} onChange={(e) => setGroup(e.target.value as Group)}><option value="station">{L.gStation}</option><option value="airline">{L.gAirline}</option><option value="day">{L.gDay}</option></select></label>
+            {view === "time" && <div className="fb-seg sm" role="group" aria-label={L.winAria}><button type="button" className={win === "all" ? "on" : ""} aria-pressed={win === "all"} onClick={() => setWin("all")}>{L.wAll}</button><button type="button" className={win === "roll" ? "on" : ""} aria-pressed={win === "roll"} onClick={() => setWin("roll")}>{L.wRoll}</button></div>}
+          </div>
+        </details>
       </div>
 
       {list.length === 0 && <section className="card"><p className="muted">{rows.length === 0 ? (tab === "active" ? L.noneActive : L.noneDone) : L.noneMatch}</p></section>}
@@ -166,13 +177,6 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
             </button></li>))}</ul>}
         </section>))}
 
-      {rows.length > 0 && <section className="fb-sum" aria-label={L.kAria}>
-        <div className="fb-kpis" role="group" aria-label={L.kAria}>
-          {kpis.map(([k, label, n]) => <button key={k} type="button" className={`fb-kpi k-${k} ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(st === k && k !== "all" ? "all" : k)}><b className="ltr">{n}</b><small>{label}</small></button>)}
-        </div>
-        <button type="button" className="btn gold fb-all" onClick={reset}>{L.showAll}</button>
-      </section>}
-
       {cur && <>
         <div className="fb-scrim" onClick={() => setSel(null)} aria-hidden="true" />
         <aside className={`fb-sheet t-${cur.tone}`} role="dialog" aria-modal="true" aria-label={cur.flightIn ?? cur.flightOut ?? ""}>
@@ -187,9 +191,9 @@ export default function FlightsBoard({ rows, L, now0, tab, q0, importHref, doneH
           {cur.stepsTotal > 0 && <div><div className="bar" aria-hidden="true"><i style={{ width: `${(cur.stepsDone / cur.stepsTotal) * 100}%` }} /></div><small className="muted">{fill(L.steps, { a: cur.stepsDone, b: cur.stepsTotal })}{cur.critical > 0 ? ` · ${fill(L.crit, { n: cur.critical })}` : ""}</small></div>}
           <div className="fb-acts">
             <Link className="btn gold" href={cur.href}>{L.open}</Link>
-            <Link className="btn" href={`${cur.href}&view=handling`}>{L.vHandling}</Link>
-            <Link className="btn" href={`${cur.href}&view=messages`}>{L.vMessages}</Link>
-            <Link className="btn" href={`${cur.href}&view=delay`}>{L.vDelay}</Link>
+            <Link className="btn" href={`${cur.href}&view=handling#handling`}>{L.vHandling}</Link>
+            <Link className="btn" href={`${cur.href}&view=messages#messages`}>{L.vMessages}</Link>
+            <Link className="btn" href={`${cur.href}&view=delay#sec-otp`}>{L.vDelay}</Link>
           </div>
         </aside></>}
     </div>

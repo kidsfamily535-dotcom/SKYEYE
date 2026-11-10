@@ -682,3 +682,9 @@ label.btn.disabled{opacity:.45;pointer-events:none}
   .fl-hd .btn{flex:1 1 100%}
 }
 @media (hover:none){.fl-actions .btn.sm{min-height:44px}}
+
+/* flight file: grouped sections keep the same rhythm as .ws; empty sections vanish; anchors land below the top bar */
+.fsec{display:flex;flex-direction:column;gap:14px;min-width:0}.fsec:empty{display:none}
+#sec-now,#sec-otp,#sec-timeline,#handling,#messages,#audit,#questions,#rqm{scroll-margin-top:84px}
+.ws .tabs.views a{text-decoration:none}
+.fb-adv>summary{cursor:pointer;list-style:none}.fb-adv>summary::-webkit-details-marker{display:none}.fb-adv[open]{flex-basis:100%}.fb-adv[open]>summary{margin-bottom:8px}
