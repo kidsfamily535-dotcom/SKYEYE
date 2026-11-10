@@ -546,4 +546,7 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - القاعدة: `flights.operator_type` يقبل commercial/private/cargo/medevac، و`flights.type_source` (schedule / agent_suggested / employee_confirmed). رحلة medevac تستخدم مسار المعالم الخاص (private) كاملاً. جدولا `flight_type_signals` (مسودة) و`flight_type_suggestions` موجودان لكن لا شيء يقرأهما بعد (الكاشف لم يُبنَ).
 - الواجهة: شارة النوع (خاصة / شحن / إسعاف) على بطاقات لوحة الرحلات وفي رأس ملف الرحلة، ورحلة الإسعاف تُرتَّب أول القائمة دائماً. التجارية بلا شارة.
 - تنبيه: `supabase/migrations/manual_eta_and_status_sync.sql` يحوي نسخة قديمة من `generate_turnaround_checkins` بدون medevac؛ لا تُعد تشغيله وإلا يسقط الإسعاف إلى المسار العادي.
-- لم يُختبر في المتصفح (نجح فحص TypeScript فقط).
+- الكاشف (قاعدة): `private.detect_flight_types(72)` يقرأ **النص الجديد فقط** من إيميلات آخر 72 ساعة المربوطة برحلة ويكتب اقتراحات `pending` فقط. كلمة قوية (MEDEVAC، STS/MEDEVAC، STS/HOSP، AIR AMBULANCE، MEDICAL FLIGHT، FREIGHTER، ALL CARGO) تكفي؛ الكلمات الضعيفة (AMBULANCE، CARGO، PRIVATE، VIP، GENERAL AVIATION) تحتاج كلمتين مختلفتين. لا يقرأ النص المقتبس. حرفا نوع الرحلة G و N من خطة الطيران غير مفعّلين. مجدول كل 5 دقائق (cron `skyeye-detect-flight-types`).
+- القرار: `public.decide_flight_type_suggestion(id, 'confirm'|'reject')` (للمستخدم المسجّل بصلاحية كتابة): التأكيد يغيّر النوع في ساقَي الدوران ويضع `type_source='employee_confirmed'`. بطاقة «تصنيف مقترح للرحلة» في ملف الرحلة (`components/FlightTypeSuggestions.tsx`).
+- اختُبر في معاملة تراجعت: إيميل MEDEVAC يولّد اقتراحاً واحداً، تكرار التشغيل لا يكرّر، كلمات ضعيفة فقط أو MEDEVAC داخل النص المقتبس لا تولّد شيئاً، والتأكيد يحدّث الساقين.
+- لم تُختبر الواجهة في المتصفح (نجح فحص TypeScript فقط).

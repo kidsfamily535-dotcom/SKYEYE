@@ -7,6 +7,8 @@ const asType = (v: unknown): FlightType => (v === "private" || v === "cargo" || 
 /** نوع الدوران = أعلى نوع بين ساقيه (إسعاف ثم خاصة ثم شحن ثم تجارية) */
 const topType = (types: unknown[]): FlightType => types.map(asType).reduce<FlightType>((m, t) => (TYPE_RANK[t] > TYPE_RANK[m] ? t : m), "commercial");
 
+export type TypeSuggestion = { id: string; type: FlightType; evidence: string; at: string };
+
 export type FlightRow = {
   rotationId: string; flightIn: string | null; flightOut: string | null; registration: string | null; origin: string | null; station: string | null; destination: string | null;
   sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string;
@@ -115,6 +117,8 @@ export async function getFlight(rotationId: string, companyId: string) {
   ]);
   if (!f || !clock) return null;
   const legs = [clock.arrival_leg_id, clock.departure_leg_id] as string[];
+  const { data: sugData } = await sb.from("flight_type_suggestions").select("id, suggested_type, evidence_text, created_at").in("flight_id", legs).eq("status", "pending").order("created_at", { ascending: false });
+  const typeSuggestions: TypeSuggestion[] = ((sugData ?? []) as Raw[]).map((x) => ({ id: x.id, type: asType(x.suggested_type), evidence: String(x.evidence_text ?? ""), at: x.created_at }));
   const { data: legTypes } = await sb.from("flights").select("operator_type, type_source").in("id", legs);
   const flightType = topType((legTypes ?? []).map((x: Raw) => x.operator_type));
   const typeSource: string = (legTypes ?? []).find((x: Raw) => asType(x.operator_type) === flightType)?.type_source ?? "schedule";
@@ -164,7 +168,7 @@ export async function getFlight(rotationId: string, companyId: string) {
 
   return {
     file: f as Raw, clock: clock as Raw, arrivalLeg: clock.arrival_leg_id as string, departureLeg: clock.departure_leg_id as string,
-    steps, questions, statements, delayCodes, panel, mails, rqms, canAct: !!me, flightType, typeSource,
+    steps, questions, statements, delayCodes, panel, mails, rqms, canAct: !!me, flightType, typeSource, typeSuggestions,
     airline: key ? airlines.get(key) ?? { code: key, name: null, logoUrl: null } : null,
   };
 }

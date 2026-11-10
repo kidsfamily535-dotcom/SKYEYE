@@ -2,6 +2,7 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import Logo from "@/components/Logo";
 import RqmDrafts from "@/components/RqmDrafts";
+import FlightTypeSuggestions from "@/components/FlightTypeSuggestions";
 import FlightQuestions from "@/components/FlightQuestions";
 import FlightTimeline from "@/components/FlightTimeline";
 import MessageComposer from "@/components/MessageComposer";
@@ -109,6 +110,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 { id: "sec-now", label: t("fl.now.title") }, { id: "sec-otp", label: t("fl.otp.title") }, { id: "sec-timeline", label: t("fl.tl.title") },
                 { id: "handling", label: t("fl.more.handling") }, { id: "messages", label: t("fl.more.messages") }, { id: "movement", label: t("fl.mv.btn"), href: `${vh("movement")}#movement` }, { id: "docs", label: t("fl.doc.btn"), href: `${vh("docs")}#docs` }, { id: "audit", label: t("fl.more.audit") },
               ]} />}
+
+              <FlightTypeSuggestions items={sel.typeSuggestions} canAct={sel.canAct} />
 
               {/* 1) المطلوب الآن: كل ما ينتظر قراراً أو تصرفاً من الموظف في مكان واحد */}
               {<div id="sec-now" className="fsec">
