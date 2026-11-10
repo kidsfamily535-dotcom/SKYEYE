@@ -7,14 +7,21 @@ import { isPlatformAdmin } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import LangSwitch from "./LangSwitch";
 
-export default async function Shell({ data, children }: { data: CommandData; children: React.ReactNode }) {
+const NAV_MODULE: Record<string, string> = { "/inbox": "emails", "/flights": "flights" };
+
+/** module: the plan module this page needs. bypass: owner pages (never gated). A suspended company sees a notice instead of the page. */
+export default async function Shell({ data, children, module, bypass }: { data: CommandData; children: React.ReactNode; module?: string; bypass?: boolean }) {
   const [pending, owner] = await Promise.all([countPendingReports().catch(() => 0), isPlatformAdmin()]);
   const { t } = await getT();
+  const mods = data.access.modules;
+  const suspended = !bypass && data.access.status === "suspended";
+  const off = !bypass && !suspended && !!module && mods !== null && !mods.includes(module);
+  const hidden = bypass || mods === null ? [] : Object.entries(NAV_MODULE).filter(([, m]) => !mods.includes(m)).map(([h]) => h);
   return (
     <div className="app">
       <aside className="side" aria-label={t("nav.aria")}>
         <div className="brand"><b className="logo">{data.company.name.slice(0, 5)}</b><div><strong>SKYEYE</strong><small>{data.company.name} · {data.company.kind}</small></div></div>
-        <Nav />
+        <Nav hidden={hidden} />
       </aside>
       <div className="main">
         <header className="top">
@@ -29,7 +36,9 @@ export default async function Shell({ data, children }: { data: CommandData; chi
           {data.shadowMode && <span className="chip shadow">{t("shell.shadow")}</span>}
           <div className="user"><span className="av">{data.user.name.slice(0, 1)}</span><div><strong>{data.user.name}</strong><small>{data.user.role}</small></div><form action="/auth/signout" method="post"><button className="btn ghost">{t("shell.signout")}</button></form></div>
         </header>
-        {children}
+        {suspended || off ? (
+          <main className="page"><section className="card" role="alert"><h2>{t(suspended ? "own.gate.suspended.title" : "own.gate.off.title")}</h2><p className="muted">{t(suspended ? "own.gate.suspended.text" : "own.gate.off.text")}</p></section></main>
+        ) : children}
       </div>
     </div>
   );

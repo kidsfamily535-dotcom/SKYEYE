@@ -21,7 +21,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   const [d, p] = await Promise.all([getCommandData(), getShiftPage(sp.id)]);
 
   return (
-    <Shell data={d}>
+    <Shell data={d} module="handover">
       <main className="page">
         {!p && <section className="card"><p className="muted">{t("home.noMembership")}</p></section>}
         {p && (

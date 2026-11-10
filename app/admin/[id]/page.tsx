@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import { getCommandData } from "@/lib/data";
-import { MODULES, ROLES, STATUSES, countryName, getCompany, isForeign, listPlans, searchAirlines } from "@/lib/admin";
+import { MODULES, ROLES, STATUSES, countryName, getBilling, getCompany, isForeign, listPlans, renewDays, renewTone, searchAirlines } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
-import { addAirline, addMember, removeAirline, setModule, setPlan, setStatus } from "../actions";
+import { addAirline, addMember, removeAirline, renewCompany, setBilling, setModule, setPlan, setStatus } from "../actions";
 import "../admin.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -14,19 +14,22 @@ const TONE: Record<string, string> = { trial: "info", active: "ok", suspended: "
 export default async function CompanyPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ err?: string; q?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   if (!UUID.test(id)) notFound();
-  const [{ t, lang }, d, r, plans] = await Promise.all([getT(), getCommandData(), getCompany(id), listPlans()]);
+  const [{ t, lang }, d, r, plans, bill] = await Promise.all([getT(), getCommandData(), getCompany(id), listPlans(), getBilling(id)]);
   if (r.status !== "ok") notFound();
   const c = r.data;
   const isHandler = c.business_types.some((b) => ["ground_handler", "cargo_terminal", "forwarder", "fbo"].includes(b));
   const isAirline = c.business_types.some((b) => ["passenger_airline", "cargo_airline"].includes(b));
   const audience = isAirline && !isHandler ? "airline" : "handler";
+  const b = bill.status === "ok" ? bill.data : {};
+  const days = renewDays(c.renews_on);
+  const rl = days === null ? "—" : days < 0 ? t("own.b.late", { n: -days }) : days === 0 ? t("own.b.today") : t("own.b.in", { n: days });
   const q = (sp.q ?? "").trim();
   const hits = isHandler && q.length >= 2 ? await searchAirlines(q) : null;
   const have = new Set(c.airlines.map((a) => a.airline_id));
   const planLabel = (p: { name_ar: string; name_en: string }) => (lang === "ar" ? p.name_ar : p.name_en);
 
   return (
-    <Shell data={d}>
+    <Shell data={d} bypass>
       <main className="page admin">
         <section className="fhero" aria-label={c.name}>
           <h1>{c.name}</h1>
@@ -60,6 +63,27 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
             <label>{t("own.d.renews")}<input type="date" name="renews_on" defaultValue={c.renews_on ?? ""} className="ltr" /></label>
             <button className="btn">{t("own.d.save")}</button>
           </form>
+        </section>
+
+        <section className="card">
+          <h2>{t("own.b.title")}</h2>
+          <p><em className={`tag ${renewTone(days)}`}>{rl}</em> {c.renews_on && <small className="muted ltr">{c.renews_on}</small>}</p>
+          {!b.billing_cycle && <p className="muted">{t("own.b.none")}</p>}
+          <form action={setBilling} className="adm-inline">
+            <input type="hidden" name="id" value={c.id} />
+            <label>{t("own.b.cycle")}<select name="cycle" defaultValue={b.billing_cycle ?? "monthly"}><option value="monthly">{t("own.b.cycle.monthly")}</option><option value="yearly">{t("own.b.cycle.yearly")}</option></select></label>
+            <label>{t("own.b.started")}<input type="date" name="started_on" required defaultValue={b.started_on ?? ""} className="ltr" /></label>
+            <label>{t("own.b.amount")}<input name="amount_note" maxLength={500} defaultValue={b.amount_note ?? ""} /></label>
+            <button className="btn">{t("own.b.save")}</button>
+          </form>
+          <p className="muted"><small>{t("own.b.amountHint")}</small></p>
+          {b.billing_cycle && (
+            <form action={renewCompany} className="adm-inline">
+              <input type="hidden" name="id" value={c.id} />
+              <button className="btn gold">{t("own.b.renew")}</button>
+              <small className="muted">{t("own.b.renewHint")}</small>
+            </form>
+          )}
         </section>
 
         <section className="card">

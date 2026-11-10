@@ -56,3 +56,13 @@ export async function addMember(f: FormData): Promise<void> {
   const id = s(f, "id"); const role = s(f, "role"); if (!UUID.test(id)) redirect("/admin");
   back(id, one(role, ROLES) && await run("admin_add_member", { p_company: id, p_email: s(f, "email"), p_role: role }));
 }
+
+export async function setBilling(f: FormData): Promise<void> {
+  const id = s(f, "id"); const cycle = s(f, "cycle"); const d = s(f, "started_on"); if (!UUID.test(id)) redirect("/admin");
+  const ok = (cycle === "monthly" || cycle === "yearly") && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  back(id, ok && await run("admin_set_company_billing", { p_company: id, p_cycle: cycle, p_started_on: d, p_amount_note: s(f, "amount_note") }));
+}
+export async function renewCompany(f: FormData): Promise<void> {
+  const id = s(f, "id"); if (!UUID.test(id)) redirect("/admin");
+  back(id, await run("admin_renew_company", { p_company: id }));
+}

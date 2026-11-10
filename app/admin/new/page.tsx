@@ -14,7 +14,7 @@ export default async function NewCompanyPage({ searchParams }: { searchParams: P
   if (!owner) notFound();
   const group = (aud: "handler" | "airline") => plans.filter((p) => p.audience === aud);
   return (
-    <Shell data={d}>
+    <Shell data={d} bypass>
       <main className="page admin">
         <section className="card">
           <div className="adm-head"><h2>{t("own.new.title")}</h2><Link className="btn sm" href="/admin">{t("own.back")}</Link></div>

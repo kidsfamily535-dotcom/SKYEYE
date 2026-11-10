@@ -16,12 +16,12 @@ const items: { href: string; label: Key }[] = [
   { href: "/flights", label: "nav.flights" }, { href: "/agent", label: "nav.agent" },
 ];
 
-export default function Nav() {
+export default function Nav({ hidden = [] }: { hidden?: string[] }) {
   const path = usePathname();
   const { t } = useT();
   return (
     <nav>
-      {items.map((n) => {
+      {items.filter((n) => !hidden.includes(n.href)).map((n) => {
         const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
         return (
           <Link key={n.href} href={n.href} className={`nav ${on ? "on" : ""}`} aria-current={on ? "page" : undefined}>

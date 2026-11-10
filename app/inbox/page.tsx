@@ -52,7 +52,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     : sel.flightRotationId ? { label: t("inbox.act.openFile"), href: `/flights?id=${sel.flightRotationId}` } : null;
 
   return (
-    <Shell data={d}>
+    <Shell data={d} module="emails">
       <main className="page">
         <section className="fhero" aria-label={t("nav.inbox")}><h1>{t("nav.inbox")}</h1><p>{t("inbox.sub")}{newCount ? t("inbox.newCount", { n: newCount }) : ""}.</p></section>
         <div className={`imail ix ${sp.id ? "reading" : ""}`}>

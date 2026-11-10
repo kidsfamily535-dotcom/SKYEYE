@@ -12,7 +12,7 @@ export default async function ImportPage() {
   const [d, c] = await Promise.all([getCommandData(), getImportContext()]);
   const prepared = c?.canWrite ? await listSchedulePrepares() : [];
   return (
-    <Shell data={d}>
+    <Shell data={d} module="schedules">
       <main className="page">
         {c && c.canWrite && (
           <section className="card" aria-label={t("sp.title")}>

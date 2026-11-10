@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import { getCommandData } from "@/lib/data";
-import { countryName, listCompanies, listPlans } from "@/lib/admin";
+import { countryName, listCompanies, listPlans, renewDays, renewTone } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
 import "./admin.css";
@@ -15,8 +15,9 @@ export default async function AdminPage() {
   if (r.status === "denied") notFound();
   const plans = await listPlans();
   const planName = (c: string | null) => { const p = plans.find((x) => x.code === c); return p ? (lang === "ar" ? p.name_ar : p.name_en) : "—"; };
+  const rl = (n: number | null) => (n === null ? "—" : n < 0 ? t("own.b.late", { n: -n }) : n === 0 ? t("own.b.today") : t("own.b.in", { n }));
   return (
-    <Shell data={d}>
+    <Shell data={d} bypass>
       <main className="page admin">
         <section className="fhero" aria-label={t("own.title")}>
           <h1>{t("own.title")}</h1><p>{t("own.sub")}</p>
@@ -34,6 +35,7 @@ export default async function AdminPage() {
                   <dl className="facts">
                     <div><dt>{t("own.f.country")}</dt><dd>{countryName(c.country, lang)}</dd></div>
                     <div><dt>{t("own.f.plan")}</dt><dd>{planName(c.plan_code)}</dd></div>
+                    <div><dt>{t("own.f.renews")}</dt><dd><em className={`tag ${renewTone(renewDays(c.renews_on))}`}>{rl(renewDays(c.renews_on))}</em></dd></div>
                     <div><dt>{t("own.f.members")}</dt><dd>{c.members}</dd></div>
                     <div><dt>{t("own.f.airlines")}</dt><dd>{c.airlines}</dd></div>
                     <div><dt>{t("own.f.activity")}</dt><dd className="ltr">{utc(c.last_activity_at)}</dd></div>

@@ -61,3 +61,13 @@ export function isForeign(companyCountry: string | null, airlineCountry: string 
   if (!companyCountry || !airlineCountry) return false;
   try { return (new Intl.DisplayNames(["en"], { type: "region" }).of(companyCountry) ?? "").toLowerCase() !== airlineCountry.toLowerCase(); } catch { return false; }
 }
+
+export type Billing = { billing_cycle?: "monthly" | "yearly" | null; started_on?: string | null; amount_note?: string | null };
+export const getBilling = (id: string) => call<Billing>("admin_company_billing", { p_company: id });
+/** Whole days until the renewal date (negative = late). Null when no date. */
+export function renewDays(renewsOn: string | null): number | null {
+  if (!renewsOn) return null;
+  const t0 = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+  return Math.round((Date.parse(`${renewsOn.slice(0, 10)}T00:00:00Z`) - t0) / 86400000);
+}
+export const renewTone = (n: number | null) => (n === null ? "muted" : n < 0 ? "late" : n <= 7 ? "warn" : "ok");

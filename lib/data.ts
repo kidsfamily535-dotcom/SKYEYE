@@ -15,6 +15,8 @@ export type CommandData = {
   radar: RadarCounts;
   decisions: Decision[];
   requests: ActiveRequest[];
+  /** Subscription state of the signed-in user's company. modules === null means "no subscription row, nothing restricted". */
+  access: { status: string | null; modules: string[] | null };
 };
 
 const ROLE_KEY: Record<string, Key> = { owner: "data.role.owner", admin: "data.role.admin", operator: "data.role.operator", viewer: "data.role.viewer" };
@@ -28,13 +30,19 @@ export async function getCommandData(): Promise<CommandData> {
   const empty: CommandData = {
     noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "" },
     shadowMode: false, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
-    radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [],
+    radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [], access: { status: null, modules: null },
   };
   if (!user) return empty;
 
   const { data: m } = await sb.from("memberships").select("role, company_id, companies(id, name, logo_path)").eq("user_id", user.id).maybeSingle();
   const co = m && (Array.isArray(m.companies) ? m.companies[0] : m.companies);
   if (!m || !co) return empty;
+
+  const [sub, mods] = await Promise.all([
+    sb.from("company_subscriptions").select("status").eq("company_id", m.company_id).maybeSingle(),
+    sb.from("company_modules").select("module, enabled").eq("company_id", m.company_id),
+  ]);
+  const access = { status: sub.data?.status ?? null, modules: sub.data ? (mods.data ?? []).filter((x) => x.enabled).map((x) => String(x.module)) : null };
 
   const [emp, inbox, drafts, urgent, triage, reqs, alerts, pendingShift] = await Promise.all([
     sb.from("employees").select("full_name, role_title").eq("company_id", m.company_id).eq("membership_id", (await sb.from("memberships").select("id").eq("user_id", user.id).single()).data?.id ?? "").maybeSingle(),
@@ -61,5 +69,6 @@ export async function getCommandData(): Promise<CommandData> {
     radar: empty.radar, // flights/radar are wired in session 5
     decisions: [...shiftDecisions, ...alertDecisions, ...(triage.data ?? []).map((x) => ({ id: x.id, tone: urgencyTone(x.urgency), text: x.summary ?? t("data.email.new"), action: x.needs_reply ? t("data.email.reviewDraft") : t("data.email.open"), href: `/inbox?id=${x.id}` }))],
     requests: (reqs.data ?? []).map((r) => ({ id: r.id, airline: (r.flight_ref ?? "").slice(0, 2) || "•", title: r.title, status: r.current_stage, tone: r.urgent ? "late" : "info", next: r.next_action ?? "" })),
+    access,
   };
 }

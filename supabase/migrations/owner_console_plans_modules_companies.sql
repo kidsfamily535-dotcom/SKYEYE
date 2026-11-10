@@ -12,3 +12,10 @@
 --   admin_set_company_module(uuid, module, bool), admin_set_company_status(uuid, status, date),
 --   admin_add_company_airline(uuid, uuid), admin_remove_company_airline(uuid, uuid), admin_add_member(uuid, email, role)
 -- Full bodies live in the database (see pg_get_functiondef).
+
+-- Applied 2026-11-10 (migration owner_console_billing_and_suspension):
+--   company_subscriptions += billing_cycle ('monthly'|'yearly'), started_on date, amount_note text (a note only, not an invoice)
+--   private.can_write(cid) and private.is_admin(cid) now also return false when the company's status is 'suspended'
+--     (a suspended company can still read, but every write RPC / RLS write policy that uses them refuses)
+--   admin_company_billing(uuid), admin_set_company_billing(uuid, cycle, started_on, note) -> renews_on = started_on + 1 month/year,
+--   admin_renew_company(uuid) -> renews_on moves one cycle forward. Nothing is suspended automatically (owner decides).
