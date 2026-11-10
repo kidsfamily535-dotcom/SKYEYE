@@ -2,6 +2,8 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import Radar from "@/components/Radar";
 import ToneIcon from "@/components/ToneIcon";
+import LibraryPanel from "@/components/LibraryPanel";
+import { getLibrary, isLibKind } from "@/lib/library";
 import "./home.css";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
@@ -19,8 +21,15 @@ function greeting(now: Date) {
   return { key, date };
 }
 
-export default async function CommandPage() {
-  const [d, c] = await Promise.all([getCommandData(), getCockpit()]);
+type SP = { q?: string | string[]; k?: string | string[]; f?: string | string[]; fk?: string | string[] };
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+
+export default async function CommandPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams;
+  const q = one(sp.q).trim().slice(0, 80); const k = one(sp.k); const fk = one(sp.fk); const f = one(sp.f).trim().slice(0, 80);
+  const kind = isLibKind(k) ? k : null;
+  const open = f && isLibKind(fk) ? { no: f, kind: fk } : null;
+  const [d, c, lib] = await Promise.all([getCommandData(), getCockpit(), getLibrary(q, kind, open)]);
   const { t } = await getT();
   const g = greeting(new Date());
   const stream: Decision[] = [...c.flightDecisions, ...d.decisions].sort((a, b) => RANK[a.tone] - RANK[b.tone]);
@@ -87,6 +96,8 @@ export default async function CommandPage() {
             </li>))}
           </ul>
         </section>
+
+        <LibraryPanel data={lib} q={q} kind={kind} open={open} />
       </main>
     </Shell>
   );

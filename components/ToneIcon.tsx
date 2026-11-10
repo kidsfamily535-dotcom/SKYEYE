@@ -7,6 +7,7 @@ const PATHS: Record<string, string> = {
   inbox: "M3 7l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z",
   flights: "M2 14l20-8-6 14-4-6z",
   shift: "M4 5h16v15H4zM4 10h16M9 3v4M15 3v4",
+  files: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z",
   agent: "M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H4zM17 14h3v5h-3zM17 19a3 3 0 0 1-3 2h-2",
 };
 
