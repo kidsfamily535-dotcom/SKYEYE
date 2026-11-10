@@ -26,6 +26,7 @@ export default function FilesLibrary({ companyId, canWrite, active, drafts }: { 
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [why, setWhy] = useState("");
+  const [cat, setCat] = useState<string>("all");
   const [pending, start] = useTransition();
   const input = useRef<HTMLInputElement>(null);
   const nameOf = (id: string | null) => active.find((f) => f.id === id)?.name ?? null;
@@ -68,10 +69,15 @@ export default function FilesLibrary({ companyId, canWrite, active, drafts }: { 
     return labelOf(lang, "files.op", op);
   };
 
+  const counts = new Map<string, number>();
+  for (const f of active) if (f.category) counts.set(f.category, (counts.get(f.category) ?? 0) + 1);
+  const cats = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const shown = cat === "all" ? active : active.filter((f) => f.category === cat);
+
   const Meta = ({ f }: { f: LibFile }) => (
     <div className="fl-meta">
       <span className="ltr">v{f.version}</span><span className="ltr">{kb(f.size)}</span>
-      <span>{labelOf(lang, "files.src", f.source)}</span><span>{labelOf(lang, "files.by", f.createdByKind)}</span><span className="ltr">{when(f.createdAt)}</span>
+      <span>{labelOf(lang, "files.src", f.source)}</span>{f.category && <span className="tag info">{labelOf(lang, "cat", f.category)}</span>}<span>{labelOf(lang, "files.by", f.createdByKind)}</span><span className="ltr">{when(f.createdAt)}</span>
     </div>
   );
 
@@ -134,9 +140,14 @@ export default function FilesLibrary({ companyId, canWrite, active, drafts }: { 
 
       <section className="card" aria-label={tr("files.library")}>
         <h2>{tr("files.library")} <span className="tag info ltr">{active.length}</span></h2>
+        {cats.length > 1 && (
+          <div className="fl-cats" role="group" aria-label={tr("files.byCategory")}>
+            <button type="button" className={`chip${cat === "all" ? " on" : ""}`} aria-pressed={cat === "all"} onClick={() => setCat("all")}>{tr("files.cat.all")} <b className="ltr">{active.length}</b></button>
+            {cats.map(([c, n]) => <button key={c} type="button" className={`chip${cat === c ? " on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>{labelOf(lang, "cat", c)} <b className="ltr">{n}</b></button>)}
+          </div>)}
         {active.length === 0 ? <p className="muted">{tr("files.empty")}</p> : (
           <ul className="fl-list">
-            {active.map((f) => (
+            {shown.map((f) => (
               <li key={f.id} className="fl-item">
                 <i className="dot ok" />
                 <div className="fl-body"><b className="fl-name"><bdi className="ltr">{f.name}</bdi></b><Meta f={f} /></div>

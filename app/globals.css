@@ -692,3 +692,5 @@ label.btn.disabled{opacity:.45;pointer-events:none}
 .ws .tabs.views.fnav{flex-direction:row;gap:6px;flex-wrap:nowrap;align-self:stretch;overflow-x:auto;scrollbar-width:none;border-radius:22px}.ws .tabs.views.fnav::-webkit-scrollbar{display:none}.ws .fold{margin-top:0}
 /* phones: the 1280px row override above comes later in the file and was beating the phone layout, so the time cells collapsed onto each other */
 @media (max-width:760px){.fb-row{grid-template-columns:1fr auto;gap:8px 12px}}
+
+.fl-cats{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.fl-cats .chip{cursor:pointer;color:var(--ink);gap:8px}.fl-cats .chip.on{background:linear-gradient(90deg,#CFA24F,#EBC673);color:#1B2436;font-weight:700;border:0}
