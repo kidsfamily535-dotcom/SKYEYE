@@ -689,3 +689,6 @@ label.btn.disabled{opacity:.45;pointer-events:none}
 .ws .tabs.views a{text-decoration:none}
 .fb-adv>summary{cursor:pointer;list-style:none}.fb-adv>summary::-webkit-details-marker{display:none}.fb-adv[open]{flex-basis:100%}.fb-adv[open]>summary{margin-bottom:8px}
 .fold-link{display:block;text-decoration:none;color:inherit;font-weight:700;padding:14px 18px}#movement,#docs{scroll-margin-top:84px}
+.ws .tabs.views.fnav{flex-direction:row;gap:6px;flex-wrap:nowrap;align-self:stretch;overflow-x:auto;scrollbar-width:none;border-radius:22px}.ws .tabs.views.fnav::-webkit-scrollbar{display:none}.ws .fold{margin-top:0}
+/* phones: the 1280px row override above comes later in the file and was beating the phone layout, so the time cells collapsed onto each other */
+@media (max-width:760px){.fb-row{grid-template-columns:1fr auto;gap:8px 12px}}
