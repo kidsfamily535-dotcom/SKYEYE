@@ -1,0 +1,15 @@
+.admin .adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.admin .adm-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.admin .adm-head h2{margin:0}
+.admin .adm-link{text-decoration:none;color:inherit;display:block}
+.admin .adm-link:hover .card{border-color:var(--gold)}
+.admin .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.admin .list li{flex-wrap:wrap}
+.admin .list form{margin:0}
+.admin .adm-form{display:flex;flex-direction:column;gap:12px;margin-top:12px;max-width:520px}
+.admin .adm-form label,.admin .adm-inline label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.admin .adm-form input,.admin .adm-form select,.admin .adm-inline input,.admin .adm-inline select{min-height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:0 14px;width:100%}
+.admin .adm-form select option,.admin .adm-inline select option{color:#1B2436}
+.admin .adm-inline{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
+.admin .adm-inline label{flex:1;min-width:150px}
+.admin .grow{flex:1;min-width:0}
