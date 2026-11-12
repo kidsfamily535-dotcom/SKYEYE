@@ -550,3 +550,8 @@ Vercel: مشروع `skyeye` مربوط بـ GitHub (فرع main)، الرابط 
 - القرار: `public.decide_flight_type_suggestion(id, 'confirm'|'reject')` (للمستخدم المسجّل بصلاحية كتابة): التأكيد يغيّر النوع في ساقَي الدوران ويضع `type_source='employee_confirmed'`. بطاقة «تصنيف مقترح للرحلة» في ملف الرحلة (`components/FlightTypeSuggestions.tsx`).
 - اختُبر في معاملة تراجعت: إيميل MEDEVAC يولّد اقتراحاً واحداً، تكرار التشغيل لا يكرّر، كلمات ضعيفة فقط أو MEDEVAC داخل النص المقتبس لا تولّد شيئاً، والتأكيد يحدّث الساقين.
 - لم تُختبر الواجهة في المتصفح (نجح فحص TypeScript فقط).
+
+## 2026-11-12 — مرفقات الشات (إصلاح حلقة مقطوعة)
+**المشكلة:** زر 📎 في الشات يرفع الملف إلى `<company>/agent/...` ويرسل `path` فقط، بينما `agent-worker` المنشور يقرأ المرفقات بـ `id` من `company_files` (status: read / still_being_read / scanned_or_image_not_readable_yet...). فكانت المرفقات تُتجاهل. المرجع: 5 أوامر سابقة فيها `files`، واحد فقط (اختبار) فيه `id`.
+**الإصلاح (فرع `feat/agent-chat-attachments`، `app/agent/actions.ts`):** `sendToAgent` يسجّل كل ملف عبر `register_uploaded_file` (يعيد استعمال الصف إن وُجد بنفس `storage_path`) ويضع `id` بجانب `path` في `payload.files` (التوافق مع من يقرأ بالمسار محفوظ). اختُبر: `tsc --noEmit` فقط، **لم يُجرَّب بمتصفح**.
+**ملاحظات:** (1) نسخة `agent-worker` في الريبو أقدم من المنشورة بكثير (34 ألف حرف مقابل 60 ألف، ينقصها `files.ts` و`attachedFiles` و`agent_find_files`): لا تنشر منها قبل مزامنتها من المنشورة. (2) «هات لي الملف» (`agent_find_files` + روابط موقّعة لساعة) منشور وشغال. (3) 8 ملفات aircraft_docs ما زالت `needs_vision` (سكانات PDF): القراءة تحتاج مزود نموذج يدعم الصور، و`llm_providers` ليس فيه عمود يدل على ذلك ولا ميزانية لمزود الآن.
