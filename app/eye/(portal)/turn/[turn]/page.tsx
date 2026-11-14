@@ -2,7 +2,7 @@ import Link from "next/link";
 import { eyeT } from "@/lib/eye/i18n-server";
 import { eyeStations, eyeTurnState, isUuid, myWorkspaces, pickWorkspace } from "@/lib/eye/api";
 import { toOtpState } from "@/lib/eye/turn";
-import EyeStand from "@/components/eye/EyeStand";
+import EyeScene from "@/components/eye/EyeScene";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ export default async function EyeTurnPage({ params, searchParams }: { params: Pr
         {dir && <span className="eye-pill dir">{t(dir)}</span>}
         {stationName && <span className="muted eye-st">{t("station")}: {stationName}</span>}
       </div>
-      <EyeStand otp={otp} flightLabel={label} registration={tn.registration} />
+      <EyeScene otp={otp} flightLabel={label} registration={tn.registration} />
     </div>
   );
 }

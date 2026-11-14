@@ -3,6 +3,7 @@ import { eyeT } from "@/lib/eye/i18n-server";
 import { eyeFlights, eyeStations, myWorkspaces, pickWorkspace } from "@/lib/eye/api";
 import type { EyeFlight } from "@/lib/eye/types";
 import FlightRow from "@/components/eye/FlightRow";
+import EyeEmpty from "@/components/eye/EyeEmpty";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function EyeFlightsPage({ searchParams }: { searchParams: P
 
       {!fl.ok ? <p className="eye-note err" role="alert">{t("listErr")}</p> : (
         <>
-          {upcoming.length === 0 ? <p className="muted">{t("noFlights")}</p> : days.map((d) => (
+          {upcoming.length === 0 ? <EyeEmpty title={t("emptyTitle")} body={t("emptyBody")} /> : days.map((d) => (
             <section key={d} className="eye-day">
               <h2>{dayLabel(d, lang)}<small className="ltr">{upcoming.filter((f) => dayKey(f.scheduled_at) === d).length}</small></h2>
               <ul className="eye-list">{upcoming.filter((f) => dayKey(f.scheduled_at) === d).map(row)}</ul>

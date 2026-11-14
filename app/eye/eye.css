@@ -53,3 +53,30 @@
   .eye-row{padding-inline:14px;gap:12px}.eye-list::before{inset-inline-start:27px}
   .eye-fn,.eye-time{font-size:18px}
 }
+/* Empty / error / offline / loading states */
+.eye-empty-card{max-width:520px;margin:40px auto;padding:28px 24px;border-radius:26px;text-align:center;color:#F4EFE3;background:radial-gradient(120% 90% at 50% 0%,#0d1730,#04060b 80%);border:1px solid rgba(227,185,100,.14);display:flex;flex-direction:column;align-items:center;gap:8px}
+.eye-empty-card svg{width:min(240px,70%);height:auto;margin-bottom:6px}
+.eye-empty-card h2{margin:0;font-size:19px;color:var(--gold);font-weight:600}
+.eye-empty-card p{margin:0 0 6px;font-size:14px;line-height:1.8;opacity:.75;max-width:38ch}
+.eye-conn{position:sticky;top:0;z-index:20;padding:9px 16px;text-align:center;font-size:13px;background:rgba(242,174,64,.16);color:var(--warn);border-bottom:1px solid rgba(242,174,64,.4);backdrop-filter:blur(8px)}
+.eye-conn.back{background:rgba(227,185,100,.14);color:var(--gold);border-bottom-color:rgba(227,185,100,.4)}
+.eye-skel{height:72px;border-radius:20px;border:1px solid rgba(227,185,100,.1);background:linear-gradient(90deg,rgba(244,239,227,.04),rgba(244,239,227,.09),rgba(244,239,227,.04));background-size:200% 100%;animation:eye-shim 1.6s ease-in-out infinite}
+.eye-skel.head{height:34px;width:40%}
+@keyframes eye-shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.eye-skel{animation:none}}
+/* Departure log (after the aircraft has left) */
+.eye-log{max-width:560px;margin:0 auto 16px;padding:20px 20px 14px;border-radius:26px;color:#F4EFE3;background:radial-gradient(120% 90% at 50% 0%,#0d1730,#04060b 80%);border:1px solid rgba(227,185,100,.14)}
+.eye-log h2{margin:0;font-size:22px;font-weight:600;color:var(--gold)}
+.eye-log-sub{margin:4px 0 14px;font-size:13px;opacity:.65}
+.eye-log h3{margin:16px 0 6px;font-size:12.5px;letter-spacing:.08em;font-weight:600;color:rgba(227,185,100,.9)}
+.eye-log-times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.eye-log-times div{padding:10px 12px;border-radius:16px;border:1px solid rgba(244,239,227,.12);background:rgba(244,239,227,.04)}
+.eye-log-times dt{font-size:11px;opacity:.65;margin-bottom:4px}.eye-log-times dd{margin:0;font-size:20px;font-weight:600}
+.eye-log-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.eye-log-list li{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.6}
+.eye-log-list i{flex:none;width:10px;height:10px;border-radius:50%;background:#F2AE40;box-shadow:0 0 10px rgba(242,174,64,.5)}
+.eye-log-list span{flex:1;min-width:0}.eye-log-list b{flex:none;color:#F2AE40;font-weight:600}
+.eye-log-none{margin:0;font-size:13.5px;opacity:.65}
+@media (max-width:720px){.eye-log-times{grid-template-columns:1fr 1fr 1fr}.eye-log-times dd{font-size:17px}.eye-empty-card{margin:24px auto}}
+.eye-lines{display:flex;flex-wrap:wrap;gap:4px 16px}.eye-lines b{font-weight:600}
+.eye-scene{width:100%;box-sizing:border-box}

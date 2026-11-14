@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { eyeT } from "@/lib/eye/i18n-server";
 import { myWorkspaces } from "@/lib/eye/api";
 import EyeLang from "@/components/eye/EyeLang";
+import EyeOnline from "@/components/eye/EyeOnline";
 
 export async function generateMetadata(): Promise<Metadata> { const { t } = await eyeT(); return { title: t("brand") }; }
 
@@ -12,6 +13,7 @@ export default async function EyeLayout({ children }: { children: React.ReactNod
   const linked = ws.ok && ws.data.length > 0;
   return (
     <div className="eye-shell">
+      <EyeOnline offline={t("offline")} online={t("online")} />
       <header className="eye-top">
         <div className="eye-brand"><strong>{t("brand")}</strong><small className="ltr">{t("brandSub")}</small></div>
         <span className="grow" />
