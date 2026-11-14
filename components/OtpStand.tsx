@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { useT } from "@/components/I18n";
-import { LAYOUT, FALLBACK } from "@/lib/otp-layout";
+import { LAYOUT, FALLBACK, SCENE_W, SCENE_H, landscape } from "@/lib/otp-layout";
 import type { OtpState, OtpStep } from "@/lib/otp";
 import { otpLoadReasons, otpOpenTurn, otpRecordEnd, otpRecordStart, otpSetInBlock, otpStateReason, type ReasonOption } from "@/app/flights/otp-actions";
 
@@ -41,7 +41,7 @@ export default function OtpStand({ otp, rotationId, canAct, airline, flightLabel
   const body = ok?.snapshot.turn.body_class ?? (otp.status === "no_turn" ? otp.body_class : null);
   const st = open ? steps.find((s) => s.step_code === sel) ?? null : null;
 
-  // Photo slot: a real top-down photo in public/otp replaces the drawn aircraft when present (portrait 400:520, nose up).
+  // Photo slot: a real top-down photo in public/otp replaces the drawn aircraft when present (landscape 520:400, nose to the right).
   useEffect(() => {
     const tries = [body ? `/otp/stand-${body}.jpg` : null, "/otp/stand.jpg"].filter(Boolean) as string[];
     let alive = true;
@@ -99,8 +99,8 @@ export default function OtpStand({ otp, rotationId, canAct, airline, flightLabel
 
   const art = (photo
     ? <div className="otps-art" style={{ backgroundImage: `url(${photo})` }} />
-    : <svg className="otps-art otps-draw" viewBox="0 0 400 520" aria-hidden="true">
-        <g fill="rgba(255,255,255,.045)" stroke="rgba(244,239,227,.24)" strokeWidth="1.4">
+    : <svg className="otps-art otps-draw" viewBox="0 0 520 400" aria-hidden="true">
+        <g transform="translate(520 0) rotate(90)" fill="rgba(255,255,255,.045)" stroke="rgba(244,239,227,.24)" strokeWidth="1.4">
           <path d="M172 205 L40 300 L40 324 L172 272Z" /><path d="M228 205 L360 300 L360 324 L228 272Z" />
           <path d="M172 432 L108 468 L108 484 L172 462Z" /><path d="M228 432 L292 468 L292 484 L228 462Z" />
           <rect x="90" y="292" width="26" height="46" rx="12" /><rect x="284" y="292" width="26" height="46" rx="12" />
@@ -178,14 +178,16 @@ export default function OtpStand({ otp, rotationId, canAct, airline, flightLabel
 
   const nodes = steps.map((s) => {
     const p = LAYOUT[s.step_code] ?? FALLBACK;
-    const pos = { left: `${(p.x / 400) * 100}%`, top: `${(p.y / 520) * 100}%` };
+    const q = landscape(p);
+    const pos = { left: `${(q.x / SCENE_W) * 100}%`, top: `${(q.y / SCENE_H) * 100}%` };
+    const place = `${q.y / SCENE_H >= 0.5 ? "T" : "B"}${q.x / SCENE_W > 0.72 ? "r" : q.x / SCENE_W < 0.28 ? "l" : "c"}`;
     const cls = `otps-n ${s.step_state}${isLate(s) ? " late" : ""}${open && sel === s.step_code ? " sel" : ""}`;
     return (
       <div key={s.step_code}>
         <button type="button" className={cls} style={pos} onClick={() => pick(s.step_code)} aria-pressed={open && sel === s.step_code} aria-label={`${nm(s)}: ${chip(s)}`}>
           <span className="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={p.icon} /></svg>{s.step_state === "done_late" && <span className="bd">+{own(s)}</span>}</span>
         </button>
-        {open && sel === s.step_code && <div className={`otps-tag ${p.side}`} style={pos}><b><bdi>{nm(s)}</bdi></b></div>}
+        {open && sel === s.step_code && <div className={`otps-tag ${place}`} style={pos}><b><bdi>{nm(s)}</bdi></b></div>}
       </div>
     );
   });

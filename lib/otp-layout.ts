@@ -1,5 +1,6 @@
-// Where each service sits around the aircraft (viewBox 400 x 520, nose up) and its icon.
-// Tune x/y here if a real top-down photo is placed in public/otp/ (the photo should be portrait 400:520, nose up, centred).
+// Where each service sits around the aircraft and its icon. x/y below are authored on a 400 x 520 canvas with the nose up;
+// the scene shows the aircraft HORIZONTAL (nose to the right), so landscape() rotates a point 90 degrees clockwise onto a 520 x 400 canvas.
+// Tune x/y here if a real top-down photo is placed in public/otp/ (the photo should be landscape 520:400, nose to the right, centred).
 export type NodePos = { x: number; y: number; side: "L" | "R" | "C"; icon: string };
 
 export const LAYOUT: Record<string, NodePos> = {
@@ -17,3 +18,8 @@ export const LAYOUT: Record<string, NodePos> = {
 
 /** A service the DB knows about but this layout does not: placed in a spare slot instead of being dropped. */
 export const FALLBACK: NodePos = { x: 200, y: 300, side: "C", icon: "M12 5v14M5 12h14" };
+
+export const SCENE_W = 520;
+export const SCENE_H = 400;
+/** Rotate an authored (nose-up, 400x520) point onto the horizontal scene (nose right, 520x400). */
+export const landscape = (p: { x: number; y: number }) => ({ x: SCENE_W - p.y, y: p.x });
