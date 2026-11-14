@@ -21,6 +21,7 @@ export default function LoginPage() {
     if (error) { setError(t("login.error")); setBusy(false); return; }
     // Links this person to their company when an admin invited this confirmed email. Harmless if there is no invitation.
     await createClient().rpc("claim_my_invite");
+    await createClient().rpc("eye_accept_invites"); // airline invitation (Airline Eye), harmless when there is none
     await syncLanguageAfterLogin().catch(() => {});
     router.replace("/"); router.refresh();
   }

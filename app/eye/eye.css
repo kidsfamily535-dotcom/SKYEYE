@@ -1,0 +1,43 @@
+/* Airline Eye portal. Uses the SKYEYE colour variables; everything is scoped under .eye / .eye-* so nothing leaks into the agent app. */
+.eye{min-height:100vh;display:flex;flex-direction:column}
+.eye-top{display:flex;align-items:center;gap:10px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(5,14,32,.82);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+.eye-brand{display:flex;flex-direction:column;line-height:1.2}
+.eye-brand strong{font-size:20px;color:var(--gold);letter-spacing:.04em}
+.eye-brand small{font-size:10px;letter-spacing:.32em;color:var(--muted)}
+.eye-main{width:min(1000px,100%);margin:0 auto;padding:22px 20px 56px;flex:1}
+.eye-page{display:flex;flex-direction:column;gap:18px}
+.eye-page h1{margin:0 0 4px;font-size:clamp(24px,3vw,34px)}
+.eye-sub{margin:0;font-size:14px;line-height:1.8;max-width:60ch}
+.eye-empty{max-width:520px;margin:48px auto}.eye-empty h1{font-size:22px;color:var(--gold)}
+.eye-filter{display:flex;gap:8px;flex-wrap:wrap}
+.eye-note{margin:0;padding:12px 16px;border-radius:14px;border:1px solid rgba(242,174,64,.45);background:rgba(242,174,64,.08);color:var(--warn);font-size:14px}
+.eye-note.err{border-color:rgba(255,114,102,.5);background:rgba(255,114,102,.08);color:var(--late)}
+.eye-day{display:flex;flex-direction:column;gap:8px}
+.eye-day h2{margin:6px 0 0;font-size:15px;color:var(--gold);font-weight:600}
+.eye-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.eye-row{display:grid;grid-template-columns:110px 96px 128px 1fr;gap:12px;align-items:center;min-height:64px;padding:12px 16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none;backdrop-filter:blur(10px)}
+.eye-row:hover{background:rgba(227,185,100,.12)}
+.eye-dir{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.eye-dir i{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-style:normal;font-size:15px}
+.eye-row.arrival .eye-dir i{background:rgba(108,166,255,.18);color:var(--info)}
+.eye-row.departure .eye-dir i{background:rgba(227,185,100,.2);color:var(--gold)}
+.eye-fn{font-size:18px;font-weight:700;letter-spacing:.04em}
+.eye-time{font-size:17px}.eye-time small{display:block;font-size:11px;color:var(--muted)}
+.eye-meta{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--muted);font-size:13px;min-width:0}
+.eye-onstand{color:var(--ok)}
+.eye-earlier summary{cursor:pointer;color:var(--muted);min-height:44px;display:flex;align-items:center}
+.eye-earlier[open] summary{margin-bottom:6px}
+.eye-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.eye-back{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none;font-size:14px}
+.eye-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.eye-pill.dir{color:var(--gold);border-color:rgba(227,185,100,.45)}
+.eye-st{font-size:13px}
+.eye-login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.eye-login form{width:min(420px,100%);display:flex;flex-direction:column;gap:14px;padding:32px}
+.eye-login label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+.eye-login input{min-height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);padding:0 14px;color:var(--ink)}
+@media (max-width:720px){
+  .eye-top{padding:12px 14px}.eye-main{padding:16px 12px 48px}
+  .eye-row{grid-template-columns:1fr auto;grid-template-areas:"dir time" "fn time" "meta meta";row-gap:6px}
+  .eye-dir{grid-area:dir}.eye-fn{grid-area:fn}.eye-time{grid-area:time;text-align:end}.eye-meta{grid-area:meta}
+}

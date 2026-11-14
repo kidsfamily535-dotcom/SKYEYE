@@ -15,9 +15,26 @@ export async function middleware(req: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  const onLogin = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/signup");
-  if (!user && !onLogin) return NextResponse.redirect(new URL("/login", req.url));
-  if (user && onLogin) return NextResponse.redirect(new URL("/", req.url));
+  const path = req.nextUrl.pathname;
+  const inEye = path === "/eye" || path.startsWith("/eye/");
+  const onEyeLogin = path === "/eye/login";
+  const onLogin = path.startsWith("/login") || path.startsWith("/signup");
+  if (!user) return onLogin || onEyeLogin ? res : NextResponse.redirect(new URL(inEye ? "/eye/login" : "/login", req.url));
+  if (onEyeLogin) return NextResponse.redirect(new URL("/eye", req.url));
+  if (onLogin) return NextResponse.redirect(new URL("/", req.url));
+  // Airline Eye users live in /eye only; SKYEYE staff never see /eye. Routing convenience only: the real boundary is the database
+  // (RLS on SKYEYE tables, can_view() inside every eye_* function). If the lookup fails we do not redirect.
+  if (!path.startsWith("/auth/")) {
+    const [sky, eye] = await Promise.all([
+      supabase.from("memberships").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.rpc("eye_my_workspaces"),
+    ]);
+    if (!sky.error && !eye.error && Array.isArray(eye.data)) {
+      const isSky = (sky.count ?? 0) > 0, isEye = eye.data.length > 0;
+      if (isEye && !isSky && !inEye) return NextResponse.redirect(new URL("/eye", req.url));
+      if (!isEye && inEye) return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
   return res;
 }
 
