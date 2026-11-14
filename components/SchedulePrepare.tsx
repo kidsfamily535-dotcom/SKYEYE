@@ -16,6 +16,7 @@ export default function SchedulePrepare({ companyId, initial }: { companyId: str
   const [items, setItems] = useState(initial);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
   const [pending, start] = useTransition();
   const input = useRef<HTMLInputElement>(null);
   const waiting = items.some((i) => ACTIVE.has(i.status));
@@ -39,10 +40,11 @@ export default function SchedulePrepare({ companyId, initial }: { companyId: str
       const path = `${companyId}/schedules/${crypto.randomUUID()}/${safeKey(f.name)}`;
       const { error } = await createClient().storage.from("company-files").upload(path, f, { contentType: "application/pdf", upsert: false });
       if (error) { setBusy(false); setMsg({ ok: false, text: tr("sp.e.uploadFailed", { name: f.name }) }); return; }
-      const r = await requestSchedulePrepare(companyId, { path, name: f.name, size: f.size, type: "application/pdf" });
+      const r = await requestSchedulePrepare(companyId, { path, name: f.name, size: f.size, type: "application/pdf" }, note);
       setBusy(false);
       if (!r.ok) { setMsg({ ok: false, text: r.message }); return; }
-      setMsg({ ok: true, text: r.already ? tr("sp.already") : tr("sp.requested") });
+      if (r.noteSaved) setNote(""); // keep the text if saving it failed, so the employee does not have to retype it
+      setMsg(r.noteSaved ? { ok: true, text: r.already ? tr("sp.already") : tr("sp.requested") } : { ok: false, text: tr("sp.noteFailed") });
       setItems(await refreshSchedulePrepares());
     });
   };
@@ -50,6 +52,10 @@ export default function SchedulePrepare({ companyId, initial }: { companyId: str
   return (
     <div className="stack">
       <p className="muted">{tr("sp.intro")}</p>
+      <label className="stack" htmlFor="sp-note">
+        <span>{tr("sp.note")}</span>
+        <textarea id="sp-note" value={note} maxLength={1000} rows={2} placeholder={tr("sp.notePh")} onChange={(e) => setNote(e.currentTarget.value)} disabled={pending || busy} />
+      </label>
       <div className="row">
         <input ref={input} id="sp-file" type="file" accept=".pdf,application/pdf" className="sr" onChange={(e) => onFile(e.currentTarget.files)} />
         <label htmlFor="sp-file" className={`btn gold${pending || busy ? " disabled" : ""}`} aria-disabled={pending || busy}>{pending || busy ? tr("sp.sending") : tr("sp.pick")}</label>
@@ -67,6 +73,7 @@ export default function SchedulePrepare({ companyId, initial }: { companyId: str
                   <b className="ltr">{i.fileName}</b> <span className={`tag ${tone(i.status)}`}>{labelOf(lang, "sp.status", i.status)}</span>
                   {ACTIVE.has(i.status) && <small className="muted">{tr("sp.working")}</small>}
                   {i.status === "failed" && <small className="err">{tr("sp.failed")}</small>}
+                  {i.note && <small className="muted">{tr("sp.noteShown")} {i.note}</small>}
                   {s && i.status === "ready_for_review" && (
                     <>
                       <small className="muted">
