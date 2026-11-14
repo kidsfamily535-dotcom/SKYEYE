@@ -9,12 +9,14 @@ export type RadarCounts = { onGround: number | null; inbound: number | null; del
 export type CommandData = {
   noMembership: boolean;
   company: { id: string; name: string; kind: string; logoPath: string | null };
-  user: { name: string; role: string };
+  user: { name: string; role: string; roleCode: string };
   shadowMode: boolean;
   counts: { inboxToReview: number | null; draftsWaiting: number | null; urgentAlerts: number | null };
   radar: RadarCounts;
   decisions: Decision[];
   requests: ActiveRequest[];
+  /** Subscription state of the signed-in user's company. modules === null means "no subscription row, nothing restricted". */
+  access: { status: string | null; modules: string[] | null };
 };
 
 const ROLE_KEY: Record<string, Key> = { owner: "data.role.owner", admin: "data.role.admin", operator: "data.role.operator", viewer: "data.role.viewer" };
@@ -26,15 +28,21 @@ export async function getCommandData(): Promise<CommandData> {
   const { t } = await getT();
   const { data: { user } } = await sb.auth.getUser();
   const empty: CommandData = {
-    noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "" },
-    shadowMode: true, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
-    radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [],
+    noMembership: true, company: { id: "", name: "SKYEYE", kind: "", logoPath: null }, user: { name: user?.email ?? "", role: "", roleCode: "" },
+    shadowMode: false, counts: { inboxToReview: null, draftsWaiting: null, urgentAlerts: null },
+    radar: { onGround: null, inbound: null, delayed: null, awaitingMsg: null }, decisions: [], requests: [], access: { status: null, modules: null },
   };
   if (!user) return empty;
 
   const { data: m } = await sb.from("memberships").select("role, company_id, companies(id, name, logo_path)").eq("user_id", user.id).maybeSingle();
   const co = m && (Array.isArray(m.companies) ? m.companies[0] : m.companies);
   if (!m || !co) return empty;
+
+  const [sub, mods] = await Promise.all([
+    sb.from("company_subscriptions").select("status").eq("company_id", m.company_id).maybeSingle(),
+    sb.from("company_modules").select("module, enabled").eq("company_id", m.company_id),
+  ]);
+  const access = { status: sub.data?.status ?? null, modules: sub.data ? (mods.data ?? []).filter((x) => x.enabled).map((x) => String(x.module)) : null };
 
   const [emp, inbox, drafts, urgent, triage, reqs, alerts, pendingShift] = await Promise.all([
     sb.from("employees").select("full_name, role_title").eq("company_id", m.company_id).eq("membership_id", (await sb.from("memberships").select("id").eq("user_id", user.id).single()).data?.id ?? "").maybeSingle(),
@@ -55,11 +63,12 @@ export async function getCommandData(): Promise<CommandData> {
   return {
     noMembership: false,
     company: { id: co.id, name: co.name, kind: t("data.kind"), logoPath: co.logo_path },
-    user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? (ROLE_KEY[m.role] ? t(ROLE_KEY[m.role]) : "") },
-    shadowMode: true, // the agent sends nothing yet; becomes a per-company setting in session 7
+    user: { name: emp.data?.full_name ?? user.email ?? "", role: emp.data?.role_title ?? (ROLE_KEY[m.role] ? t(ROLE_KEY[m.role]) : ""), roleCode: m.role },
+    shadowMode: false, // shadow-mode label retired; the agent still never sends: every message is a draft a person sends
     counts: { inboxToReview: inbox.count ?? 0, draftsWaiting: drafts.count ?? 0, urgentAlerts: (urgent.count ?? 0) + (alerts.data ?? []).filter((a) => a.severity === "high").length },
     radar: empty.radar, // flights/radar are wired in session 5
     decisions: [...shiftDecisions, ...alertDecisions, ...(triage.data ?? []).map((x) => ({ id: x.id, tone: urgencyTone(x.urgency), text: x.summary ?? t("data.email.new"), action: x.needs_reply ? t("data.email.reviewDraft") : t("data.email.open"), href: `/inbox?id=${x.id}` }))],
     requests: (reqs.data ?? []).map((r) => ({ id: r.id, airline: (r.flight_ref ?? "").slice(0, 2) || "•", title: r.title, status: r.current_stage, tone: r.urgent ? "late" : "info", next: r.next_action ?? "" })),
+    access,
   };
 }

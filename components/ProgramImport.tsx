@@ -4,6 +4,7 @@ import Link from "next/link";
 import { previewProgram, commitProgram } from "@/app/flights/import/actions";
 import type { ProgramResult } from "@/lib/program";
 import { labelOf } from "@/lib/i18n";
+import { readProgramFile, FILE_ACCEPT } from "@/lib/program-file";
 import { useT } from "@/components/I18n";
 
 const TEMPLATE = "fn,stn,origin,dest,date,sta,std,dep,block_min,reg\nMS777/8,CAI,DXB,DXB,2026-11-01,14:00,15:30,,240,SU-GDM\n";
@@ -12,11 +13,23 @@ const SOFT = new Set(["airline_missing", "station_missing"]);
 export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
   const { t: tr, lang } = useT();
   const [text, setText] = useState(""); const [res, setRes] = useState<ProgramResult | null>(null);
-  const [msg, setMsg] = useState<string | null>(null); const [addMissing, setAddMissing] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null); const [note, setNote] = useState<string | null>(null); const [reading, setReading] = useState(false); const [addMissing, setAddMissing] = useState(false);
   const [pending, start] = useTransition();
 
-  const reset = (t: string) => { setText(t); setRes(null); setMsg(null); };
-  const onFile = async (f: File | undefined) => { if (!f) return; if (/\.xlsx?$/i.test(f.name)) { setMsg(tr("imp.xlsx")); return; } reset(await f.text()); };
+  const reset = (t: string) => { setText(t); setRes(null); setMsg(null); setNote(null); };
+  const onFile = async (input: HTMLInputElement) => {
+    const f = input.files?.[0]; if (!f) return;
+    setReading(true); setMsg(null); setNote(null); setRes(null);
+    const r = await readProgramFile(f);
+    setReading(false); input.value = "";
+    if (!r.ok) { setMsg(tr(`imp.f.${r.reason}`, { name: f.name })); return; }
+    setText(r.text);
+    const notes: string[] = [];
+    if (r.sheet) notes.push(tr("imp.f.sheet", { sheet: r.sheet }));
+    if (!r.headerFound) notes.push(tr("imp.f.noHeader"));
+    else if (r.kind === "pdf") notes.push(tr("imp.f.pdfCheck"));
+    setNote(notes.length ? notes.join(" ") : null);
+  };
   const preview = () => start(async () => { const r = await previewProgram(text); if (!r.ok) { setMsg(r.message); setRes(null); } else { setMsg(null); setRes(r.data); } });
   const commit = () => start(async () => { const r = await commitProgram(text, addMissing); if (!r.ok) { setMsg(r.message); return; } setRes(r.data); setMsg(null); });
   const download = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([TEMPLATE], { type: "text/csv" })); a.download = "flight-program-template.csv"; a.click(); };
@@ -32,12 +45,14 @@ export default function ProgramImport({ canAdmin }: { canAdmin: boolean }) {
         <div className="row">
           <button type="button" className="btn sm" onClick={download}>{tr("imp.template")}</button>
           <label className="btn sm" htmlFor="pf">{tr("imp.upload")}</label>
-          <input id="pf" type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" className="sr" onChange={(e) => onFile(e.target.files?.[0])} />
+          <input id="pf" type="file" accept={FILE_ACCEPT} className="sr" onChange={(e) => onFile(e.currentTarget)} />
         </div>
         <label htmlFor="pt">{tr("imp.programLabel")}</label>
         <textarea id="pt" className="ltr" rows={9} dir="ltr" value={text} onChange={(e) => reset(e.target.value)} placeholder={TEMPLATE} />
+        {reading && <p className="muted" role="status">{tr("imp.f.reading")}</p>}
+        {note && <p className="muted" role="status">{note}</p>}
         {msg && <p role="alert" className="err">{msg}</p>}
-        <div className="row"><button type="button" className="btn gold" disabled={pending || text.trim().length < 5} onClick={preview}>{pending && !res ? tr("imp.checking") : tr("imp.check")}</button></div>
+        <div className="row"><button type="button" className="btn gold" disabled={pending || reading || text.trim().length < 5} onClick={preview}>{pending && !res ? tr("imp.checking") : tr("imp.check")}</button></div>
       </>)}
 
       {res && !done && (

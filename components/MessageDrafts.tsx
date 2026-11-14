@@ -22,7 +22,7 @@ export default function MessageDrafts({ drafts, canAct }: { drafts: PanelDraft[]
   const save = async (d: PanelDraft) => { const r = await saveMessageDraft(d.id, cur(d)); if (r.ok) setDev((p) => ({ ...p, [d.id]: r.deviations })); return r; };
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>, id?: string) => start(async () => { const r = await fn(); setMsg(r.ok ? null : r.message ?? t("fl.rqm.err")); setOkId(r.ok ? id ?? null : null); setConfirm(null); });
   return (
-    <div className="card" id="drafts">
+    <div className="card paper-draft" id="drafts">
       <h2>{t("fl.drf.title")}<Hint>{t("fl.drf.hint")}</Hint></h2>
       {shown.length === 0 && <p className="muted">{t("fl.drf.none")}</p>}
       {shown.map((d) => {

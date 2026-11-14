@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { TFn } from "@/lib/i18n";
+import { ALIASES, norm, type ProgramKey } from "@/lib/program-cols";
 
 /** One row of the flight program, in the shape the database function expects. */
 export type ProgramRow = { fn: string; stn: string; origin: string; dest: string; date: string; sta: string; std: string; dep?: string; block_min?: string; reg?: string };
@@ -9,20 +10,6 @@ export type ProgramResult = {
   missing_airlines: string[]; missing_stations: string[]; airlines_added?: number; stations_added?: number;
   result?: { rows: number; flights_inserted: number; flights_skipped_existing: number };
 };
-
-const ALIASES: Record<keyof ProgramRow, string[]> = {
-  fn: ["fn", "flight", "flightno", "flightnumber", "flt", "رقمالرحلة", "الرحلة"],
-  stn: ["stn", "station", "المحطة"],
-  origin: ["origin", "from", "orig", "منمطار", "القدوم"],
-  dest: ["dest", "to", "destination", "الوجهة"],
-  date: ["date", "التاريخ"],
-  sta: ["sta", "arrival", "arr", "الوصول"],
-  std: ["std", "departure", "dep_time", "المغادرة"],
-  dep: ["dep", "originstd", "origindep"],
-  block_min: ["blockmin", "block", "blockminutes", "flighttime"],
-  reg: ["reg", "registration", "tail", "التسجيل"],
-};
-const norm = (s: string) => s.toLowerCase().replace(/[\s_\-./]/g, "");
 
 function splitLine(line: string, d: string): string[] {
   const out: string[] = []; let cur = ""; let q = false;
@@ -43,7 +30,11 @@ function fixDate(v: string): string {
   return s.replace(/[T ].*$/, "");
 }
 /** "09:05:00" -> "09:05" (Excel often adds seconds). */
-const fixTime = (v: string) => { const m = v.trim().match(/^(\d{1,2}):(\d{2})(:\d{2})?$/); return m ? `${m[1]}:${m[2]}` : v.trim(); };
+const fixTime = (v: string) => {
+  const s = v.trim();
+  const m = s.match(/^(?:\d{4}-\d{2}-\d{2}[T ])?(\d{1,2}):(\d{2})(:\d{2})?$/);
+  return m ? `${m[1]}:${m[2]}` : s;
+};
 
 export type ParseOut = { ok: true; rows: ProgramRow[] } | { ok: false; message: string };
 

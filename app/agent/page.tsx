@@ -5,6 +5,7 @@ import AgentLive from "@/components/AgentLive";
 import ChatDock from "@/components/ChatDock";
 import ChatScroll from "@/components/ChatScroll";
 import Hint from "@/components/Hint";
+import "./agent.css";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import { answerText, draftTextOf, getAgentPage, sourcesOf, missingOf } from "@/lib/agent";
@@ -14,22 +15,22 @@ import { labelOf } from "@/lib/i18n";
 const TONE: Record<string, string> = { queued: "warn", running: "info", done: "ok", failed: "late", cancelled: "info" };
 const clean = (s: string) => s.replace(/\*\*/g, "").replace(/^#+\s*/gm, "");
 
-export default async function AgentPage({ searchParams }: { searchParams: Promise<{ flight?: string }> }) {
+export default async function AgentPage({ searchParams }: { searchParams: Promise<{ flight?: string; say?: string }> }) {
   const sp = await searchParams;
   const { t, lang } = await getT();
   const [d, p] = await Promise.all([getCommandData(), getAgentPage({ flight: sp.flight })]);
   return (
     <Shell data={d}>
-      <main className="page">
+      <main className="page ag">
         {!p && <section className="card"><p className="muted">{t("home.noMembership")}</p></section>}
         {p && (
           <>
             <AgentLive companyId={p.companyId} active={p.active > 0} />
-            <section className="card chatshell" aria-label={t("agent.chat.aria")}>
-              <header className="chathead">
-                <div><h2>{t("nav.agent")}<Hint>{t("agent.hint")}</Hint></h2></div>
-                <span className="tag ok">{t("agent.online")}</span>
-              </header>
+            <section className="ag-hero" aria-label={t("nav.agent")}>
+              <div><h1>{t("nav.agent")}<Hint>{t("agent.hint")}</Hint></h1><p>{t("agent.sub")}</p></div>
+              <span className="ag-online"><i className="livedot" aria-hidden="true" />{t("agent.online")}</span>
+            </section>
+            <section className="card chatshell ag-shell" aria-label={t("agent.chat.aria")}>
               <div className="chatscroll" role="log" aria-live="polite">
                 {p.commands.length === 0 && <p className="muted empty">{t("agent.empty")}</p>}
                 <ol className="chat">
@@ -44,6 +45,7 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
                           {c.type !== "answer_question" && <b>{labelOf(lang, "agent.cmd", c.type)}</b>}
                           {c.targetType !== "company" && <small className="muted">{labelOf(lang, "agent.target", c.targetType)}{c.targetLabel ? <>: <bdi className="ltr">{c.targetLabel}</bdi></> : ""}</small>}
                           {c.instruction && <p><bdi>{c.instruction}</bdi></p>}
+                          {c.files.length > 0 && <ul className="ag-files" aria-label={t("agent.up.files")}>{c.files.map((f, i) => <li key={`${f.name}-${i}`}><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h9l4 4v14H6zM14 3v5h5" /></svg><bdi className="ltr">{f.name}</bdi></li>)}</ul>}
                         </div>
                         <div className="bubble agent">
                           <small className="muted">SKYEYE</small>
@@ -66,7 +68,7 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
                 </ol>
                 <ChatScroll signal={p.commands.map((c) => `${c.id}:${c.status}`).join("|")} />
               </div>
-              <ChatDock companyId={p.companyId} opts={p.opts} initial={p.ctx} canWrite={p.canWrite} />
+              <ChatDock companyId={p.companyId} opts={p.opts} initial={p.ctx} canWrite={p.canWrite} initialText={(sp.say ?? "").slice(0, 500)} />
             </section>
 
             {p.canWrite && (

@@ -1,0 +1,21 @@
+-- Applied to production 2026-11-10 (migration owner_console_plans_modules_companies).
+-- Owner console: plans, per-company subscription and modules, company country, owner-only functions.
+-- Tables (RLS on; members read their own company rows; NO write policies, writes only through the functions below):
+--   public.plans(code pk, name_ar, name_en, audience 'handler'|'airline', modules text[], price_note, sort, active)
+--   public.company_subscriptions(company_id pk, plan_code fk, status 'trial'|'active'|'suspended', renews_on, notes, updated_at)
+--   public.company_modules(company_id, module, enabled)  -- modules: emails flights requests complaints otp slots schedules handover handler_followup
+--   public.companies.country text (ISO-2, default 'EG', check ^[A-Z]{2}$)
+-- Seeded plans: trial, basic, full (handlers); otp_only, otp_follow (airlines). Existing companies backfilled: country EG, plan full, status trial.
+-- Functions (security definer, all call private.require_platform_admin(), EXECUTE only for authenticated, every change written to audit_log):
+--   admin_companies(), admin_company_detail(uuid), admin_search_airlines(text),
+--   admin_create_company(name, code, country, business_types[], plan), admin_set_company_plan(uuid, plan),
+--   admin_set_company_module(uuid, module, bool), admin_set_company_status(uuid, status, date),
+--   admin_add_company_airline(uuid, uuid), admin_remove_company_airline(uuid, uuid), admin_add_member(uuid, email, role)
+-- Full bodies live in the database (see pg_get_functiondef).
+
+-- Applied 2026-11-10 (migration owner_console_billing_and_suspension):
+--   company_subscriptions += billing_cycle ('monthly'|'yearly'), started_on date, amount_note text (a note only, not an invoice)
+--   private.can_write(cid) and private.is_admin(cid) now also return false when the company's status is 'suspended'
+--     (a suspended company can still read, but every write RPC / RLS write policy that uses them refuses)
+--   admin_company_billing(uuid), admin_set_company_billing(uuid, cycle, started_on, note) -> renews_on = started_on + 1 month/year,
+--   admin_renew_company(uuid) -> renews_on moves one cycle forward. Nothing is suspended automatically (owner decides).

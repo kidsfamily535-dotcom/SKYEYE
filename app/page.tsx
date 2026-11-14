@@ -1,14 +1,20 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/admin";
+import { inCompanyView } from "@/lib/mode";
 import Shell from "@/components/Shell";
-import Radar from "@/components/Radar";
+import ToneIcon from "@/components/ToneIcon";
+import LibraryPanel from "@/components/LibraryPanel";
+import { getLibrary, isLibKind } from "@/lib/library";
+import "./home.css";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
-import { fwd, type Key } from "@/lib/i18n";
+import type { Key } from "@/lib/i18n";
 
-const dash = (n: number | null) => (n ?? "—");
 const RANK: Record<string, number> = { late: 0, warn: 1, info: 2, ok: 3 };
-const short = (s: string, n = 90) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
+const short = (s: string, n = 70) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
 
 function greeting(now: Date) {
   const h = +new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", hour12: false }).format(now) % 24;
@@ -17,87 +23,97 @@ function greeting(now: Date) {
   return { key, date };
 }
 
-export default async function CommandPage() {
-  const [d, c] = await Promise.all([getCommandData(), getCockpit()]);
-  const { t, lang } = await getT();
+/** Fills {name} placeholders of a translated sentence with links, so the numbers live inside the sentence. */
+const fill = (tpl: string, m: Record<string, ReactNode>) =>
+  tpl.split(/(\{\w+\})/).map((p, i) => { const k = /^\{(\w+)\}$/.exec(p)?.[1]; return k && k in m ? <span key={i}>{m[k]}</span> : p; });
+
+type SP = { q?: string | string[]; k?: string | string[]; f?: string | string[]; fk?: string | string[] };
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+
+export default async function CommandPage({ searchParams }: { searchParams: Promise<SP> }) {
+  if ((await isPlatformAdmin()) && !(await inCompanyView())) redirect("/admin");
+  const sp = await searchParams;
+  const q = one(sp.q).trim().slice(0, 80); const k = one(sp.k); const fk = one(sp.fk); const f = one(sp.f).trim().slice(0, 80);
+  const kind = isLibKind(k) ? k : null;
+  const open = f && isLibKind(fk) ? { no: f, kind: fk } : null;
+  const searching = Boolean(q || kind || open);
+  const [d, c, lib] = await Promise.all([getCommandData(), getCockpit(), searching ? getLibrary(q, kind, open) : Promise.resolve(null)]);
+  const { t } = await getT();
   const g = greeting(new Date());
-  const go = fwd(lang);
-  const stream: Decision[] = [...c.flightDecisions, ...d.decisions].sort((a, b) => RANK[a.tone] - RANK[b.tone]);
-  const attention = (d.counts.urgentAlerts ?? 0) + (c.delayed ?? 0);
+
+  // One entry per situation: the same overdue flight can reach us from the flight rules and from the alerts.
+  const seen = new Set<string>();
+  const stream: Decision[] = [...c.flightDecisions, ...d.decisions]
+    .sort((a, b) => RANK[a.tone] - RANK[b.tone])
+    .filter((x) => (seen.has(x.text) ? false : (seen.add(x.text), true)));
   const first = stream[0];
-  const reco = d.noMembership ? null
-    : stream.length === 0 ? t("home.reco.none")
-    : t(stream.length === 1 ? "home.reco.one" : "home.reco.many", { n: stream.length, first: short(first.text) });
+  const rest = stream.slice(1);
+  const SHOW = 4;
 
-  const stat = (n: number | null | undefined, label: string, href: string, hot?: boolean) => (
-    <Link href={href} className="gl hstat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
+  const num = (n: number, href: string, hot?: boolean) => <Link href={href} className={`hm-n ltr${hot ? " hot" : ""}`}>{n}</Link>;
+  const sentences: ReactNode[] = [];
+  if (!d.noMembership) {
+    if ((c.todayFlights ?? 0) > 0 || (c.onGround ?? 0) > 0) sentences.push(fill(t("home.s.flights"), { today: num(c.todayFlights ?? 0, "/flights?day=today"), ground: num(c.onGround ?? 0, "/flights") }));
+    if ((c.delayed ?? 0) > 0) sentences.push(fill(t("home.s.late"), { n: num(c.delayed ?? 0, "/flights", true) }));
+    if ((d.counts.inboxToReview ?? 0) > 0) sentences.push(fill(t("home.s.mail"), { n: num(d.counts.inboxToReview ?? 0, "/inbox?f=new") }));
+    if ((d.counts.draftsWaiting ?? 0) > 0) sentences.push(fill(t("home.s.drafts"), { n: num(d.counts.draftsWaiting ?? 0, "/inbox?f=draft") }));
+  }
 
-  const chip = (href: string, label: string) => <Link href={href} className="hchip">{label}</Link>;
+  const pill = (x: Decision) => {
+    const body = <><i className={`dot ${x.tone}`} aria-hidden="true" /><span><bdi>{short(x.text)}</bdi></span><small>{t(`tone.${x.tone}` as Key)}</small></>;
+    return <li key={x.id}>{x.href ? <Link className={`hm-pill ${x.tone}`} href={x.href}>{body}</Link> : <span className={`hm-pill ${x.tone}`}>{body}</span>}</li>;
+  };
 
   return (
     <Shell data={d}>
-      <main className="page home">
-        <section className="hhero" aria-label={t("nav.home")}>
-          <div className="gl hradar">
-            <div className="ttl"><span className="livedot" aria-hidden="true" />{t("home.radar")}</div>
-            <Radar counts={c.radar} />
-          </div>
-          <div className="hhero-main">
-            <div className="gl hgreet">
-              <h1>{t("home.title", { greet: t(g.key) })}</h1>
-              <p><span className="ltr">{g.date}</span> · {t("home.subtitle")}</p>
-            </div>
-            <div className="hchips">
-              {chip("/agent", t("nav.agent"))}
-              {chip("/inbox", t("home.chip.drafts"))}
-              {chip("#attention", t("home.chip.alerts"))}
-              {chip("/handover", t("shell.handover"))}
-            </div>
-          </div>
+      <main className="page hm">
+        <section className="hm-hero" aria-label={t("nav.home")}>
+          <p className="hm-eyebrow"><span className="ltr">{g.date}</span></p>
+          <h1>{t("home.title", { greet: t(g.key) })}</h1>
+          {d.noMembership
+            ? <p className="hm-story">{t("home.noMembership")}</p>
+            : <p className="hm-story" aria-live="polite">{sentences.length === 0 ? t("home.reco.none") : sentences.map((s, i) => <span key={i} className="hm-sent">{s} </span>)}</p>}
         </section>
 
-        <section className="hstats" aria-label={t("home.stats.aria")}>
-          {stat(c.todayFlights, t("home.stat.today"), "/flights?day=today")}
-          {stat(c.onGround, t("home.stat.ground"), "/flights")}
-          {stat(attention, t("home.stat.attention"), "#attention", attention > 0)}
-          {stat(d.counts.inboxToReview, t("home.stat.emails"), "/inbox?f=new")}
-        </section>
-
-        {reco && (
-          <section className="reco gl" aria-label={t("home.reco.title")}>
-            <span className="eye" aria-hidden="true" />
-            <div><small className="muted">{t("home.reco.title")}</small><p>{reco}</p></div>
-            {first?.href && <Link className="btn gold" href={first.href}>{first.action}</Link>}
+        {first && (
+          <section id="attention" className={`hm-next ${first.tone}`} aria-label={t("home.next.title")}>
+            <span className="hm-next-ico" aria-hidden="true"><ToneIcon name={first.tone} size={26} /></span>
+            <div className="hm-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
+            {first.href && <Link className="hm-go" href={first.href}>{first.action}</Link>}
           </section>
         )}
 
-        <div className="cols2">
-          <section id="attention" aria-label={t("home.attention")}>
-            <h2 className="sec">{t("home.attention")}</h2>
-            {d.noMembership && <div className="card gl"><p className="muted">{t("home.noMembership")}</p></div>}
-            {!d.noMembership && stream.length === 0 && <div className="card gl"><p className="muted">{t("home.nothing")}</p></div>}
-            <ul className="flist">{stream.map((x, i) => (
-              <li key={x.id} className={`fcard ${i === 0 && x.tone === "late" ? "hot" : ""}`}>
-                <div className="arow">
-                  <span className={`fstatus ${x.tone === "ok" ? "ok" : x.tone}`}><b>{t(`tone.${x.tone}` as Key)}</b></span>
-                  <span className="atext"><bdi>{x.text}</bdi></span>
-                  {x.href ? <Link className={`btn sm ${i === 0 ? "gold" : ""}`} href={x.href}>{x.action}</Link> : null}
-                </div>
-              </li>))}
-            </ul>
+        {rest.length > 0 && (
+          <section className="hm-then" aria-label={t("home.then")}>
+            <h2>{t("home.then")}</h2>
+            <ul className="hm-pills">{rest.slice(0, SHOW).map(pill)}</ul>
+            {rest.length > SHOW && (
+              <details className="hm-more">
+                <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
+                <ul className="hm-pills">{rest.slice(SHOW).map(pill)}</ul>
+              </details>)}
           </section>
-          <div className="side-col">
-            <section className="card gl hqa">
-              <h2>{t("home.qa")}</h2>
-              <div className="stack">
-                <Link className="qa gold" href="/inbox?f=new">{t("home.qa.inbox")}<span aria-hidden="true">+</span></Link>
-                <Link className="qa" href="/flights?day=today">{t("home.stat.today")}<span aria-hidden="true">{go}</span></Link>
-                <Link className="qa" href="/handover">{t("home.qa.shift")}<span aria-hidden="true">{go}</span></Link>
-                <Link className="qa" href="/agent">{t("nav.agent")}<span aria-hidden="true">{go}</span></Link>
-              </div>
-            </section>
+        )}
+
+        {!d.noMembership && (
+          <form action="/agent" method="get" className="hm-say" role="search" aria-label={t("home.say.aria")}>
+            <span className="hm-say-ico" aria-hidden="true"><ToneIcon name="agent" size={22} /></span>
+            <input name="say" maxLength={500} autoComplete="off" placeholder={t("home.say.ph")} aria-label={t("home.say.aria")} />
+            <button className="btn gold">{t("home.say.go")}</button>
+          </form>
+        )}
+
+        {!d.noMembership && (
+          <div className="hm-find">
+            <form action="/" method="get" role="search" aria-label={t("home.find.aria")}>
+              <input name="q" defaultValue={q} className="ltr" autoComplete="off" placeholder={t("home.find.ph")} aria-label={t("home.find.aria")} />
+              <button className="btn">{t("home.find.go")}</button>
+            </form>
+            <Link href="/files" className="hm-docs">{t("lib.docs")} <small>{t("lib.docs.sub")}</small></Link>
           </div>
-        </div>
+        )}
+
+        {searching && <LibraryPanel data={lib} q={q} kind={kind} open={open} />}
       </main>
     </Shell>
   );

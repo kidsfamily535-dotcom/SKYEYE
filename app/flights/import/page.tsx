@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import ProgramImport from "@/components/ProgramImport";
+import SchedulePrepare from "@/components/SchedulePrepare";
+import { listSchedulePrepares } from "@/app/flights/import/schedule-actions";
 import { getCommandData } from "@/lib/data";
 import { getImportContext } from "@/lib/program";
 import { getT } from "@/lib/lang";
@@ -8,9 +10,16 @@ import { getT } from "@/lib/lang";
 export default async function ImportPage() {
   const { t } = await getT();
   const [d, c] = await Promise.all([getCommandData(), getImportContext()]);
+  const prepared = c?.canWrite ? await listSchedulePrepares() : [];
   return (
-    <Shell data={d}>
+    <Shell data={d} module="schedules">
       <main className="page">
+        {c && c.canWrite && (
+          <section className="card" aria-label={t("sp.title")}>
+            <h2>{t("sp.title")}</h2>
+            <SchedulePrepare companyId={c.companyId} initial={prepared} />
+          </section>
+        )}
         <section className="card" aria-label={t("imp.title")}>
           <div className="row"><h2 className="grow">{t("imp.title")}</h2><Link className="btn sm" href="/flights">{t("imp.back")}</Link></div>
           {!c && <p className="muted">{t("home.noMembership")}</p>}

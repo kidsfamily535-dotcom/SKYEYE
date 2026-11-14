@@ -22,10 +22,3 @@ export function cardStatus(r: FlightRow, t: TFn, now = Date.now()): CardStatus {
   }
   return { tone: "idle", code: "unknown", label: t("fl.cs.unknown") };
 }
-
-export function summarize(rows: FlightRow[], t: TFn, now = Date.now()) {
-  const today = new Date(now).toISOString().slice(0, 10);
-  let late = 0, ok = 0, soon = 0;
-  for (const r of rows) { const s = cardStatus(r, t, now); if (s.tone === "late") late++; else if (s.code === "onTime") ok++; else if (s.code === "soon") soon++; }
-  return { today: rows.filter((r) => (r.sta ?? r.std ?? "").slice(0, 10) === today).length, ok, late, soon };
-}

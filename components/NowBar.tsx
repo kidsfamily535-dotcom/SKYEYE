@@ -12,7 +12,7 @@ export default function NowBar({ items, composeHref, t }: { items: NeededItem[];
     <section className="card nowbar" aria-label={t("fl.now.title")}>
       <h2>{t("fl.now.title")}</h2>
       <ul>
-        {items.map((x, i) => x.kind === "alert" ? (
+        {items.slice(0, 1).map((x, i) => x.kind === "alert" ? (
           <li key={x.id} className={`nb ${x.level}`}>
             <span className={`lvl ${x.level}`}>{x.level}</span>
             <div><b><bdi>{x.reason}</bdi></b><small className="muted">{t("fl.now.action")} <bdi>{x.action}</bdi></small></div>
@@ -28,6 +28,17 @@ export default function NowBar({ items, composeHref, t }: { items: NeededItem[];
           </li>
         ))}
       </ul>
+      {items.length > 1 && (
+        <details className="nb-more"><summary>{t("fl.now.more", { n: items.length - 1 })}</summary>
+          <ul>
+            {items.slice(1).map((x, i) => x.kind === "alert" ? (
+              <li key={x.id} className={`nb ${x.level}`}><span className={`lvl ${x.level}`}>{x.level}</span><div><b><bdi>{x.reason}</bdi></b><small className="muted">{t("fl.now.action")} <bdi>{x.action}</bdi></small></div></li>
+            ) : (
+              <li key={`m2-${x.type}-${i}`} className="nb task"><i className={`dot ${x.isDue ? "warn" : "info"}`} aria-hidden="true" /><div><b className="ltr">{x.isDue ? t("fl.now.msgDue", { type: short(x.type) }) : t("fl.now.msgWait", { type: short(x.type), time: hm(x.dueAt) })}</b></div><Link className="btn sm" href={composeHref(x.type)}>{t("fl.now.open")}</Link></li>
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }

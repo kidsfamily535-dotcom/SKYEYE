@@ -1,0 +1,9 @@
+-- Applied to production 2026-11-10 (migration company_settings_team_and_types).
+-- Company settings: a company's own admin manages the team; the platform owner sets company types.
+-- All functions are security definer, refuse anyone else, and write to audit_log. EXECUTE only for authenticated.
+--   private.my_admin_company()                       the company where the caller is owner/admin (null if suspended)
+--   public.company_team()                            members of the caller's company with login email and employee name
+--   public.company_set_member_role(uuid, text)       admin/operator/viewer only; not self, not the owner row
+--   public.company_remove_member(uuid)               not self, not the owner row; detaches the employee record
+--   public.admin_set_company_types(uuid, text[])     platform owner only; six allowed business types
+-- Full bodies live in the database (see pg_get_functiondef).
