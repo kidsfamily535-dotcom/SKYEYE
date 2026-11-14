@@ -15,7 +15,7 @@ import { labelOf } from "@/lib/i18n";
 const TONE: Record<string, string> = { queued: "warn", running: "info", done: "ok", failed: "late", cancelled: "info" };
 const clean = (s: string) => s.replace(/\*\*/g, "").replace(/^#+\s*/gm, "");
 
-export default async function AgentPage({ searchParams }: { searchParams: Promise<{ flight?: string }> }) {
+export default async function AgentPage({ searchParams }: { searchParams: Promise<{ flight?: string; say?: string }> }) {
   const sp = await searchParams;
   const { t, lang } = await getT();
   const [d, p] = await Promise.all([getCommandData(), getAgentPage({ flight: sp.flight })]);
@@ -68,7 +68,7 @@ export default async function AgentPage({ searchParams }: { searchParams: Promis
                 </ol>
                 <ChatScroll signal={p.commands.map((c) => `${c.id}:${c.status}`).join("|")} />
               </div>
-              <ChatDock companyId={p.companyId} opts={p.opts} initial={p.ctx} canWrite={p.canWrite} />
+              <ChatDock companyId={p.companyId} opts={p.opts} initial={p.ctx} canWrite={p.canWrite} initialText={(sp.say ?? "").slice(0, 500)} />
             </section>
 
             {p.canWrite && (

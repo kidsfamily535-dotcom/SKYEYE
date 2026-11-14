@@ -18,10 +18,10 @@ const safeKey = (n: string) => { const e = extOf(n); const base = n.slice(0, Mat
 
 const SUGGEST_ITEM: Key[] = ["agent.si.0", "agent.si.1", "agent.si.2"];
 
-export default function ChatDock({ companyId, opts, initial, canWrite }: { companyId: string; opts: Opts; initial: { type: string; id: string } | null; canWrite: boolean }) {
+export default function ChatDock({ companyId, opts, initial, canWrite, initialText = "" }: { companyId: string; opts: Opts; initial: { type: string; id: string } | null; canWrite: boolean; initialText?: string }) {
   const { t: tr } = useT();
   const [ctx, setCtx] = useState(initial ? `${initial.type}:${initial.id}` : `company:${companyId}`);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [files, setFiles] = useState<File[]>([]);

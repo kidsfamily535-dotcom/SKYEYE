@@ -119,3 +119,33 @@
 @media (max-width:599px){.lib-entries li{grid-template-columns:minmax(0,1fr) auto}.lib-esum{grid-column:1/-1}.lib-row{grid-template-columns:minmax(0,1fr) auto}.lib-no{grid-column:1/-1}}
 @media (min-width:1100px){.lib-grid.has-detail{grid-template-columns:minmax(260px,.8fr) minmax(0,1.4fr);align-items:start}}
 .lib-docs-top{border-color:rgba(230,199,122,.5);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}
+
+/* ---- story home: the agent talks, no number tiles, no radar, no rows ---- */
+.hm-hero{min-height:0;gap:10px;padding:24px 20px 22px}
+.hm-story{margin:6px 0 0;font-size:clamp(17px,4.4vw,22px);line-height:2;color:#EEE8D8;max-width:36em}
+.hm-sent{display:inline}
+.hm-n{display:inline-block;min-width:1.6em;padding:0 .35em;margin:0 .15em;border-radius:99px;background:rgba(227,185,100,.2);border:1px solid rgba(230,199,122,.5);color:#F8E7B8;font-weight:700;text-align:center;text-decoration:none;line-height:1.55}
+.hm-n:hover{background:rgba(227,185,100,.38)}
+.hm-n.hot{background:rgba(255,114,102,.22);border-color:rgba(255,114,102,.65);color:#FFB3AB}
+.hm-then h2{margin:0 0 10px;font-size:14px;font-weight:600;color:var(--gold);letter-spacing:.04em}
+.hm-pills{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.hm-pill{display:inline-flex;align-items:center;gap:8px;max-width:100%;min-height:44px;padding:6px 14px;border-radius:99px;background:rgba(11,21,48,.7);border:1px solid rgba(230,199,122,.32);color:var(--ink);text-decoration:none;font-size:14px;line-height:1.5}
+a.hm-pill:hover{background:rgba(227,185,100,.16);border-color:var(--gold)}
+.hm-pill .dot{width:9px;height:9px;flex:none}
+.hm-pill span{min-width:0;overflow-wrap:anywhere}.hm-pill small{flex:none;color:var(--muted);font-size:11.5px}
+.hm-then .hm-more{margin-top:10px}
+.hm-say{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;padding-inline:12px 8px;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid rgba(230,199,122,.45);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.hm-say-ico{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:rgba(227,185,100,.18);color:var(--gold)}
+.hm-say input{flex:1;min-width:0;min-height:46px;border:0;background:transparent;color:var(--ink);font-size:15.5px}
+.hm-say input:focus-visible{outline:none}.hm-say:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,185,100,.22)}
+.hm-say .btn{min-height:46px;border-radius:16px}
+.hm-find{display:flex;flex-direction:column;gap:8px}
+.hm-find form{display:flex;gap:8px}
+.hm-find input{flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:99px;border:1px solid rgba(230,199,122,.28);background:rgba(11,21,48,.55);color:var(--ink);font-size:14.5px}
+.hm-find .btn{border-radius:99px}
+.hm-docs{align-self:flex-start;display:inline-flex;align-items:baseline;gap:8px;padding:6px 4px;color:var(--gold);text-decoration:none;font-size:13.5px}
+.hm-docs small{color:var(--muted);font-size:12px}.hm-docs:hover{text-decoration:underline}
+.hm-lib{display:block;border-radius:20px;background:rgba(11,21,48,.62);border:1px solid rgba(230,199,122,.28)}
+.lib-sum-static{cursor:default}
+.lib-close-all{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;color:var(--ink);text-decoration:none}.lib-close-all:hover{background:rgba(255,255,255,.1)}
+@media (min-width:700px){.hm-hero{padding:34px 34px 30px}.hm-story{font-size:24px}}

@@ -21,26 +21,15 @@ export default async function LibraryPanel({ data, q, kind, open }: Props) {
   const { t, lang } = await getT();
   const kindName = (k: string) => labelOf(lang, "lib.kind", k);
   return (
-    <>
-    <Link href="/files" className="lib-docs lib-docs-top"><span className="lib-docs-ico"><ToneIcon name="files" size={22} /></span><span><b>{t("lib.docs")}</b><small>{t("lib.docs.sub")}</small></span></Link>
-    <details id="library" className="hm-lib" open={Boolean(q || kind || open)}>
-      <summary className="lib-sum">
+    <section id="library" className="hm-lib" aria-label={t("lib.title")}>
+      <div className="lib-sum lib-sum-static">
         <span className="lib-sum-ico" aria-hidden="true"><ToneIcon name="files" size={22} /></span>
-        <span className="lib-sum-t"><b>{t("lib.title")}</b><small>{t("lib.open.hint")}</small></span>
-        <span className="lib-chev" aria-hidden="true" />
-      </summary>
-      <div className="lib-body">
-      <div className="lib-head">
-        <p>{t("lib.sub")}</p>
+        <span className="lib-sum-t"><b>{t("lib.title")}</b>{q && <small className="ltr"><bdi>{q}</bdi></small>}</span>
+        <Link href="/" className="lib-close-all" aria-label={t("home.find.close")}>✕</Link>
       </div>
-
+      <div className="lib-body">
       {!data && <p className="hm-empty">{t("home.noMembership")}</p>}
       {data && (<>
-        <form method="get" action="/" className="lib-search" role="search">
-          <input name="q" defaultValue={q} className="ltr" placeholder={t("lib.ph")} aria-label={t("lib.search")} autoComplete="off" />
-          {kind && <input type="hidden" name="k" value={kind} />}
-          <button className="btn gold">{t("lib.search")}</button>
-        </form>
         <div className="lib-kinds" role="group" aria-label={t("lib.kinds")}>
           <Link href={href(q, null)} className={`chip ${!kind ? "on" : ""}`} aria-current={!kind ? "true" : undefined}>{t("lib.kind.all")}</Link>
           {LIB_KINDS.map((k) => <Link key={k} href={href(q, k)} className={`chip ${kind === k ? "on" : ""}`} aria-current={kind === k ? "true" : undefined}>{kindName(k)}</Link>)}
@@ -106,7 +95,6 @@ export default async function LibraryPanel({ data, q, kind, open }: Props) {
         </div>
       </>)}
       </div>
-    </details>
-    </>
+    </section>
   );
 }

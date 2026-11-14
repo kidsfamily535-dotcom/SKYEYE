@@ -1,9 +1,9 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { isPlatformAdmin } from "@/lib/admin";
 import { inCompanyView } from "@/lib/mode";
 import Shell from "@/components/Shell";
-import Radar from "@/components/Radar";
 import ToneIcon from "@/components/ToneIcon";
 import LibraryPanel from "@/components/LibraryPanel";
 import { getLibrary, isLibKind } from "@/lib/library";
@@ -13,9 +13,8 @@ import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
 import type { Key } from "@/lib/i18n";
 
-const dash = (n: number | null) => (n ?? "—");
 const RANK: Record<string, number> = { late: 0, warn: 1, info: 2, ok: 3 };
-const short = (s: string, n = 90) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
+const short = (s: string, n = 70) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
 
 function greeting(now: Date) {
   const h = +new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", hour12: false }).format(now) % 24;
@@ -23,6 +22,10 @@ function greeting(now: Date) {
   const key: Key = h >= 5 && h < 12 ? "home.greet.morning" : h >= 12 ? "home.greet.evening" : "home.greet.night";
   return { key, date };
 }
+
+/** Fills {name} placeholders of a translated sentence with links, so the numbers live inside the sentence. */
+const fill = (tpl: string, m: Record<string, ReactNode>) =>
+  tpl.split(/(\{\w+\})/).map((p, i) => { const k = /^\{(\w+)\}$/.exec(p)?.[1]; return k && k in m ? <span key={i}>{m[k]}</span> : p; });
 
 type SP = { q?: string | string[]; k?: string | string[]; f?: string | string[]; fk?: string | string[] };
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -33,74 +36,84 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
   const q = one(sp.q).trim().slice(0, 80); const k = one(sp.k); const fk = one(sp.fk); const f = one(sp.f).trim().slice(0, 80);
   const kind = isLibKind(k) ? k : null;
   const open = f && isLibKind(fk) ? { no: f, kind: fk } : null;
-  const [d, c, lib] = await Promise.all([getCommandData(), getCockpit(), getLibrary(q, kind, open)]);
+  const searching = Boolean(q || kind || open);
+  const [d, c, lib] = await Promise.all([getCommandData(), getCockpit(), searching ? getLibrary(q, kind, open) : Promise.resolve(null)]);
   const { t } = await getT();
   const g = greeting(new Date());
-  const stream: Decision[] = [...c.flightDecisions, ...d.decisions].sort((a, b) => RANK[a.tone] - RANK[b.tone]);
-  const attention = (d.counts.urgentAlerts ?? 0) + (c.delayed ?? 0);
+
+  // One entry per situation: the same overdue flight can reach us from the flight rules and from the alerts.
+  const seen = new Set<string>();
+  const stream: Decision[] = [...c.flightDecisions, ...d.decisions]
+    .sort((a, b) => RANK[a.tone] - RANK[b.tone])
+    .filter((x) => (seen.has(x.text) ? false : (seen.add(x.text), true)));
   const first = stream[0];
-  const reco = d.noMembership ? null
-    : stream.length === 0 ? t("home.reco.none")
-    : t(stream.length === 1 ? "home.reco.one" : "home.reco.many", { n: stream.length, first: short(first.text) });
-
-  const stat = (n: number | null | undefined, label: string, href: string, hot?: boolean) => (
-    <Link href={href} className="hm-stat"><b className={`ltr ${hot ? "hot" : ""}`}>{d.noMembership ? "—" : dash(n ?? null)}</b><small>{label}</small></Link>);
-
   const rest = stream.slice(1);
-  const SHOW = 3;
-  const row = (x: Decision, i: number) => (
-    <li key={x.id} className={`hm-row ${x.tone}`}>
-      <span className="hm-row-ico"><ToneIcon name={x.tone} /></span>
-      <span className="hm-row-text"><b><bdi>{x.text}</bdi></b><small>{t(`tone.${x.tone}` as Key)}</small></span>
-      {x.href ? <Link className="hm-act" href={x.href}>{x.action}</Link> : null}
-    </li>);
+  const SHOW = 4;
+
+  const num = (n: number, href: string, hot?: boolean) => <Link href={href} className={`hm-n ltr${hot ? " hot" : ""}`}>{n}</Link>;
+  const sentences: ReactNode[] = [];
+  if (!d.noMembership) {
+    if ((c.todayFlights ?? 0) > 0 || (c.onGround ?? 0) > 0) sentences.push(fill(t("home.s.flights"), { today: num(c.todayFlights ?? 0, "/flights?day=today"), ground: num(c.onGround ?? 0, "/flights") }));
+    if ((c.delayed ?? 0) > 0) sentences.push(fill(t("home.s.late"), { n: num(c.delayed ?? 0, "/flights", true) }));
+    if ((d.counts.inboxToReview ?? 0) > 0) sentences.push(fill(t("home.s.mail"), { n: num(d.counts.inboxToReview ?? 0, "/inbox?f=new") }));
+    if ((d.counts.draftsWaiting ?? 0) > 0) sentences.push(fill(t("home.s.drafts"), { n: num(d.counts.draftsWaiting ?? 0, "/inbox?f=draft") }));
+  }
+
+  const pill = (x: Decision) => {
+    const body = <><i className={`dot ${x.tone}`} aria-hidden="true" /><span><bdi>{short(x.text)}</bdi></span><small>{t(`tone.${x.tone}` as Key)}</small></>;
+    return <li key={x.id}>{x.href ? <Link className={`hm-pill ${x.tone}`} href={x.href}>{body}</Link> : <span className={`hm-pill ${x.tone}`}>{body}</span>}</li>;
+  };
 
   return (
     <Shell data={d}>
       <main className="page hm">
         <section className="hm-hero" aria-label={t("nav.home")}>
-          <div className="hm-hero-top">
-            <div className="hm-greet">
-              <p className="hm-eyebrow"><span className="ltr">{g.date}</span></p>
-              <h1>{t("home.title", { greet: t(g.key) })}</h1>
-              <p>{t("home.subtitle")}</p>
-            </div>
-            <div className="hm-radar">
-              <div className="hm-radar-ttl"><span className="livedot" aria-hidden="true" />{t("home.radar")}</div>
-              <Radar counts={c.radar} />
-            </div>
-          </div>
-          <div className="hm-stats" role="group" aria-label={t("home.stats.aria")}>
-            {stat(c.todayFlights, t("home.stat.today"), "/flights?day=today")}
-            {stat(c.onGround, t("home.stat.ground"), "/flights")}
-            {stat(attention, t("home.stat.attention"), "#attention", attention > 0)}
-            {stat(d.counts.inboxToReview, t("home.stat.emails"), "/inbox?f=new")}
-          </div>
+          <p className="hm-eyebrow"><span className="ltr">{g.date}</span></p>
+          <h1>{t("home.title", { greet: t(g.key) })}</h1>
+          {d.noMembership
+            ? <p className="hm-story">{t("home.noMembership")}</p>
+            : <p className="hm-story" aria-live="polite">{sentences.length === 0 ? t("home.reco.none") : sentences.map((s, i) => <span key={i} className="hm-sent">{s} </span>)}</p>}
         </section>
 
-        {d.noMembership && <p className="hm-empty">{t("home.noMembership")}</p>}
-
-        {reco && (
-          <section id="attention" className={`hm-next ${first?.tone ?? "ok"}`} aria-label={t("home.reco.title")}>
-            <span className="hm-next-ico" aria-hidden="true"><ToneIcon name={first?.tone ?? "ok"} size={26} /></span>
-            <div className="hm-next-text"><h2>{t("home.reco.title")}</h2><p>{reco}</p></div>
-            {first?.href && <Link className="hm-go" href={first.href}>{first.action}</Link>}
+        {first && (
+          <section id="attention" className={`hm-next ${first.tone}`} aria-label={t("home.next.title")}>
+            <span className="hm-next-ico" aria-hidden="true"><ToneIcon name={first.tone} size={26} /></span>
+            <div className="hm-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
+            {first.href && <Link className="hm-go" href={first.href}>{first.action}</Link>}
           </section>
         )}
 
         {rest.length > 0 && (
-          <section className="hm-list" aria-label={t("home.attention")}>
-            <h2>{t("home.attention")} <span className="hm-count ltr">{rest.length}</span></h2>
-            <ul>{rest.slice(0, SHOW).map(row)}</ul>
+          <section className="hm-then" aria-label={t("home.then")}>
+            <h2>{t("home.then")}</h2>
+            <ul className="hm-pills">{rest.slice(0, SHOW).map(pill)}</ul>
             {rest.length > SHOW && (
               <details className="hm-more">
                 <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
-                <ul>{rest.slice(SHOW).map(row)}</ul>
+                <ul className="hm-pills">{rest.slice(SHOW).map(pill)}</ul>
               </details>)}
           </section>
         )}
 
-        <LibraryPanel data={lib} q={q} kind={kind} open={open} />
+        {!d.noMembership && (
+          <form action="/agent" method="get" className="hm-say" role="search" aria-label={t("home.say.aria")}>
+            <span className="hm-say-ico" aria-hidden="true"><ToneIcon name="agent" size={22} /></span>
+            <input name="say" maxLength={500} autoComplete="off" placeholder={t("home.say.ph")} aria-label={t("home.say.aria")} />
+            <button className="btn gold">{t("home.say.go")}</button>
+          </form>
+        )}
+
+        {!d.noMembership && (
+          <div className="hm-find">
+            <form action="/" method="get" role="search" aria-label={t("home.find.aria")}>
+              <input name="q" defaultValue={q} className="ltr" autoComplete="off" placeholder={t("home.find.ph")} aria-label={t("home.find.aria")} />
+              <button className="btn">{t("home.find.go")}</button>
+            </form>
+            <Link href="/files" className="hm-docs">{t("lib.docs")} <small>{t("lib.docs.sub")}</small></Link>
+          </div>
+        )}
+
+        {searching && <LibraryPanel data={lib} q={q} kind={kind} open={open} />}
       </main>
     </Shell>
   );
