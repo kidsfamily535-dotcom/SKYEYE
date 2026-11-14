@@ -1,5 +1,6 @@
 import "../eye.css";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { eyeT } from "@/lib/eye/i18n-server";
 import { myWorkspaces } from "@/lib/eye/api";
 import EyeLang from "@/components/eye/EyeLang";
@@ -11,11 +12,18 @@ export default async function EyeLayout({ children }: { children: React.ReactNod
   const { t, lang } = await eyeT();
   const ws = await myWorkspaces();
   const linked = ws.ok && ws.data.length > 0;
+  const isAdmin = ws.ok && ws.data.some((w) => w.role === "airline_admin");
   return (
     <div className="eye-shell">
       <EyeOnline offline={t("offline")} online={t("online")} />
       <header className="eye-top">
         <div className="eye-brand"><strong>{t("brand")}</strong><small className="ltr">{t("brandSub")}</small></div>
+        {linked && isAdmin && (
+          <nav className="eye-nav" aria-label={t("brand")}>
+            <Link href="/eye">{t("navFlights")}</Link>
+            <Link href="/eye/admin">{t("navAdmin")}</Link>
+          </nav>
+        )}
         <span className="grow" />
         <EyeLang lang={lang} label={t("lang")} />
         <form action="/auth/signout" method="post"><button className="btn ghost sm">{t("signout")}</button></form>

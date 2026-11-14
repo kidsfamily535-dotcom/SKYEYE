@@ -4,6 +4,8 @@ import OwnerShell from "@/components/OwnerShell";
 import { countryName, listCompanies, listPlans, renewDays, renewTone } from "@/lib/admin";
 import { getT } from "@/lib/lang";
 import { labelOf } from "@/lib/i18n";
+import { eyeT } from "@/lib/eye/i18n-server";
+import { eyeOwnerOverview } from "@/lib/eye/api";
 import "./admin.css";
 
 const utc = (iso: string | null) => (iso ? `${iso.slice(0, 16).replace("T", " ")} UTC` : "—");
@@ -13,6 +15,7 @@ export default async function AdminPage() {
   const [{ t, lang }, r] = await Promise.all([getT(), listCompanies()]);
   if (r.status === "denied") notFound();
   const plans = await listPlans();
+  const [{ t: et }, eyeWs] = await Promise.all([eyeT(), eyeOwnerOverview()]);
   const planName = (c: string | null) => { const p = plans.find((x) => x.code === c); return p ? (lang === "ar" ? p.name_ar : p.name_en) : "—"; };
   const rl = (n: number | null) => (n === null ? "—" : n < 0 ? t("own.b.late", { n: -n }) : n === 0 ? t("own.b.today") : t("own.b.in", { n }));
   return (
@@ -43,6 +46,28 @@ export default async function AdminPage() {
               </Link>
             ))}
           </div>
+        )}
+        {eyeWs.ok && (
+          <section className="eye-own" aria-label={et("ownTitle")}>
+            <h2>{et("ownTitle")}</h2>
+            <p className="muted eye-ownsub">{et("ownSub")}</p>
+            {eyeWs.data.length === 0 && <p className="muted">{et("ownEmpty")}</p>}
+            <div className="adm-grid">
+              {eyeWs.data.map((w) => (
+                <article key={w.workspace_id} className="card">
+                  <header className="adm-head"><h2>{w.airline_name}</h2>{w.status !== "active" && <em className="tag late">{et("wsSuspended")}</em>}</header>
+                  <p className="muted">{w.name}</p>
+                  <dl className="facts">
+                    <div><dt>{et("ownMembers")}</dt><dd>{w.members_active}</dd></div>
+                    <div><dt>{et("ownStopped")}</dt><dd>{w.members_stopped}</dd></div>
+                    <div><dt>{et("ownInvites")}</dt><dd>{w.invites_pending}</dd></div>
+                    <div><dt>{et("ownStations")}</dt><dd>{w.stations_linked} / {w.stations_total}</dd></div>
+                    <div><dt>{et("ownActivity")}</dt><dd className="ltr">{utc(w.last_activity)}</dd></div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
       </main>
     </OwnerShell>

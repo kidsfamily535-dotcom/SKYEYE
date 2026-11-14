@@ -13,3 +13,7 @@
 .admin .adm-inline{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
 .admin .adm-inline label{flex:1;min-width:150px}
 .admin .grow{flex:1;min-width:0}
+
+/* Airline Eye workspaces card (owner) */
+.eye-own{margin-top:26px}
+.eye-own h2{margin:0 0 4px}.eye-own .eye-ownsub{margin:0 0 12px}

@@ -80,3 +80,27 @@
 @media (max-width:720px){.eye-log-times{grid-template-columns:1fr 1fr 1fr}.eye-log-times dd{font-size:17px}.eye-empty-card{margin:24px auto}}
 .eye-lines{display:flex;flex-wrap:wrap;gap:4px 16px}.eye-lines b{font-weight:600}
 .eye-scene{width:100%;box-sizing:border-box}
+/* Airline administrator screen (/eye/admin) and owner card */
+.eye-nav{display:flex;gap:6px;margin-inline-start:18px}
+.eye-nav a{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:14px}
+.eye-nav a:hover{border-color:rgba(227,185,100,.5)}
+.eye-note.ok{border-color:rgba(227,185,100,.5);background:rgba(227,185,100,.08);color:var(--gold)}
+.eye-card{display:flex;flex-direction:column;gap:6px;padding:18px 20px 12px;border-radius:26px;color:#F4EFE3;background:radial-gradient(120% 90% at 50% 0%,#0d1730,#04060b 80%);border:1px solid rgba(227,185,100,.14)}
+.eye-card h2{margin:0;font-size:20px;font-weight:600;color:var(--gold)}
+.eye-card h3{margin:14px 0 2px;font-size:12.5px;letter-spacing:.08em;font-weight:600;color:rgba(227,185,100,.9)}
+.eye-card .muted{color:rgba(244,239,227,.65)}
+.eye-form{display:flex;flex-direction:column;gap:8px}
+.eye-formgrid{display:grid;grid-template-columns:1fr 1.3fr 1fr auto;gap:10px;align-items:end}
+.eye-card label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:rgba(244,239,227,.7)}
+.eye-card input,.eye-card select{min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);padding:0 12px;color:var(--ink);font:inherit}
+.eye-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-top:1px solid rgba(244,239,227,.1)}
+.eye-item.off{opacity:.62}
+.eye-item .who{flex:1;min-width:170px;display:flex;flex-direction:column;gap:2px}
+.eye-item .who small{color:rgba(244,239,227,.6);font-size:12px}
+.eye-actions{display:flex;gap:8px;flex-wrap:wrap}
+.eye-chip.ok{border-color:rgba(227,185,100,.6);color:#E3B964}
+.eye-chip.off{border-color:rgba(244,239,227,.25);color:rgba(244,239,227,.55)}
+.eye-actlist li{flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(244,239,227,.08)}
+.eye-actlist small{flex:none;opacity:.6;font-size:12px}
+.eye-card .btn{min-height:40px}
+@media (max-width:720px){.eye-formgrid{grid-template-columns:1fr}.eye-nav{margin-inline-start:6px}.eye-card{border-radius:22px;padding-inline:14px}}
