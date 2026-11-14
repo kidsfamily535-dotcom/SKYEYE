@@ -18,17 +18,17 @@ import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
 import { buildFeed, buildAudit, nextStep, withEndpoints, type FeedItem } from "@/lib/flight-feed";
-import FlightSectionNav from "@/components/FlightSectionNav";
 import FlightsBoard from "@/components/FlightsBoard";
 import { toBoardRows } from "@/lib/flight-board";
-import FlightJourney from "@/components/FlightJourney";
+import ArrivalReply from "@/components/ArrivalReply";
 import OtpStand from "@/components/OtpStand";
 import { getOtp } from "@/lib/otp";
-import { buildJourney } from "@/lib/flight-journey";
+import { cardStatus } from "@/lib/flight-status";
+import { durText } from "@/lib/dur";
+import { flightLine, lineLabels } from "@/lib/flight-line";
 import { dayShort } from "@/lib/flight-group";
-import { getFlight, getFlightList, needsAction } from "@/lib/flights";
+import { getFlight, getFlightList, type FlightRow } from "@/lib/flights";
 import { getFlightFileNo } from "@/lib/library";
-import { lineLabels } from "@/lib/flight-line";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
 
@@ -70,12 +70,22 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   };
   const f = sel?.file; const c = sel?.clock;
   const fileNo = f?.rotation_id ? await getFlightFileNo(String(f.rotation_id)) : null;
-  const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const otp = sel && f ? await getOtp(String(f.rotation_id), lang) : null;
-  const journey = sel ? buildJourney(sel.file, sel.clock, sel.steps, t, lang) : null;
+  const feedIn = sel ? { steps: sel.steps, questions: sel.questions, statements: sel.statements, mails: sel.mails, rqms: sel.rqms, criticalOpen: Number(f?.sop_critical_open ?? 0) } : null;
   const feed = feedIn && f && c ? withEndpoints(buildFeed(feedIn, t, lang), f, c, t) : null;
   const next = feedIn ? nextStep(feedIn, t) : null;
   const audit: FeedItem[] = sel ? buildAudit(sel, t, lang) : [];
+  const nowMs = Date.now();
+  const ms = (v: unknown) => (v ? +new Date(String(v)) : null);
+  const status = sel && f ? cardStatus({ status: f.status, atd: f.atd, ata: f.ata, sta: f.sta, eta: f.eta ?? null } as unknown as FlightRow, t, nowMs) : null;
+  const staMs = ms(f?.sta);
+  /** The one thing the agent asks first: scheduled arrival passed and nothing recorded. */
+  const waitingArrival = !!f && !f.ata && !f.atd && f.status !== "cancelled" && staMs !== null && staMs < nowMs;
+  const dayWord = f?.sta ? (String(f.sta).slice(0, 10) === new Date(nowMs).toISOString().slice(0, 10) ? t("fx.d.dayToday") : t("fx.d.dayOn", { d: dayShort(String(f.sta)) })) : "";
+  const arrAt = f ? (f.ata ?? f.eta ?? f.sta) : null; const depAt = f && c ? (f.atd ?? c.expected_std ?? f.std) : null;
+  const headLine = f && c && status ? (waitingArrival
+    ? t("fx.d.noArr", { who: String(f.registration ?? f.flight_in ?? ""), t: hm(f.sta), day: dayWord })
+    : flightLine({ code: status.code, sta: staMs, eta: ms(f.eta), arr: ms(arrAt), dep: ms(depAt), atd: ms(f.atd) }, nowMs, lang, lineLabels(t))) : "";
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
 
   return (
@@ -86,57 +96,54 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
         {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
         {sp.id && sel && f && c && <div className="detail ws">
-              <header className="idbar card">
-                {sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} />}
-                <div className="idmain">
-                  <div className="idtop"><b className="ltr idfn">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</b>
-                    <span className={`tag ${f.status === "delayed" ? "late" : "info"}`}>{labelOf(lang, "fl.status", f.status)}</span>
-                    {sel.flightType !== "commercial" && <span className={`ftype ft-${sel.flightType}`} title={sel.typeSource === "agent_suggested" ? t("fl.ft.suggested") : sel.typeSource === "employee_confirmed" ? t("fl.ft.confirmed") : undefined}>{t(`fl.ft.${sel.flightType}`)}</span>}
-                    {Number(f.sop_critical_open) > 0 && <span className="tag warn">{t("fl.critOpen")} <span className="ltr">{String(f.sop_critical_open)}</span></span>}</div>
-                  <small className="ltr idroute">{f.origin ?? "—"} → {f.station ?? "—"} → {f.destination ?? "—"}{f.registration ? ` · ${f.registration}` : ""}</small>
+              <header className="fx-head card">
+                <div className="fx-head-top">
+                  {sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} size="md" />}
+                  <div className="fx-head-id">
+                    <b className="ltr fx-fn">{f.flight_in ?? "—"} / {f.flight_out ?? "—"}</b>
+                    <small><bdi>{sel.airline?.name ?? sel.airline?.code ?? ""}</bdi>{f.registration ? <> <span aria-hidden="true">·</span> <bdi className="ltr">{f.registration}</bdi></> : null}</small>
+                  </div>
+                  {status && <span className={`fx-chip t-${status.tone}`}>{status.label}</span>}
+                  {sel.flightType !== "commercial" && <span className={`ftype ft-${sel.flightType}`} title={sel.typeSource === "agent_suggested" ? t("fl.ft.suggested") : sel.typeSource === "employee_confirmed" ? t("fl.ft.confirmed") : undefined}>{t(`fl.ft.${sel.flightType}`)}</span>}
+                  <span className="grow" />
+                  <Link className="btn sm ghost" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
                 </div>
-                <div className="idact">
-                  <Link className={`btn sm${view === "movement" ? " on" : ""}`} href={`${vh("movement")}#movement`}>{t("fl.mv.btn")}</Link>
-                  <Link className={`btn sm${view === "docs" ? " on" : ""}`} href={`${vh("docs")}#docs`}>{t("fl.doc.btn")}</Link>
-                  {fileNo && <Link className="btn sm" href={`/?f=${encodeURIComponent(fileNo)}&fk=flight#library`}>{t("fl.libFile")}</Link>}
-                  <Link className="btn sm" href={`/agent?flight=${f.ata ? sel.departureLeg : sel.arrivalLeg}`}>{t("fl.askAgent")}</Link>
+                <p className="fx-head-route ltr">{f.origin ?? "—"} › <b>{f.station ?? "—"}</b> › {f.destination ?? "—"}</p>
+                <div className="fx-head-times">
+                  <span className="fx-seq">
+                    <span className="fx-t"><small>{f.ata ? t("fx.arr.did") : t("fx.arr.will")}</small><b className="ltr">{hm(arrAt ? String(arrAt) : null)}</b><em className="ltr">{dayShort(arrAt ? String(arrAt) : null)}</em></span>
+                    <i aria-hidden="true">{lang === "ar" ? "←" : "→"}</i>
+                    <span className="fx-t"><small>{f.atd ? t("fx.dep.did") : t("fx.dep.will")}</small><b className="ltr">{hm(depAt ? String(depAt) : null)}</b><em className="ltr">{dayShort(depAt ? String(depAt) : null)}</em></span>
+                  </span>
+                  {c.planned_ground_minutes ? <small className="muted">{t("fx.d.ground", { d: durText(Number(c.planned_ground_minutes), lang) })}</small> : null}
                 </div>
-                <dl className="idtimes">
-                  <div><dt>{t("fl.arr")}</dt><dd className="ltr">{hm(f.sta)}{f.ata ? <> · <b>{hm(f.ata)}</b></> : null}<small className="fday">{dayShort(f.ata ?? f.sta)}</small></dd></div>
-                  <div><dt>{t("fl.dep")}</dt><dd className="ltr">{hm(f.std)}{c.expected_std && c.expected_std !== f.std ? <> · <b>{hm(c.expected_std)}</b></> : null}<small className="fday">{dayShort(c.expected_std ?? f.std)}</small></dd></div>
-                  {c.arrival_delay_min !== null && c.arrival_delay_min !== undefined && Number(c.arrival_delay_min) !== 0 && <div><dt>{t("fl.arrDelay")}</dt><dd className="ltr">{t("fl.min", { n: String(c.arrival_delay_min) })}</dd></div>}
-                  {c.planned_ground_minutes ? <div><dt>{t("fl.plannedGround")}</dt><dd className="ltr">{t("fl.min", { n: String(c.planned_ground_minutes) })}</dd></div> : null}
-                </dl>
+                {waitingArrival
+                  ? <ArrivalReply arrivalLeg={sel.arrivalLeg} text={headLine} canAct={sel.canAct} L={{ q: t("fx.d.arrived"), yes: t("fx.d.yes"), useNow: t("fx.d.useNow"), save: t("fl.tl.record"), back: t("fl.tl.back"), timeAria: t("fl.tl.timeAria") }} />
+                  : <div className="fx-agent"><p><span>{headLine}</span></p></div>}
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
-              {<FlightSectionNav t={t} items={[
-                { id: "sec-now", label: t("fl.now.title") }, { id: "sec-otp", label: t("fl.otp.title") }, { id: "sec-timeline", label: t("fl.tl.title") },
-                { id: "handling", label: t("fl.more.handling") }, { id: "messages", label: t("fl.more.messages") }, { id: "movement", label: t("fl.mv.btn"), href: `${vh("movement")}#movement` }, { id: "docs", label: t("fl.doc.btn"), href: `${vh("docs")}#docs` }, { id: "audit", label: t("fl.more.audit") },
-              ]} />}
-
               <FlightTypeSuggestions items={sel.typeSuggestions} canAct={sel.canAct} />
 
-              {/* 1) المطلوب الآن: كل ما ينتظر قراراً أو تصرفاً من الموظف في مكان واحد */}
+              {/* المطلوب الآن: بند واحد بارز، والباقي مطوي */}
               {<div id="sec-now" className="fsec">
                 {sel.panel.needed.length > 0
-                  ? <NowBar items={sel.panel.needed} t={t} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
-                  : next && next.tone !== "ok" && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? `${vh("overview")}&view=handling#handling` : next.href}>{next.action}</Link>}</section>}
+                  ? <NowBar items={sel.panel.needed} t={t} folded={waitingArrival} composeHref={(ty) => `${vh("overview")}&compose=${encodeURIComponent(ty)}#compose`} />
+                  : next && next.tone !== "ok" && !waitingArrival && <section className={`card reco next ${next.tone}`} aria-label={t("fl.next")}><span className="eye" aria-hidden="true" /><div><small className="muted">{t("fl.next")}</small><p>{next.text}</p></div>{next.href && <Link className="btn gold" href={next.href.startsWith("?") ? `${vh("overview")}&view=handling#handling` : next.href}>{next.action}</Link>}</section>}
                 {sel.questions.length > 0 && <div className="card" id="questions"><h2>{t("fl.q.title")}<Hint>{t("fl.q.hint")}</Hint></h2>
                   <FlightQuestions questions={sel.questions} canAct={sel.canAct} />
                 </div>}
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
               </div>}
 
-              {/* 2) الأرض: زمن الوقفة (OTP) ومرحلة الرحلة */}
-              {<div id="sec-otp" className="fsec">
-                {(d.access.modules === null || d.access.modules.includes("otp")) && otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} airline={sel.airline} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
-                {(d.access.modules === null || d.access.modules.includes("otp")) && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: Date.now() }}
+              {/* الأرض: كارت الوقفة (OTP stand) دايماً، وكتلة زمن الوقفة بعد وصول الطائرة فقط */}
+              {(d.access.modules === null || d.access.modules.includes("otp")) && ((otp && f) || f.ata) && <div id="sec-otp" className="fsec">
+                {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} airline={sel.airline} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
+                {f.ata && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: nowMs }}
                   delayAction={<details className="otp-delay" open={focus === "delay"}><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />}
-                {journey && <FlightJourney j={journey} />}
               </div>}
 
-              {/* 3) الخط الزمني: ترتيب الأحداث فقط (القادم ثم الذي تم) */}
+              {/* القصة: اللي جاي ثم اللي حصل، عمودياً */}
               {feed && <div className="card" id="sec-timeline"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
                 {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
                 <ol className="vt">
@@ -146,7 +153,9 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 </ol>
               </div>}
 
-              {/* 4) التفاصيل المطوية: التسجيل اليدوي، المراسلات، التدقيق */}
+              {/* صف هادئ في الآخر: المناولة، المراسلات، الحركة، المستندات، التدقيق */}
+              <div className="fx-more">
+              {fileNo && <Link className="card fold fold-link" href={`/?f=${encodeURIComponent(fileNo)}&fk=flight#library`}>{t("fl.libFile")} ›</Link>}
               {<details id="handling" className="card fold" open={focus === "handling"}><summary>{t("fl.more.handling")}</summary>
                 <FlightTimeline steps={sel.steps} arrivalLeg={sel.arrivalLeg} canAct={sel.canAct} />
               </details>}
@@ -179,6 +188,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 {audit.length === 0 && <p className="muted">{t("fl.audit.none")}</p>}
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
               </details>}
+              </div>
         </div>}
       </main>
     </Shell>

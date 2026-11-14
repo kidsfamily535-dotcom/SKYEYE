@@ -17,17 +17,17 @@ export default function RqmDrafts({ drafts, canAct }: { drafts: FlightRqm[]; can
   if (drafts.length === 0) return null;
   return (
     <div className="card" id="rqm">
-      <h2>{t("fl.rqm.title")}<Hint>{t("fl.rqm.hint")}</Hint></h2>
+      <h2>{t("fx.rqm.title")}<Hint>{t("fl.rqm.hint")}</Hint></h2>
       {drafts.map((d) => {
         const sent = !!d.sentAt;
         return (
           <div key={d.id} className="draft">
-            <small className="muted">{d.followup ? t("fl.rqm.followup") : ""}{sent ? <>{t("fl.rqm.sentPre")} <span className="ltr">{fmtUtc(d.sentAt)}</span> {t("fl.rqm.sentPost")}</> : <>{t("fl.rqm.readyPre")} <span className="ltr">{fmtUtc(d.createdAt)}</span></>}</small>
-            <pre className="ltr mono orig">{d.body}</pre>
+            <small className="muted"><b>{t("fl.rqm.title")}</b> · {d.followup ? t("fl.rqm.followup") : ""}{sent ? <>{t("fl.rqm.sentPre")} <span className="ltr">{fmtUtc(d.sentAt)}</span> {t("fl.rqm.sentPost")}</> : <>{t("fl.rqm.readyPre")} <span className="ltr">{fmtUtc(d.createdAt)}</span></>}</small>
+            <details className="rqm-raw"><summary className="fb-link">{t("fx.rqm.show")}</summary><pre className="ltr mono orig">{d.body}</pre></details>
             {d.warnings.map((w, i) => <p key={i} className="muted">⚠ {w}</p>)}
             {!sent && canAct && (
               <div className="row">
-                <button type="button" className="btn sm" onClick={async () => { await navigator.clipboard.writeText(d.body); setCopied(d.id); setTimeout(() => setCopied(null), 1500); }}>{copied === d.id ? t("copy.done") : t("fl.act.copy")}</button>
+                <button type="button" className="btn sm gold" onClick={async () => { await navigator.clipboard.writeText(d.body); setCopied(d.id); setTimeout(() => setCopied(null), 1500); }}>{copied === d.id ? t("copy.done") : t("fl.act.copy")}</button>
                 <span className="grow" />
                 <button type="button" className="btn ghost sm" disabled={pending} onClick={() => run(() => rejectMessageDraft(d.id))}>{t("fl.rqm.notNeeded")}</button>
                 {confirm === d.id
