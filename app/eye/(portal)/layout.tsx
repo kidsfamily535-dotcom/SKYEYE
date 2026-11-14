@@ -11,7 +11,7 @@ export default async function EyeLayout({ children }: { children: React.ReactNod
   const ws = await myWorkspaces();
   const linked = ws.ok && ws.data.length > 0;
   return (
-    <div className="eye">
+    <div className="eye-shell">
       <header className="eye-top">
         <div className="eye-brand"><strong>{t("brand")}</strong><small className="ltr">{t("brandSub")}</small></div>
         <span className="grow" />

@@ -53,7 +53,7 @@ export default async function EyeFlightsPage({ searchParams }: { searchParams: P
         <>
           {upcoming.length === 0 ? <p className="muted">{t("noFlights")}</p> : days.map((d) => (
             <section key={d} className="eye-day">
-              <h2>{dayLabel(d, lang)}</h2>
+              <h2>{dayLabel(d, lang)}<small className="ltr">{upcoming.filter((f) => dayKey(f.scheduled_at) === d).length}</small></h2>
               <ul className="eye-list">{upcoming.filter((f) => dayKey(f.scheduled_at) === d).map(row)}</ul>
             </section>
           ))}

@@ -10,16 +10,18 @@ export default function FlightRow({ f, ws, t, stationName }: { f: EyeFlight; ws:
   const arr = f.direction === "arrival";
   return (
     <li>
-      <Link className={`eye-row ${f.direction}`} href={`/eye/turn/${f.turn_id}?ws=${ws}&d=${f.direction}`}>
-        <span className="eye-dir"><i aria-hidden="true">{arr ? "↓" : "↑"}</i>{t(arr ? "arrival" : "departure")}</span>
-        <span className="eye-fn ltr">{f.flight_number}</span>
-        <span className="eye-time ltr">{hm(f.scheduled_at)} <small>{t("utc")} · {dm(f.scheduled_at)}</small></span>
-        <span className="eye-meta">
-          {f.registration && <span className="ltr">{f.registration}</span>}
-          {f.linked_flight && <span>{t(arr ? "leavesAs" : "cameAs")} <b className="ltr">{f.linked_flight}</b></span>}
-          {stationName && <span>{stationName}</span>}
-          {f.in_block_at && <span className="eye-onstand">{t("onStand")} <b className="ltr">{hm(f.in_block_at)}</b></span>}
+      <Link className={`eye-row ${f.direction}${f.in_block_at ? " on" : ""}`} href={`/eye/turn/${f.turn_id}?ws=${ws}&d=${f.direction}`}>
+        <span className="eye-node" aria-hidden="true">{arr ? "↓" : "↑"}</span>
+        <span className="eye-body">
+          <span className="eye-fnrow"><b className="eye-fn ltr">{f.flight_number}</b><span className="eye-chip">{t(arr ? "arrival" : "departure")}</span></span>
+          <span className="eye-meta">
+            {f.registration && <span className="ltr">{f.registration}</span>}
+            {f.linked_flight && <span>{t(arr ? "leavesAs" : "cameAs")} <b className="ltr">{f.linked_flight}</b></span>}
+            {stationName && <span>{stationName}</span>}
+            {f.in_block_at && <span className="eye-onstand">{t("onStand")} <b className="ltr">{hm(f.in_block_at)}</b></span>}
+          </span>
         </span>
+        <span className="eye-time ltr">{hm(f.scheduled_at)}<small>{t("utc")} · {dm(f.scheduled_at)}</small></span>
       </Link>
     </li>
   );
