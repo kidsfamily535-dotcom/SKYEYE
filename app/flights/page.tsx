@@ -13,6 +13,7 @@ import { getCommandCenter } from "@/lib/command-center";
 import NowBar from "@/components/NowBar";
 import OtpBlock from "@/components/OtpBlock";
 import DelayForm from "@/components/DelayForm";
+import "./flights.css";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
@@ -27,6 +28,7 @@ import { buildJourney } from "@/lib/flight-journey";
 import { dayShort } from "@/lib/flight-group";
 import { getFlight, getFlightList, needsAction } from "@/lib/flights";
 import { getFlightFileNo } from "@/lib/library";
+import { lineLabels } from "@/lib/flight-line";
 import { getT } from "@/lib/lang";
 import { labelOf, type TFn } from "@/lib/i18n";
 
@@ -55,17 +57,16 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const L = {
     title: t("fl.title"), subtitle: t("fl.subtitle"), importBtn: t("fl.import.btn"), askAgent: t("fl.askAgent"), search: t("fl.search.ph"),
     tabActive: t("fl.tab.active"), tabDone: t("fl.tab.done"), kAll: t("fl.b.kAll"), kAttn: t("fl.grp.attn"), kLate: t("fl.sum.late"), kGround: t("fl.cs.onGround"), kSoon: t("fl.sum.soon"), kOk: t("fl.sum.ok"),
-    count: t("fl.grp.count", { n: "{n}" }), noneActive: t("fl.none.active"), noneDone: t("fl.none.done"), noneMatch: t("fl.none.match"),
-    vHandling: t("fl.view.handling"), vMessages: t("fl.view.messages"), vDelay: t("fl.view.delay"),
-    kAria: t("fl.b.kAria"), tabAria: t("fl.b.tabAria"), viewAria: t("fl.b.viewAria"), vBays: t("fl.b.vBays"), vTime: t("fl.b.vTime"), vList: t("fl.b.vList"),
-    airlines: t("fl.b.airlines"), allAirlines: t("fl.b.allAirlines"), stations: t("fl.b.stations"), allStations: t("fl.b.allStations"), results: t("fl.b.results", { n: "{n}", m: "{m}" }),
-    clear: t("fl.b.clear"), groupBy: t("fl.b.groupBy"), gStation: t("fl.b.gStation"), gAirline: t("fl.b.gAirline"), gDay: t("fl.b.gDay"), winAria: t("fl.b.winAria"), wAll: t("fl.b.wAll"), wRoll: t("fl.b.wRoll"),
-    left: t("fl.b.left", { d: "{d}" }), over: t("fl.b.over", { d: "{d}" }), inT: t("fl.b.inT", { d: "{d}" }), agoT: t("fl.b.agoT", { d: "{d}" }), atd: t("fl.b.atd"),
-    groundMin: t("fl.b.groundMin", { n: "{n}" }), close: t("fl.b.close"), from: t("fl.b.from"), to: t("fl.b.to"), station: t("fl.b.station"), eta: t("fl.b.eta"),
-    today: t("fl.grp.today"), tomorrow: t("fl.grp.tomorrow"), stale: t("fl.grp.stale"),
-    showAll: t("fl.b.showAll"), more: t("fl.b.more"),
+    noneActive: t("fl.none.active"), noneDone: t("fl.none.done"), noneMatch: t("fl.none.match"),
+    kAria: t("fl.b.kAria"), tabAria: t("fl.b.tabAria"), viewAria: t("fl.b.viewAria"), vNow: t("fx.view.now"), vList: t("fl.b.vList"),
+    airlines: t("fl.b.airlines"), allAirlines: t("fl.b.allAirlines"), stations: t("fl.b.stations"), allStations: t("fl.b.allStations"), clear: t("fl.b.clear"), filter: t("fx.filter"),
+    today: t("fl.grp.today"), tomorrow: t("fl.grp.tomorrow"), now: t("fl.now"),
     ft_private: t("fl.ft.private"), ft_cargo: t("fl.ft.cargo"), ft_medevac: t("fl.ft.medevac"),
-    steps: t("fl.b.steps", { a: "{a}", b: "{b}" }), crit: t("fl.b.crit", { n: "{n}" }), open: t("fl.b.open"),
+    calm: t("fx.calm"), quietWindow: t("fx.quiet.window"),
+    staleTitle: t("fx.stale.title", { n: "{n}" }), staleSub: t("fx.stale.sub", { a: "{a}", b: "{b}" }), staleSub1: t("fx.stale.sub1", { a: "{a}" }), staleBtn: t("fx.stale.btn"),
+    earlier: t("fx.earlier", { n: "{n}" }), later: t("fx.later", { n: "{n}" }),
+    arrWill: t("fx.arr.will"), arrDid: t("fx.arr.did"), depWill: t("fx.dep.will"), depDid: t("fx.dep.did"),
+    ...lineLabels(t),
   };
   const f = sel?.file; const c = sel?.clock;
   const fileNo = f?.rotation_id ? await getFlightFileNo(String(f.rotation_id)) : null;
@@ -80,7 +81,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d} module="flights">
       <main className="page">
-        {!sp.id && <FlightsBoard rows={board} L={L} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
+        {!sp.id && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
 
         {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
