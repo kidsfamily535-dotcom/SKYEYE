@@ -678,3 +678,53 @@ project_log.
 تسألني عن أي شيء مكتوب فيها. نفّذ أهداف الجلسة 3 كما في الخطة على فرع
 منفصل. سأرسل التوكن هنا في الشات، ولا تحفظه في أي مكان. في آخر الجلسة
 سلّم لمن بعدك حسب بروتوكول التسليم.
+
+## عين الشركة — الجلسة 3: البوابة المعزولة `/eye` (فرع `feat/eye-portal`، غير مدموج في main)
+
+**1. ما أُنجز**
+- `/eye/login`: دخول منفصل بهوية «عين الشركة»، ويقبل دعوة شركة الطيران المعلّقة (`eye_accept_invites`). أُضيف نفس الاستدعاء في `/login` القديمة (سطر واحد، لا يضر لو مفيش دعوة).
+- توجيه الدخول في `middleware.ts`: مستخدم شركة طيران (له مساحة عمل في `eye_my_workspaces` وليس عضوًا في `memberships`) يُحوَّل لـ `/eye` من أي صفحة غير `/auth/*`؛ وموظف SKYEYE أو غير المرتبط يُحوَّل من `/eye` إلى `/`. هذا توجيه للراحة فقط، والحدّ الحقيقي هو القاعدة (RLS في جداول SKYEYE و`eye.can_view()` داخل كل دالة `eye_*`). لو فشل الاستعلام لا يحوّل.
+- `/eye`: قائمة الرحلات، صف لكل رحلة (الوصول والسفر صفّان منفصلان)، مجمّعة بالأيام (النهاردة وبعده، ثم «رحلات سابقة» مطوية)، فلتر مساحات العمل والمحطات، وتنبيه لو محطة متوقفة أو غير مربوطة. تعرض ما تعيده الدوال فقط (التسجيل، الرحلة المقابلة، «على الوقفة من» لو `in_block_at` موجود).
+- `/eye/turn/[turn]`: مشهد الوقفة المشترك للمشاهدة فقط (`OtpStand` بـ `canAct={false}` عبر `components/eye/EyeStand.tsx`): لا أزرار تسجيل ولا نموذج chocks-on ولا أسباب تأخير.
+- الملفات الجديدة: `app/eye/**`، `components/eye/**`، `lib/eye/**` (types وapi وturn وi18n وi18n-server). ملفات الوكيل المعدّلة: `middleware.ts` و`app/login/page.tsx` فقط.
+- كل القراءة عبر `eye_my_workspaces` و`eye_flights` و`eye_stations` و`eye_turn_state`. لا `.from()` على أي جدول في كود `eye` (تم التحقق بـ grep)، ولا يُستدعى أي دالة تسجيل أو استيراد أو دعوة من البوابة.
+
+**2. الفرع و commit**
+`feat/eye-portal` — commits: `be17c0b` (نسخ القسم 14) و`b9f566f` (البوابة) ثم هذا التسليم.
+
+**3. ما اختُبر وكيف**
+- `tsc --noEmit` و`next build` نجحا (المسارات `/eye` و`/eye/login` و`/eye/turn/[turn]` ظهرت في البناء).
+- اختبار العزل على القاعدة الحقيقية بمستخدم تجريبي (`airline_viewer` في مساحة A فقط)، داخل كتلة تتراجع، بصلاحية `authenticated`: `eye_my_workspaces` = 1 (A)؛ `eye_flights(A)` = 4 صفوف (رحلتان × وصول/سفر) كلها أرقام A؛ `eye_flights(B)` مرفوضة؛ `eye_stations(A)` = 1؛ `eye_turn_state(A, دوران A)` ok و`can_record=false` و10 خدمات؛ `eye_turn_state` لدوران B عبر A أو عبر B مرفوضة؛ عضويات SKYEYE للمستخدم = 0؛ `eye_record_end` مرفوضة للمشاهد؛ القراءة المباشرة من `eye.workspaces` مرفوضة.
+
+**4. ما لم يُختبر**
+- **لم يُفتح في متصفح ولا بجلسة دخول حقيقية** (الحاوية لا تصل لـ Supabase): توجيه الـ middleware بكوكيز حقيقية، صفحة `/eye/login`، المظهر على الموبايل، وتبديل اللغة. يلزم تجربة يدوية بالحساب التجريبي أدناه.
+- وضع محطات SKYEYE الحقيقية (`mode = skyeye`) وربطها بشركة مناولة حقيقية: الجلسة 6.
+- الأداء، والدوران ذو الرحلة الواحدة.
+
+**5. قرارات جديدة**
+- المشهد في `/eye` للقراءة فقط لكل الأدوار في هذه الجلسة (حتى `station_recorder`)؛ واجهة المسجِّل تأتي لاحقًا.
+- لون الرقم (في الميعاد / سيتجاوز / تجاوز) يُشتق في `lib/eye/turn.ts` من أرقام `snapshot.ground` التي حسبتها القاعدة (لا حساب جديد)، لأن `eye_turn_state` لا تُرجع `warning` ولا `is_demo`. رسالة التحذير النصية لا تظهر.
+- صور الطائرات: ما زال الرسم المؤقت (أفقي 520:400، الأنف يمينًا) حتى الجلسة 4.
+- قاموس نصوص مستقل `lib/eye/i18n.ts` وتبديل لغة بالكوكي فقط (`EyeLang`) بدون استدعاء `set_my_language`.
+
+**6. مشاكل معروفة**
+- الـ middleware يضيف الآن استعلامين (memberships + `eye_my_workspaces`) لكل تنقّل مستخدم مسجّل.
+- `EyeStand` يستورد `OtpStand` الذي يستورد server actions الخاصة بـ SKYEYE (لا تُستدعى في وضع المشاهدة، ولو استُدعيت ترفضها القاعدة). الأنظف لاحقًا فصل مكوّن عرض نقي.
+- الملاحظات القديمة من القسم 14 ما زالت قائمة (company_id في `otp.turns` = معرّف مساحة العمل؛ صلاحية anon على دوال `otp.record_*`؛ سبب تقرير التجربة الأولى غير معروف).
+- ملاحظة نص: حالة «الوقفة مفتوحة وchocks-on لم يُسجَّل» تعرض رسالة SKYEYE العامة.
+
+**7. بيانات الاختبار في القاعدة (تُحذف بعد الانتهاء)**
+مستخدم `eye.test.viewer@skyeye-test.invalid` (كلمة السر أُعطيت للمالك في الشات فقط، لا تُكتب في الريبو)، مساحتان `TEST — Airline A (تجريبي)` و`TEST — Airline B (تجريبي)` (المستخدم عضو في A فقط)، محطتان، و4 دورانات تسجيلها `TEST-A1` و`TEST-A2` و`TEST-B1` و`TEST-B2` (`is_demo=false` عمدًا لأن `eye_flights` تستبعد الديمو). لا تلمس رحلات SKYEYE الحقيقية. للحذف:
+```sql
+delete from eye.turn_stations where workspace_id in (select id from eye.workspaces where name like 'TEST —%');
+delete from otp.turns where registration like 'TEST-%';
+delete from eye.members where workspace_id in (select id from eye.workspaces where name like 'TEST —%');
+delete from eye.stations where workspace_id in (select id from eye.workspaces where name like 'TEST —%');
+delete from eye.audit_log where workspace_id in (select id from eye.workspaces where name like 'TEST —%');
+delete from eye.workspaces where name like 'TEST —%';
+delete from auth.identities where user_id in (select id from auth.users where email = 'eye.test.viewer@skyeye-test.invalid');
+delete from auth.users where email = 'eye.test.viewer@skyeye-test.invalid';
+```
+
+**8. أول خطوة للجلسة 4**
+جرّب الحساب التجريبي في المتصفح على نسخة Vercel للفرع وأصلح ما يظهر، ثم ابنِ تجربة شركة الطيران (الخطة، الجلسة 4): صور الطائرات الأفقية إن وُجدت، وتحسين القائمة والمشهد، وفصل مكوّن العرض النقي عن `OtpStand`.
