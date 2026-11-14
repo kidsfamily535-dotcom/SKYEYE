@@ -837,3 +837,39 @@ label.btn.disabled{opacity:.45;pointer-events:none}
 @keyframes otps-away{to{transform:translateX(14%) scale(.9);opacity:.3;filter:blur(1.5px)}}
 @keyframes otps-fade{from{opacity:0;transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){.otps *,.otps *::before,.otps *::after{animation:none!important;transition:none!important}.otps.final .otps-art{opacity:.3}.otps.final .otps-final{opacity:1}}
+
+/* ===== OTP "flight reel": horizontal cinematic strips (flight, handling, movement messages, documents); each frame opens a glass card ===== */
+.otr{position:relative;max-width:560px;margin:0 auto 16px;padding:14px 0 12px;border-radius:26px;overflow:hidden;isolation:isolate;color:#F4EFE3;background:radial-gradient(120% 90% at 50% 0%,#0d1730,#04060b 80%);border:1px solid rgba(227,185,100,.14)}
+.otr-head{padding:0 18px 4px;font-size:12.5px;letter-spacing:.08em;color:rgba(227,185,100,.85)}
+.otr-lane{padding:6px 0 4px}
+.otr-lbl{display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:13px;color:rgba(244,239,227,.78)}
+.otr-lbl small{font-size:11px;opacity:.6}
+.otr-empty{margin:8px 18px 10px;font-size:12.5px;color:rgba(244,239,227,.5)}
+.otr-scroll{direction:ltr;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 14px 10px}
+.otr-scroll::-webkit-scrollbar{display:none}
+.otr-track{position:relative;display:flex;align-items:flex-start;gap:4px;min-width:max-content}
+.otr-track::before{content:"";position:absolute;inset-inline:0;top:21px;height:2px;border-radius:2px;background:rgba(244,239,227,.16)}
+.otr-track::after{content:"";position:absolute;inset-inline:0;top:34px;height:3px;background:repeating-linear-gradient(90deg,rgba(244,239,227,.14) 0 6px,transparent 6px 14px)}
+.otr-f{position:relative;z-index:1;flex:0 0 98px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;padding:0 4px 2px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.otr-f .d{position:relative;width:18px;height:18px;margin-top:13px;border-radius:50%;border:1px solid rgba(244,239,227,.34);background:rgba(244,239,227,.14);transition:transform .3s,box-shadow .5s,background .5s}
+.otr-f.future .d{background:transparent;border-style:dashed}
+.otr-f.dim{opacity:.55}.otr-f.dim .d{background:transparent;border-style:dashed}
+.otr-f.done .d{background:#E3B964;border-color:#EBC774;box-shadow:0 0 12px 2px rgba(227,185,100,.5)}
+.otr-f.warn .d{background:#FFF3D2;border-color:#FFF3D2;animation:otps-breathe 2.2s ease-in-out infinite}
+.otr-f.late .d{background:#F2AE40;border-color:#F8C46B;box-shadow:0 0 14px 3px rgba(242,174,64,.5)}
+.otr-f.late .d::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:1.5px solid rgba(242,174,64,.85);animation:otps-wave 3.2s ease-out infinite}
+.otr-f.sel .d{transform:scale(1.35)}
+.otr-f .bd{position:absolute;inset-block-start:-12px;inset-inline-start:11px;min-width:20px;height:15px;border-radius:99px;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px;background:#F2AE40;color:#1B1204}
+.otr-f b{margin-top:6px;font-size:12px;line-height:1.35;font-weight:600;text-align:center;max-height:2.75em;overflow:hidden;unicode-bidi:plaintext}
+.otr-f small{font-size:11px;opacity:.65}
+.otr-now{position:relative;z-index:1;flex:0 0 40px;align-self:stretch;display:flex;flex-direction:column;align-items:center}
+.otr-now i{width:2px;height:34px;margin-top:4px;background:linear-gradient(#E3B964,transparent);box-shadow:0 0 10px #E3B964}
+.otr-now em{margin-top:4px;font-style:normal;font-size:10.5px;color:#E3B964;letter-spacing:.04em}
+.otr-card{margin:6px 10px 0;border-radius:22px;max-height:none}
+.otr-card h3 .otps-chip{margin-inline-start:2px}
+.otr-act{display:flex;gap:10px;margin-top:12px}.otr-act>*{flex:1;display:grid;place-items:center;text-decoration:none}
+.otr-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.otr-chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06)}
+.otr-pre{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word;margin:6px 0 0;padding:10px 12px;border-radius:14px;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);max-height:240px;overflow:auto}
+.otr-muted{opacity:.6;font-size:12.5px}
+@media (prefers-reduced-motion:reduce){.otr *,.otr *::before,.otr *::after{animation:none!important;transition:none!important}}

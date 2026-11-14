@@ -22,6 +22,7 @@ import FlightsBoard from "@/components/FlightsBoard";
 import { toBoardRows } from "@/lib/flight-board";
 import ArrivalReply from "@/components/ArrivalReply";
 import OtpStand from "@/components/OtpStand";
+import OtpReel, { type ReelItem } from "@/components/OtpReel";
 import { getOtp } from "@/lib/otp";
 import { cardStatus } from "@/lib/flight-status";
 import { durText } from "@/lib/dur";
@@ -86,6 +87,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const headLine = f && c && status ? (waitingArrival
     ? t("fx.d.noArr", { who: String(f.registration ?? f.flight_in ?? ""), t: hm(f.sta), day: dayWord })
     : flightLine({ code: status.code, sta: staMs, eta: ms(f.eta), arr: ms(arrAt), dep: ms(depAt), atd: ms(f.atd) }, nowMs, lang, lineLabels(t))) : "";
+  /** Flight reel strip 1: oldest to newest, what happened then what is still due. */
+  const reelFlight: ReelItem[] = feed ? [...[...feed.done].reverse().map((x) => ({ ...x, done: true })), ...feed.waiting.map((x) => ({ ...x, done: false }))].map((x) => ({ id: x.id, at: x.at, tone: x.tone, title: x.title, detail: x.detail, href: x.href, done: x.done })) : [];
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
 
   return (
@@ -139,6 +142,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               {/* الأرض: كارت الوقفة (OTP stand) دايماً، وكتلة زمن الوقفة بعد وصول الطائرة فقط */}
               {(d.access.modules === null || d.access.modules.includes("otp")) && ((otp && f) || f.ata) && <div id="sec-otp" className="fsec">
                 {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} airline={sel.airline} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
+                {feed && <OtpReel rotationId={String(f.rotation_id)} arrivalLeg={sel.arrivalLeg} flight={reelFlight} steps={sel.steps} />}
                 {f.ata && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: nowMs }}
                   delayAction={<details className="otp-delay" open={focus === "delay"}><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />}
               </div>}
