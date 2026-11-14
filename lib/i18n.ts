@@ -1189,12 +1189,16 @@ const ar = {
   "fx.d.dayToday": "اليوم",
   "fx.d.dayOn": "يوم {d}",
   "fx.d.arrived": "وصلت؟",
-  "fx.d.yes": "وصلت · اكتب الوقت",
+  "fx.d.yes": "وصلت · سجّل الأوقات",
   "fx.d.useNow": "الوقت الآن (UTC)",
   "fx.d.ground": "{d} على الأرض",
   "fx.d.more": "المطلوب كمان ({n})",
   "fx.rqm.title": "مسودة جاهزة من الوكيل",
   "fx.rqm.show": "عرض نص الرسالة",
+  "fx.d.td": "الهبوط (Touchdown)",
+  "fx.d.co": "وضع الشوك (Chocks-on)",
+  "fx.d.coHint": "لو الطيارة لسه ما وقفتش سيبه فاضي وسجّله بعدين.",
+  "fx.d.order": "وقت الشوك لازم يكون بعد الهبوط أو يساويه.",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -2379,12 +2383,16 @@ const en: Record<Key, string> = {
   "fx.d.dayToday": "today",
   "fx.d.dayOn": "on {d}",
   "fx.d.arrived": "Has it arrived?",
-  "fx.d.yes": "Arrived · enter the time",
+  "fx.d.yes": "Arrived · record the times",
   "fx.d.useNow": "Current time (UTC)",
   "fx.d.ground": "{d} on the ground",
   "fx.d.more": "Also needed ({n})",
   "fx.rqm.title": "Draft ready from the agent",
   "fx.rqm.show": "Show message text",
+  "fx.d.td": "Touchdown",
+  "fx.d.co": "Chocks-on",
+  "fx.d.coHint": "If the aircraft is not parked yet, leave it empty and record it later.",
+  "fx.d.order": "Chocks-on must be at or after touchdown.",
 };
 
 export const dict: Record<Lang, Record<Key, string>> = { ar, en };

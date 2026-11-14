@@ -83,7 +83,13 @@
 .fx-agent p{margin:0;font-size:18px;line-height:1.6}.fx-agent p b{color:var(--gold)}
 .fx-reply{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .fx-reply .btn.gold{min-height:48px;padding:0 24px;font-size:16px}
-.fx-reply input{min-height:46px;color-scheme:dark}
+.fx-reply input,.fx-fld input{min-height:46px;color-scheme:dark}
+.fx-reply.col{flex-direction:column;align-items:stretch;gap:14px}
+.fx-flds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.fx-fld{display:flex;flex-direction:column;gap:6px}.fx-fld label{font-weight:600}
+.fx-fld-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ws .card.nb-folded{padding:4px 22px;min-height:0}
+.nb-folded[open]{padding-bottom:14px}
 .nb-folded>summary{cursor:pointer;color:var(--gold);list-style:none;min-height:44px;display:flex;align-items:center}
 .nb-folded>summary::-webkit-details-marker{display:none}
 .rqm-raw{margin:6px 0 10px}.rqm-raw summary{cursor:pointer;list-style:none}.rqm-raw summary::-webkit-details-marker{display:none}

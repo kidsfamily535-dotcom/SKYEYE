@@ -118,7 +118,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   {c.planned_ground_minutes ? <small className="muted">{t("fx.d.ground", { d: durText(Number(c.planned_ground_minutes), lang) })}</small> : null}
                 </div>
                 {waitingArrival
-                  ? <ArrivalReply arrivalLeg={sel.arrivalLeg} text={headLine} canAct={sel.canAct} L={{ q: t("fx.d.arrived"), yes: t("fx.d.yes"), useNow: t("fx.d.useNow"), save: t("fl.tl.record"), back: t("fl.tl.back"), timeAria: t("fl.tl.timeAria") }} />
+                  ? <ArrivalReply arrivalLeg={sel.arrivalLeg} text={headLine} canAct={sel.canAct} L={{ q: t("fx.d.arrived"), yes: t("fx.d.yes"), useNow: t("fx.d.useNow"), save: t("fl.tl.record"), back: t("fl.tl.back"), td: t("fx.d.td"), co: t("fx.d.co"), coHint: t("fx.d.coHint"), order: t("fx.d.order") }} />
                   : <div className="fx-agent"><p><span>{headLine}</span></p></div>}
               </header>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
