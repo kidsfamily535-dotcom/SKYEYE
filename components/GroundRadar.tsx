@@ -11,7 +11,7 @@ function Plane() {
   return (<svg viewBox="0 0 120 64" width="84" height="45"><path d="M6 32c0-2 2-4 6-5l78-3c10-1 20 3 24 8-4 5-14 9-24 8l-78-3c-4-1-6-3-6-5z" fill="currentColor" /><path d="M46 29L30 4h12l26 25zM46 35L30 60h12l26-25z" fill="currentColor" /><path d="M14 29L6 16h8l10 13zM14 35l-8 13h8l10-13z" fill="currentColor" /></svg>);
 }
 
-export default function GroundRadar({ rows, selId, stand, lang, listHref, importHref }: { rows: BoardRow[]; selId: string | null; stand: ReactNode; lang: "ar" | "en"; listHref: string; importHref: string }) {
+export default function GroundRadar({ rows, selId, stand, explicit, lang, listHref, importHref }: { rows: BoardRow[]; selId: string | null; stand: ReactNode; explicit: boolean; lang: "ar" | "en"; listHref: string; importHref: string }) {
   const ar = lang === "ar";
   const [q, setQ] = useState("");
   const [now, setNow] = useState<number | null>(null);
@@ -32,16 +32,16 @@ export default function GroundRadar({ rows, selId, stand, lang, listHref, import
     const pos = onG ? (arr !== null ? Math.max(arr, a0) : t) : (arr !== null ? arr : t + 30 * 60000);
     return (
       <li key={r.id} className="rd-lane">
-        <Link href={`/flights?sel=${r.id}`} className={`rd-l ${selId === r.id ? "sel" : ""}`} aria-current={selId === r.id ? "true" : undefined}>
-          <span className="rd-tag ltr"><i className={late ? "late" : warn ? "warn" : onG ? "gnd" : "app"} />{r.flightIn ?? "—"}{r.flightOut ? ` / ${r.flightOut}` : ""}</span>
+        <Link href={`/flights?sel=${r.id}`} scroll={false} className={`rd-l ${selId === r.id ? "sel" : ""}`} aria-current={selId === r.id ? "true" : undefined}>
+          <span className="rd-id"><span className="rd-tag ltr"><i className={late ? "late" : warn ? "warn" : onG ? "gnd" : "inb"} />{r.flightIn ?? "—"}{r.flightOut ? ` / ${r.flightOut}` : ""}</span>{r.reg ? <em className="rd-reg ltr">{r.reg}</em> : null}</span>
           <span className="rd-track ltr">
             <u className="rd-nowline" style={{ left: x(t) }} aria-hidden="true" />
             {arr !== null && dep !== null && <span className={`rd-zone ${late ? "late" : ""}`} style={{ left: x(arr), width: `calc(${x(dep)} - ${x(arr)})`, minWidth: 14 }} aria-hidden="true" />}
             {!onG && arr !== null && <span className="rd-path" style={{ left: x(t), width: `calc(${x(arr)} - ${x(t)})` }} aria-hidden="true" />}
-            <span className={`rd-plane ${onG ? "gnd" : "app"} ${late ? "late" : ""}`} style={{ left: x(pos) }} aria-hidden="true"><Plane /></span>
+            <span className={`rd-plane ${onG ? "gnd" : "inb"} ${late ? "late" : ""}`} style={{ left: x(pos) }} aria-hidden="true"><Plane /></span>
             {dep !== null && <b className="rd-dep" style={{ left: x(dep) }}>{hm(dep)}</b>}
           </span>
-          <span className="rd-meta">{r.reg ? <em className="ltr">{r.reg}</em> : null}<span className="sr">{r.label}</span></span>
+          <span className="rd-go" aria-hidden="true">{ar ? "‹" : "›"}</span><span className="sr">{r.label}</span>
         </Link>
       </li>
     );
@@ -63,8 +63,11 @@ export default function GroundRadar({ rows, selId, stand, lang, listHref, import
             <div className="rd-axis ltr" aria-hidden="true">{ticks.map((v) => <i key={v} className={v === t ? "now" : ""} style={{ left: x(v) }}>{v === t ? (ar ? "الآن" : "NOW") : hm(v)}</i>)}</div>
             <ul className="rd-lanes">{all.map(lane)}</ul></>}
         </section>
-        <section className="rd-panel rd-wide">
-          {selId && <Link className="rd-open" href={`/flights?id=${selId}`}>{ar ? "ملف الرحلة ›" : "Flight file ›"}</Link>}
+        <section className={`rd-panel rd-wide ${explicit ? "open" : ""}`} aria-label={ar ? "وقفة الرحلة المحددة" : "Selected flight stand"}>
+          {selId && <div className="rd-sh">
+            <Link className="rd-file" href={`/flights?id=${selId}`}>{ar ? "ملف الرحلة وتسجيل OTP" : "Flight file & record OTP"}</Link>
+            <Link className="rd-close" href="/flights" scroll={false} aria-label={ar ? "إغلاق" : "Close"}>×</Link>
+          </div>}
           {stand}
         </section>
       </div>

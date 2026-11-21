@@ -101,7 +101,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d} module="flights">
       <main className="page">
-        {radar && <GroundRadar rows={board} selId={radarSel} lang={lang === "ar" ? "ar" : "en"} listHref="/flights?view=list" importHref="/flights/import"
+        {radar && <GroundRadar rows={board} selId={radarSel} explicit={!!sp.sel} lang={lang === "ar" ? "ar" : "en"} listHref="/flights?view=list" importHref="/flights/import"
           stand={radarSel && radarOtp ? <OtpGantt otp={radarOtp} nowMs={Date.now()} lang={lang === "ar" ? "ar" : "en"} title={`${lang === "ar" ? "الوقفة" : "Stand"} — ${board.find((r) => r.id === radarSel)?.flightIn ?? ""}`} /> : <p className="rd-empty">{lang === "ar" ? "اختر رحلة على الأرض لعرض وقفتها." : "Pick a flight on the ground to see its stand."}</p>} />}
         {!sp.id && !radar && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
 
