@@ -127,3 +127,6 @@ html body .fx-more .card.fold:hover{background:#262626}
 .fold-link{padding:10px 14px}
 html body .fx-otpmore{background:#1F1F1F;padding:10px 14px}
 .fx-otpmore>summary{display:flex;width:100%;justify-content:space-between;font-size:14px}.fx-otpmore>summary::after{content:"+";color:#FFC107;font-weight:700}.fx-otpmore[open]>summary::after{content:"–"}
+html body .fx-more .card.fold,html body .fx-otpmore{padding:2px 14px}
+.fx-more .fold summary,.fx-otpmore>summary{min-height:44px;align-items:center;color:#F2F2F2;margin:0}
+.fx-more .fold[open]>summary,.fx-otpmore[open]>summary{margin-bottom:6px}
