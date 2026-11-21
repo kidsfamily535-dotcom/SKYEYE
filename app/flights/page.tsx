@@ -15,8 +15,6 @@ import OtpBlock from "@/components/OtpBlock";
 import DelayForm from "@/components/DelayForm";
 import "./flights.css";
 import "./radar.css";
-import GroundRadar from "@/components/GroundRadar";
-import OtpGantt from "@/components/OtpGantt";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
@@ -57,10 +55,6 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const d = await getCommandData();
   const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
   const board = sp.id ? [] : toBoardRows(all, tab, t);
-  /** Default flights screen = ground radar (active tab). The full filterable list stays at ?view=list and for the "done" tab. */
-  const radar = !sp.id && tab === "active" && sp.view !== "list";
-  const radarSel = radar ? (board.find((r) => r.id === sp.sel)?.id ?? board.filter((r) => r.code === "onGround").sort((a, b) => (a.dep ?? 9e15) - (b.dep ?? 9e15))[0]?.id ?? null) : null;
-  const radarOtp = radarSel ? await getOtp(radarSel, lang) : null;
   const cc = sel && (view === "movement" || view === "docs") ? await getCommandCenter(d.company.id, sel.arrivalLeg) : null;
   const L = {
     title: t("fl.title"), subtitle: t("fl.subtitle"), importBtn: t("fl.import.btn"), askAgent: t("fl.askAgent"), search: t("fl.search.ph"),
@@ -101,9 +95,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   return (
     <Shell data={d} module="flights">
       <main className="page">
-        {radar && <GroundRadar rows={board} selId={radarSel} explicit={!!sp.sel} lang={lang === "ar" ? "ar" : "en"} listHref="/flights?view=list" importHref="/flights/import"
-          stand={radarSel && radarOtp ? <OtpGantt otp={radarOtp} nowMs={Date.now()} lang={lang === "ar" ? "ar" : "en"} title={`${lang === "ar" ? "الوقفة" : "Stand"} — ${board.find((r) => r.id === radarSel)?.flightIn ?? ""}`} /> : <p className="rd-empty">{lang === "ar" ? "اختر رحلة على الأرض لعرض وقفتها." : "Pick a flight on the ground to see its stand."}</p>} />}
-        {!sp.id && !radar && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
+        {!sp.id && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
 
         {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
@@ -150,8 +142,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
 
               {/* الأرض: كارت الوقفة (OTP stand) دايماً، وكتلة زمن الوقفة بعد وصول الطائرة فقط */}
               {(d.access.modules === null || d.access.modules.includes("otp")) && ((otp && f) || f.ata) && <div id="sec-otp" className="fsec">
-                {otp && otp.status === "ok" && <section className="rd" dir={lang === "ar" ? "rtl" : "ltr"} style={{ padding: 10 }}><div className="rd-panel" style={{ padding: "0 10px 12px" }}><OtpGantt otp={otp} nowMs={nowMs} lang={lang === "ar" ? "ar" : "en"} title={lang === "ar" ? "الوقفة — الخط الزمني للخدمات" : "Stand — service timeline"} /></div></section>}
-                {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} airline={sel.airline} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
+                {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
                 {(feed || f.ata) && <details className="card fold fx-otpmore" open={focus === "delay"}><summary>{lang === "ar" ? "تفاصيل الوقفة وتسجيل التأخير" : "Stand details & delay log"}</summary>
                 {feed && <OtpReel rotationId={String(f.rotation_id)} arrivalLeg={sel.arrivalLeg} flight={reelFlight} steps={sel.steps} />}
                 {f.ata && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: nowMs }}

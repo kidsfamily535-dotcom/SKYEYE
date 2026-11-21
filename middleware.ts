@@ -18,7 +18,6 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const inEye = path === "/eye" || path.startsWith("/eye/");
   const onEyeLogin = path === "/eye/login";
-  const onPrev = path.startsWith("/preview-tmp"); if (onPrev) return res;
   const onLogin = path.startsWith("/login") || path.startsWith("/signup");
   if (!user) return onLogin || onEyeLogin ? res : NextResponse.redirect(new URL(inEye ? "/eye/login" : "/login", req.url));
   if (onEyeLogin) return NextResponse.redirect(new URL("/eye", req.url));
