@@ -10,7 +10,7 @@ import { backToOwner } from "@/app/mode-actions";
 import { getT } from "@/lib/lang";
 import LangSwitch from "./LangSwitch";
 
-const NAV_MODULE: Record<string, string> = { "/inbox": "emails", "/flights": "flights" };
+const NAV_MODULE: Record<string, string> = { "/inbox": "emails", "/flights": "flights", "/otp": "flights" };
 
 /** module: the plan module this page needs. A suspended company sees a notice instead of the page. The platform owner only sees the company app in preview mode; otherwise he is sent to the owner console. */
 export default async function Shell({ data, children, module }: { data: CommandData; children: React.ReactNode; module?: string }) {
