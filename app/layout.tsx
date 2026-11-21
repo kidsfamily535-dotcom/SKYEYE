@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./radar-theme.css";
 import { getT } from "@/lib/lang";
 import { dirOf } from "@/lib/i18n";
 import { I18nProvider } from "@/components/I18n";
@@ -9,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("meta.title"), description: t("meta.description") };
 }
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#06122A" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#46443F" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { lang } = await getT();

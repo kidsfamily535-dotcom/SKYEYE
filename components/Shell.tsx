@@ -25,7 +25,7 @@ export default async function Shell({ data, children, module }: { data: CommandD
   return (
     <div className="app">
       <aside className="side" aria-label={t("nav.aria")}>
-        <div className="brand"><b className="logo">{data.company.name.slice(0, 5)}</b><div><strong>SKYEYE</strong><small>{data.company.name} · {data.company.kind}</small></div></div>
+        <div className="brand"><b className="logo">{data.company.name.slice(0, 5)}</b><div><strong><svg className="brand-plane" viewBox="-40 -40 80 80" width="22" height="22" aria-hidden="true"><path d="M0,-34L4,-10L38,6L38,12L4,6L3,24L12,30L12,34L0,31L-12,34L-12,30L-3,24L-4,6L-38,12L-38,6L-4,-10Z" fill="currentColor" /></svg>SKYEYE</strong><small>{data.company.name} · {data.company.kind}</small></div></div>
         <Nav hidden={hidden} />
       </aside>
       <div className="main">
