@@ -1,0 +1,42 @@
+/* Ground-radar look for /flights and the OTP stand panel. Everything is scoped under .rd so the rest of the app keeps its own style. */
+.rd{background:#46443F;color:#F2F2F2;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;font-variant-numeric:tabular-nums}
+.rd-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rd-top h1{margin:0;font-size:24px;margin-inline-end:auto}
+.rd-search{flex:1 1 220px;max-width:360px;min-height:42px;border-radius:8px;border:0;background:#F2F2F2;color:#1F1F1F;padding:0 14px;font:inherit}
+.rd-badge{font-size:12px;font-weight:700;border:1px solid #FFC107;color:#FFC107;border-radius:99px;padding:4px 12px}
+.rd-link{color:#F2F2F2;text-decoration:none;background:#2E2E2E;border-radius:8px;padding:9px 14px;font-size:14px}.rd-link:hover{background:#1F1F1F}
+.rd-grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:14px;align-items:start}
+.rd-panel{background:#1F1F1F;border-radius:10px;padding:0 10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.3);position:relative}
+.rd-h{display:flex;align-items:center;gap:8px;min-height:44px;margin:0;padding:0 4px;font-size:16px;font-weight:700;color:#F2F2F2}
+.rd-live{font-size:11px;font-weight:700;background:#FFC107;color:#111;border-radius:4px;padding:0 6px}
+.rd-sub{margin:10px 4px 6px;font-size:13px;color:#A3A3A3;font-weight:600}
+.rd-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rd-card{display:block;background:#2E2E2E;border-radius:8px;padding:8px 12px;color:inherit;text-decoration:none;outline:1.5px solid transparent}
+.rd-card:hover{background:#363636}.rd-card.sel{outline-color:#FFC107}
+.rd-c1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.rd-c1>b{font-size:16px}
+.rd-c1 em{font-style:normal;font-size:11px;font-weight:700;background:#4A4A4A;border-radius:4px;padding:0 6px}
+.rd-c1 em.chip.late,.rd-c1 em.chip.warn{background:#E8A33D;color:#111}
+.rd-time{margin-inline-start:auto;font-weight:700;color:#9A9A9A}.rd-time.late{color:#FF766C}.rd-time.warn{color:#E8A33D}
+.rd-c2{display:block;color:#A3A3A3;font-size:13px;margin-top:2px}
+.rd-empty{color:#A3A3A3;margin:6px 4px 12px}
+.rd-open{position:absolute;inset-inline-end:14px;top:12px;color:#FFC107;text-decoration:none;font-size:13px;font-weight:700}
+.rd-stand{padding-top:2px}
+.rd-trio{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.rd-trio>div{flex:1 1 120px;background:#2E2E2E;border-radius:8px;padding:6px 10px}
+.rd-trio small{display:block;font-size:11px;color:#A3A3A3}.rd-trio b{font-size:15px}.rd-trio b.bad{color:#FF766C}.rd-trio em{font-style:normal;font-size:10px;font-weight:400;color:#A3A3A3}
+.rd-gantt{background:#2A2A2A;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.rd-g-axis,.rd-g-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;align-items:center}
+.rd-g-axis>div{position:relative;height:22px}
+.rd-g-axis i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:10px;color:#A3A3A3;white-space:nowrap}
+.rd-g-axis i.plan{color:#FFC107}.rd-g-axis i.now{background:#F2F2F2;color:#111;border-radius:99px;padding:0 8px;font-weight:700;top:0}
+.rd-g-name{display:flex;flex-direction:column;line-height:1.25}.rd-g-name b{font-size:13px}.rd-g-name span{font-size:11px;font-weight:700}
+.rd-g-name .good{color:#3FB58A}.rd-g-name .bad{color:#FF766C}
+.rd-g-track{position:relative;height:26px;background:rgba(255,255,255,.03);border-radius:4px}
+.rd-g-track .bar{position:absolute;top:7px;height:12px;border-radius:3px}.rd-g-track .bar.live{opacity:.85}
+.rd-g-track .dot{position:absolute;top:8px;width:10px;height:10px;border-radius:50%;transform:translateX(-50%)}
+.rd-g-track .plan-tick{position:absolute;top:3px;height:20px;border-inline-start:2px dashed #A3A3A3;transform:translateX(-1px)}
+.rd-g-track .plan-line{position:absolute;top:0;bottom:0;border-inline-start:1px dashed #FFC107;opacity:.6}
+.rd-g-track .now-line{position:absolute;top:0;bottom:0;border-inline-start:1.5px solid #F2F2F2;opacity:.8}
+.rd-foot{margin:8px 4px 0;text-align:center;font-weight:700;color:#3FB58A}.rd-foot.bad{color:#FF766C}
+.rd-legend{margin:2px 4px 0;font-size:12px;color:#A3A3A3}
+@media (max-width:900px){.rd-grid{grid-template-columns:1fr}.rd-g-axis,.rd-g-row{grid-template-columns:110px minmax(0,1fr)}.rd-search{max-width:none}}
