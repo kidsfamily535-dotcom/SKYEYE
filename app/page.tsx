@@ -8,6 +8,9 @@ import ToneIcon from "@/components/ToneIcon";
 import LibraryPanel from "@/components/LibraryPanel";
 import { getLibrary, isLibKind } from "@/lib/library";
 import "./home.css";
+import "./command.css";
+import CommandScope from "@/components/CommandScope";
+import UtcClock from "@/components/UtcClock";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
@@ -38,7 +41,8 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
   const open = f && isLibKind(fk) ? { no: f, kind: fk } : null;
   const searching = Boolean(q || kind || open);
   const [d, c, lib] = await Promise.all([getCommandData(), getCockpit(), searching ? getLibrary(q, kind, open) : Promise.resolve(null)]);
-  const { t } = await getT();
+  const { t, lang } = await getT();
+  const ar = lang === "ar";
   const g = greeting(new Date());
 
   // One entry per situation: the same overdue flight can reach us from the flight rules and from the alerts.
@@ -59,41 +63,57 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
     if ((d.counts.draftsWaiting ?? 0) > 0) sentences.push(fill(t("home.s.drafts"), { n: num(d.counts.draftsWaiting ?? 0, "/inbox?f=draft") }));
   }
 
-  const pill = (x: Decision) => {
-    const body = <><i className={`dot ${x.tone}`} aria-hidden="true" /><span><bdi>{short(x.text)}</bdi></span><small>{t(`tone.${x.tone}` as Key)}</small></>;
-    return <li key={x.id}>{x.href ? <Link className={`hm-pill ${x.tone}`} href={x.href}>{body}</Link> : <span className={`hm-pill ${x.tone}`}>{body}</span>}</li>;
+  const lane = (x: Decision) => {
+    const body = <><span className="cr-tag"><i className={x.tone} aria-hidden="true" /></span><span className="cr-lane-track" aria-hidden="true"><span className={`cr-zone ${x.tone}`} /><svg className={`cr-lane-plane ${x.tone}`} viewBox="-12 -14 52 28" width="46" height="24"><path d="M-9 0c0-1 1-2 3-2.4l22-1.2c3-.2 6 1.2 7.4 3.6-1.4 2.4-4.4 3.8-7.4 3.6l-22-1.2c-2-.4-3-1.4-3-2.4zM3 -1.4L-4 -12h4l9 10.6zM3 1.4L-4 12h4l9-10.6z" fill="currentColor" /></svg></span><span className="cr-lane-text"><bdi>{short(x.text)}</bdi><small>{t(`tone.${x.tone}` as Key)}</small></span></>;
+    return <li key={x.id}>{x.href ? <Link className="cr-lane" href={x.href}>{body}</Link> : <span className="cr-lane">{body}</span>}</li>;
   };
 
   return (
     <Shell data={d}>
       <main className="page hm">
-        <section className="hm-hero" aria-label={t("nav.home")}>
-          <p className="hm-eyebrow"><span className="ltr">{g.date}</span></p>
-          <h1>{t("home.title", { greet: t(g.key) })}</h1>
-          {d.noMembership
-            ? <p className="hm-story">{t("home.noMembership")}</p>
-            : <p className="hm-story" aria-live="polite">{sentences.length === 0 ? t("home.reco.none") : sentences.map((s, i) => <span key={i} className="hm-sent">{s} </span>)}</p>}
+        <section className="cr" aria-label={t("nav.home")} dir={ar ? "rtl" : "ltr"}>
+          <header className="cr-top">
+            <h1><span className="cr-title-ico" aria-hidden="true">✈</span>{t("nav.home")}</h1>
+            <span className="cr-date ltr">{g.date}</span>
+            <UtcClock />
+            {d.shadowMode && <span className="cr-badge shadow">{ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing"}</span>}
+          </header>
+
+          <div className="cr-grid">
+            <div className="cr-panel cr-scope-panel">
+              <h2 className="cr-h">{ar ? "شاشة البرج" : "Tower scope"}<span className="cr-live">{ar ? "مباشر" : "LIVE"}</span></h2>
+              <CommandScope counts={c.radar} ar={ar} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+            </div>
+
+            <div className="cr-panel cr-call">
+              <h2 className="cr-h">{ar ? "نداء البرج" : "Tower call"}</h2>
+              <p className="cr-greet">{t("home.title", { greet: t(g.key) })}</p>
+              {d.noMembership
+                ? <p className="cr-line">{t("home.noMembership")}</p>
+                : <ul className="cr-lines" aria-live="polite">{sentences.length === 0 ? <li className="cr-line calm"><i />{t("home.reco.none")}</li> : sentences.map((x, i) => <li key={i} className="cr-line"><i />{x}</li>)}</ul>}
+            </div>
+          </div>
+
+          {first && (
+            <div id="attention" className={`cr-next ${first.tone}`} aria-label={t("home.next.title")}>
+              <span className="cr-next-plane" aria-hidden="true"><svg viewBox="-12 -14 52 28" width="64" height="34"><path d="M-9 0c0-1 1-2 3-2.4l22-1.2c3-.2 6 1.2 7.4 3.6-1.4 2.4-4.4 3.8-7.4 3.6l-22-1.2c-2-.4-3-1.4-3-2.4zM3 -1.4L-4 -12h4l9 10.6zM3 1.4L-4 12h4l9-10.6z" fill="currentColor" /></svg></span>
+              <div className="cr-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
+              {first.href && <Link className="cr-go" href={first.href}>{first.action}</Link>}
+            </div>
+          )}
+
+          {rest.length > 0 && (
+            <div className="cr-panel cr-queue" aria-label={t("home.then")}>
+              <h2 className="cr-h">{ar ? "طابور المدرج" : "Runway queue"}<small className="cr-hint">{t("home.then")}</small></h2>
+              <ul className="cr-lanes">{rest.slice(0, SHOW).map(lane)}</ul>
+              {rest.length > SHOW && (
+                <details className="cr-more">
+                  <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
+                  <ul className="cr-lanes">{rest.slice(SHOW).map(lane)}</ul>
+                </details>)}
+            </div>
+          )}
         </section>
-
-        {first && (
-          <section id="attention" className={`hm-next ${first.tone}`} aria-label={t("home.next.title")}>
-            <span className="hm-next-ico" aria-hidden="true"><ToneIcon name={first.tone} size={26} /></span>
-            <div className="hm-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
-            {first.href && <Link className="hm-go" href={first.href}>{first.action}</Link>}
-          </section>
-        )}
-
-        {rest.length > 0 && (
-          <section className="hm-then" aria-label={t("home.then")}>
-            <h2>{t("home.then")}</h2>
-            <ul className="hm-pills">{rest.slice(0, SHOW).map(pill)}</ul>
-            {rest.length > SHOW && (
-              <details className="hm-more">
-                <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
-                <ul className="hm-pills">{rest.slice(SHOW).map(pill)}</ul>
-              </details>)}
-          </section>
-        )}
 
         {!d.noMembership && (
           <form action="/agent" method="get" className="hm-say" role="search" aria-label={t("home.say.aria")}>
