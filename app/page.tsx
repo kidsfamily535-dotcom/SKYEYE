@@ -10,7 +10,6 @@ import { getLibrary, isLibKind } from "@/lib/library";
 import "./home.css";
 import "./command.css";
 import CommandScope from "@/components/CommandScope";
-import UtcClock from "@/components/UtcClock";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
@@ -75,7 +74,6 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
           <header className="cr-top">
             <h1><span className="cr-title-ico" aria-hidden="true">✈</span>{t("nav.home")}</h1>
             <span className="cr-date ltr">{g.date}</span>
-            <UtcClock />
             {d.shadowMode && <span className="cr-badge shadow">{ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing"}</span>}
           </header>
 

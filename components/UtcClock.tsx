@@ -1,7 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useT } from "./I18n";
+
 export default function UtcClock() {
-  const [n, setN] = useState<number | null>(null);
-  useEffect(() => { setN(Date.now()); const i = setInterval(() => setN(Date.now()), 20000); return () => clearInterval(i); }, []);
-  return <span className="cr-badge ltr">UTC · {n === null ? "—" : new Date(n).toISOString().slice(11, 16)}</span>;
+  const { t: tr } = useT();
+  const [t, setT] = useState("--:--");
+  useEffect(() => {
+    const tick = () => setT(new Date().toISOString().slice(11, 16));
+    tick();
+    const id = setInterval(tick, 15000);
+    return () => clearInterval(id);
+  }, []);
+  return (<span className="chip ltr" aria-label={tr("clock.aria")}>{t} UTC</span>);
 }
