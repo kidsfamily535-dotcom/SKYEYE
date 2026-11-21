@@ -1,0 +1,153 @@
+/* Ground-radar look for the OTP stand scene (SKYEYE staff) and the airline "Company Eye" portal.
+   One stylesheet on purpose: the handling company and the airline must see the same screen.
+   Reference: "الرادار الأرضي — شاشة المراقبة". Tarmac grey ground, near-black instrument panels, amber = selected / on stand,
+   dashed outlines = planned zone, small dark tags with a status dot, aircraft drawn from above.
+   Loaded after globals.css and radar-theme.css; it only re-skins the otps-*, otr-*, eye-* surfaces (no layout of the data, no logic).
+   Wording rule kept from the Eye: a delay is amber, never red. */
+
+/* ---------- OTP stand scene (components/OtpStand.tsx and components/eye/EyeScene.tsx) ---------- */
+html body .otps{max-width:600px;border-radius:10px;background:#1F1F1F;border:0;color:#F2F2F2;box-shadow:0 2px 12px rgba(0,0,0,.3);position:relative}
+html body .otps-bg,html body .otps-bg.photo{background:#1F1F1F;filter:none;transform:none}
+html body .otps-vig,html body .otps.tone-warn .otps-vig,html body .otps.tone-late .otps-vig{background:none}
+html body .otps-top{padding:14px 16px 0}
+html body .otps-top small{font-size:13px;font-weight:700;letter-spacing:.04em;opacity:1;color:#F2F2F2;display:inline-flex;align-items:center;gap:8px;background:#111;border-radius:6px;padding:4px 10px}
+html body .otps-top small::before{content:"";width:8px;height:8px;border-radius:50%;background:#FFC107}
+html body .otps-logo{background:#fff;border-radius:6px;padding:2px 4px;opacity:1}
+html body .otps-demo{border:0;background:#111;color:#E8A33D;border-radius:6px;padding:3px 9px}
+
+/* the big figure: an instrument read-out, not a poster */
+html body .otps-time,html body .otps-final{padding:10px 16px 2px}
+html body .otps-time>small{font-size:12px;font-weight:700;letter-spacing:.06em;opacity:1;color:#A3A3A3}
+html body .otps-num{font-family:var(--font);font-size:clamp(64px,18vw,104px);font-weight:700;letter-spacing:0;color:#FFC107;text-shadow:none}
+html body .otps-num.ok{color:#F2F2F2}html body .otps-num.warn,html body .otps-num.late{color:#E8A33D;text-shadow:none}html body .otps-num.muted{color:#8A97A6}
+html body .otps-unit{font-size:13px;opacity:1;color:#A3A3A3}
+html body .otps-say{opacity:1;color:#D8D8D8;background:#2A2A2A;border-radius:8px;padding:8px 14px;max-width:40ch}
+html body .otps-draft{opacity:1;color:#8A97A6}
+html body .otps-final b{font-family:var(--font);font-weight:700;color:#FFC107}
+html body .otps-final small{opacity:1;color:#A3A3A3}
+
+/* the stand: a tarmac map with the dashed equipment-restricted zone, the aircraft in amber seen from above */
+html body .otps-stage{width:auto;margin:6px 12px 0;border-radius:8px;background:#55534E;overflow:hidden;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.04) 78px 80px)}
+html body .otps-stage::before{content:"";position:absolute;inset:10px;border:1.5px dashed rgba(255,255,255,.4);border-radius:6px;pointer-events:none;z-index:1}
+html body .otps-stage::after{content:"";position:absolute;inset-inline:0;bottom:7%;border-top:1.2px dashed #E5B800;pointer-events:none;z-index:1;opacity:.7}
+html body .otps-art{-webkit-mask-image:none;mask-image:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+html body .otps-draw g{fill:#FFC107;stroke:#1B1B1B;stroke-width:2.2;stroke-linejoin:round}
+html body .otps.pre .otps-art{opacity:1;filter:none}
+html body .otps.pre .otps-draw g{fill:none;stroke:rgba(255,255,255,.7);stroke-width:1.8;stroke-dasharray:7 5}
+html body .otps.final .otps-draw g{fill:#C99700}
+
+/* step nodes: dark service tags with a status dot, like the GPU / PCA / fuel chips on the map */
+html body .otps-n .dot{width:24px;height:24px;border-radius:7px;color:#F2F2F2;background:#111;border:1.5px solid rgba(255,255,255,.55);box-shadow:none}
+html body .otps-n .dot svg{width:13px;height:13px}
+html body .otps-n.upcoming .dot{background:rgba(17,17,17,.7);border-style:dashed;color:rgba(255,255,255,.7)}
+html body .otps-n.in_window .dot{color:#111;background:#FFC107;border-color:#FFC107;animation:otps-breathe 2.2s ease-in-out infinite}
+html body .otps-n.done .dot{color:#111;background:#3FB58A;border-color:#3FB58A;box-shadow:none}
+html body .otps-n.done_late .dot{color:#111;background:#E8A33D;border-color:#E8A33D;box-shadow:none}
+html body .otps-n.late .dot{color:#111;background:#E8A33D;border-color:#FFC107;box-shadow:none}
+html body .otps-n.late .dot::after{border-color:rgba(232,163,61,.9);border-radius:9px}
+html body .otps-n.sel .dot{transform:scale(1.25);outline:2px solid #FFC107;outline-offset:2px}
+html body .otps-n .bd{background:#E8A33D;color:#111;border-radius:6px}
+html body .otps-tag{background:#111;border:0;border-radius:6px;backdrop-filter:none;-webkit-backdrop-filter:none;color:#F2F2F2;font-weight:600;outline:1.5px solid #FFC107}
+html body .otps-taxi i{background:#FFC107;box-shadow:0 0 8px #FFC107}
+
+/* time strip = a one-row Gantt: planned dashed, actual solid amber */
+html body .otps-strip{padding:8px 18px 22px}
+html body .otps-line{height:6px;border-radius:3px;background:#111;margin:16px 0 10px}
+html body .otps-line::before,html body .otps-line::after{height:0;background:none;border-top:1.5px dashed rgba(255,255,255,.28);inset-inline:0}
+html body .otps-line::before{top:-6px}html body .otps-line::after{bottom:-6px}
+html body .otps-fill{background:#FFC107;box-shadow:none;border-radius:3px}
+html body .otps-tick{width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:3px;background:#8A97A6}
+html body .otps-tick.done,html body .otps-tick.done_late{background:#3FB58A;box-shadow:none}html body .otps-tick.late{background:#E8A33D;box-shadow:none}
+html body .otps-ends{opacity:1;color:#A3A3A3;font-weight:600}
+html body .otps-intro{color:#F2F2F2}html body .otps-intro h3{color:#FFC107}
+
+/* details panel (selected step) = the black instrument panel outlined in amber */
+html body .otps-sheet{margin:0 12px 14px;padding:12px 16px 16px;border-radius:10px;background:#2A2A2A;backdrop-filter:none;-webkit-backdrop-filter:none;border:0;outline:1.5px solid #FFC107;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+html body .otps-sheet .grab{display:none}
+html body .otps-sheet .x{background:#111;border-radius:7px;color:#F2F2F2}
+html body .otps-sheet h3{color:#F2F2F2;font-size:16px}
+html body .otps-chip{background:#111;border:0;border-radius:6px;padding:3px 10px;font-weight:600;color:#BDBDBD;display:inline-flex;align-items:center;gap:6px}
+html body .otps-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+html body .otps-chip.done{color:#3FB58A}html body .otps-chip.done_late{color:#E8A33D}html body .otps-chip.in_window{color:#FFC107}html body .otps-chip.overdue_unconfirmed{color:#E8A33D}
+html body .otps-lines{opacity:1;color:#D0D0D0}
+html body .otps-big{background:#FFC107;border:0;border-radius:8px;color:#111;font-weight:700}
+html body .otps-big:hover:not(:disabled){background:#FFD24A}
+html body .otps-ghost{background:#2E2E2E;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#F2F2F2}
+html body .otps-ghost:hover:not(:disabled){background:#3A3A3A}
+html body .otps .otp-reasons button{background:#2E2E2E;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#F2F2F2}
+html body .otps .otp-reasons button.on{border-color:#FFC107;background:#3A3326}
+html body .otps .otp-form label{color:#A3A3A3}
+
+/* flight reel under the scene (components/OtpReel.tsx): film strip -> lanes of dark tags */
+html body .otr-head{color:#F2F2F2;letter-spacing:.02em;font-weight:700}
+html body .otr-lbl{color:#A3A3A3}
+html body .otr-track::before{border-top:1.5px dashed rgba(255,255,255,.28);background:none;height:0}
+html body .otr-track::after{background:none;height:0}
+html body .otr-f .d{border-radius:7px;background:#111;border:1.5px solid rgba(255,255,255,.55);box-shadow:none}
+html body .otr-f.future .d{background:transparent;border-style:dashed}
+html body .otr-f.done .d{background:#3FB58A;border-color:#3FB58A;box-shadow:none}
+html body .otr-f.warn .d{background:#FFC107;border-color:#FFC107}
+html body .otr-f.late .d{background:#E8A33D;border-color:#FFC107;box-shadow:none}
+html body .otr-f.late .d::after{border-color:rgba(232,163,61,.9);border-radius:9px}
+html body .otr-f b{color:#F2F2F2}
+html body .otr-now i{background:#FFC107}html body .otr-now em{color:#FFC107}
+html body .otr-card{border-radius:10px}
+
+/* ---------- Company Eye portal (/eye): same panels, same tags, same tarmac ---------- */
+html body .eye-top{background:#1F1F1F;backdrop-filter:none;border-bottom:0;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+html body .eye-brand strong{color:#FFC107;letter-spacing:.14em}
+html body .eye-brand small{color:#A3A3A3}
+html body .eye-nav,html body .eye-filter{flex-direction:row;flex-wrap:wrap;align-items:center}
+html body .eye-nav a{background:#2E2E2E;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#F2F2F2}
+html body .eye-nav a:hover{background:#3A3A3A;border-color:rgba(255,255,255,.14)}
+html body .eye-page h1{color:#F2F2F2}
+html body .eye-sub{color:#D0D0D0}
+html body .eye-note{border:0;border-radius:8px;background:#2A2A2A;color:#E8A33D;outline:1.5px dashed rgba(232,163,61,.6);outline-offset:-1.5px}
+html body .eye-note.err{color:#FF766C;outline-color:rgba(255,118,108,.6)}
+html body .eye-note.ok{color:#3FB58A;outline-color:rgba(63,181,138,.6);background:#2A2A2A}
+
+/* a day of flights = one instrument panel; each flight = an aircraft strip */
+html body .eye-day,html body .eye-earlier,html body .eye-log,html body .eye-card,html body .eye-empty-card{background:#1F1F1F;border:0;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);color:#F2F2F2}
+html body .eye-day h2,html body .eye-earlier summary{font-size:16px;font-weight:700;letter-spacing:0;color:#F2F2F2;display:flex;align-items:center;gap:10px;padding:2px 14px 8px}
+html body .eye-day h2 small{margin:0;margin-inline-start:auto;border:0;background:#FFC107;color:#111;font-weight:700;border-radius:4px;padding:0 8px;opacity:1}
+html body .eye-list{padding:0 10px 4px}
+html body .eye-list::before{display:none}
+html body .eye-row{min-height:64px;margin-bottom:6px;padding:10px 12px;border-radius:8px;background:#2A2A2A}
+html body .eye-row:hover{background:#363636}
+html body .eye-row:focus-visible{outline:1.5px solid #FFC107;outline-offset:0;border-radius:8px}
+html body .eye-row.on{outline:1.5px solid #FFC107}
+html body .eye-node{width:30px;height:30px;border-radius:7px;background:#111;border:1.5px solid rgba(255,255,255,.55);color:#BDBDBD}
+html body .eye-row.arrival .eye-node{color:#8FB8FF;border-color:rgba(143,184,255,.7)}
+html body .eye-row.departure .eye-node{color:#FFC107;border-color:rgba(255,193,7,.8)}
+html body .eye-row.on .eye-node{background:#FFC107;border-color:#FFC107;color:#111}
+html body .eye-fn{letter-spacing:.04em}
+html body .eye-chip{background:#111;border:0;border-radius:6px;padding:2px 10px;color:#BDBDBD;display:inline-flex;align-items:center;gap:6px}
+html body .eye-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+html body .eye-row.arrival .eye-chip{color:#8FB8FF}
+html body .eye-row.departure .eye-chip{color:#FFC107}
+html body .eye-chip.ok{color:#3FB58A}html body .eye-chip.off{color:#8A97A6}
+html body .eye-meta{color:#A3A3A3}html body .eye-day .eye-meta b{color:#F2F2F2}
+html body .eye-onstand{color:#FFC107}
+html body .eye-time{color:#F2F2F2}html body .eye-time small{opacity:1;color:#8A97A6}
+html body .eye-back,html body .eye-pill{background:#2E2E2E;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#F2F2F2}
+html body .eye-pill.dir{color:#FFC107;border-color:rgba(255,193,7,.5)}
+
+/* departure log + admin cards + empty state */
+html body .eye-log h2,html body .eye-card h2,html body .eye-empty-card h2{color:#F2F2F2;font-weight:700}
+html body .eye-log h3,html body .eye-card h3{color:#A3A3A3;letter-spacing:.04em}
+html body .eye-log-sub,html body .eye-log-none,html body .eye-card .muted{color:#A3A3A3;opacity:1}
+html body .eye-log-times div{background:#2A2A2A;border:0;border-radius:8px}
+html body .eye-log-times dt{opacity:1;color:#A3A3A3}
+html body .eye-log-times div:nth-child(3){outline:1.5px solid #FFC107}
+html body .eye-log-list i{border-radius:3px;background:#E8A33D;box-shadow:none}
+html body .eye-log-list b{color:#E8A33D}
+html body .eye-card input,html body .eye-card select,html body .eye-login input{background:#2E2E2E;border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#F2F2F2}
+html body .eye-item{border-top:0;background:#2A2A2A;border-radius:8px;padding:10px 12px;margin-top:6px}
+html body .eye-actlist li{border-top:0;background:#2A2A2A;border-radius:8px;padding:8px 12px;margin-top:6px}
+html body .eye-empty-card p{opacity:1;color:#A3A3A3}
+html body .eye-conn{background:#2A2A2A;color:#E8A33D;border-bottom:1.5px dashed rgba(232,163,61,.6);backdrop-filter:none}
+html body .eye-conn.back{color:#3FB58A;border-bottom-color:rgba(63,181,138,.6);background:#2A2A2A}
+html body .eye-skel{border:0;border-radius:8px;background:linear-gradient(90deg,#262626,#303030,#262626);background-size:200% 100%}
+html body .eye-login form{background:#1F1F1F;border-radius:10px;box-shadow:0 2px 16px rgba(0,0,0,.4)}
+@media (max-width:720px){html body .eye-day,html body .eye-earlier,html body .eye-log,html body .eye-card,html body .eye-empty-card{border-radius:10px}html body .otps-stage{margin-inline:8px}}
