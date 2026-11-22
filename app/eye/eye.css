@@ -174,3 +174,17 @@ html[dir=ltr] .eye-rd-sel select,.ltr .eye-rd-sel select{background-position:rig
 .eye-pop{display:flex;flex-direction:column;gap:6px;min-width:150px;max-height:240px;overflow:auto}
 .eye-pop-i{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#2c2c2c;color:#fff;border:0;border-radius:8px;padding:8px 10px;cursor:pointer;font-family:inherit;direction:ltr}
 .eye-pop-i:hover{outline:1.5px solid #FFC107}.eye-pop-i small{color:#a3a3a3}
+
+/* Layout (shared look with the command page): the flights panel is a real column beside the map on wide screens, a bottom sheet under the map on phones. Nothing floats over the map any more. */
+.eye-rd{display:flex;flex-direction:row;gap:0;overflow:hidden}
+.eye-rd-map{flex:1;min-width:0;height:auto;align-self:stretch}
+.eye-rd-panel{position:static;inset:auto;width:320px;flex:none;max-height:none;border-radius:0;background:#171717;backdrop-filter:none;padding:10px;border-inline-start:1px solid rgba(255,255,255,.08)}
+.eye-rd-sel select{font-size:16px}
+@media (max-width:1000px){.eye-rd-tip{display:none}}
+@media (max-width:800px){
+  .eye-main:has(.eye-rd) .eye-page{height:calc(100dvh - 64px);min-height:480px}
+  .eye-rd{flex-direction:column}
+  .eye-rd-map{flex:1 1 auto;min-height:240px}
+  .eye-rd-panel{width:auto;flex:none;height:min(42%,320px);border-inline-start:0;border-top:1px solid rgba(255,255,255,.1)}
+  .eye-rd-note{font-size:10px;padding:4px 8px}
+}
