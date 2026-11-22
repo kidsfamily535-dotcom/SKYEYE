@@ -10,7 +10,7 @@ import { getLibrary, isLibKind } from "@/lib/library";
 import "./home.css";
 import "./command.css";
 import "./command-map.css";
-import CommandMap from "@/components/CommandMap";
+import CommandRadar from "@/components/CommandRadar";
 import CommandDock, { type DockItem } from "@/components/CommandDock";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
@@ -140,7 +140,7 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
         <section className="cr cr-full" aria-label={t("nav.home")} dir={ar ? "rtl" : "ltr"}>
           <CommandDock title={t("nav.home")} date={g.date} shadow={d.shadowMode ? (ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing") : undefined} items={items} defaultOpen={searching ? "lib" : undefined} />
           <div className="cr-panel cr-scope-panel cr-hero">
-            <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+            <CommandRadar counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
           </div>
         </section>
       </main>

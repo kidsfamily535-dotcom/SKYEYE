@@ -1,0 +1,23 @@
+/* Command-page radar (same look as the airline portal radar). Physical left/right on purpose: the page is RTL but the map is not. */
+.cx{position:relative;flex:1;min-height:0;width:100%;display:flex}
+.cx-map{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:#1b1d20}
+.cx-map .eye-lf{flex:1;min-height:0}
+.cx-panel{position:absolute;left:12px;top:12px;bottom:60px;width:300px;z-index:1100;background:rgba(18,18,18,.86);backdrop-filter:blur(6px);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.cx-sel{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#a3a3a3;flex:none}
+.cx-sel select{appearance:none;-webkit-appearance:none;width:100%;background:#262626 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23FFC107' stroke-width='2'/%3E%3C/svg%3E") no-repeat left 12px center;color:#fff;font-family:inherit;font-weight:700;font-size:15px;line-height:1.2;border:1px solid #FFC107;border-radius:10px;padding:10px 14px 10px 34px;cursor:pointer}
+[dir=ltr] .cx-sel select{background-position:right 12px center;padding:10px 34px 10px 14px}
+.cx-sel select:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.cx-list{flex:1;min-height:0;overflow:auto}
+.cx-h{margin:6px 2px;font-size:14px;display:flex;align-items:center;gap:6px}.cx-h i{width:9px;height:9px;border-radius:50%}.cx-h small{background:#FFC107;color:#111;border-radius:4px;padding:0 6px}
+.cx-card{display:flex;flex-direction:column;gap:3px;text-decoration:none;background:#1f1f1f;color:inherit;border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.cx-card:hover,.cx-card.on{outline:1.5px solid #FFC107}
+.cx-r1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.cx-r1 b{font-size:16px}
+.cx-pill{font-size:11px;font-weight:700;background:#4A4A4A;border-radius:4px;padding:0 6px}
+.cx-s2{font-size:13px;color:#a3a3a3}.cx-empty{margin:8px;color:#c9c9c9;font-size:13px}
+.cx-tip{position:absolute;right:12px;bottom:76px;z-index:1200;display:flex;flex-direction:column;gap:3px;min-width:210px;background:rgba(20,20,20,.95);border:1px solid #FFC107;border-radius:10px;padding:10px 12px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.cx-hint{margin-top:4px;font-size:12px;color:#FFC107;font-weight:700}
+.cx-legend{position:absolute;left:50%;transform:translateX(-50%);bottom:34px;z-index:1000;margin:0;padding:0;list-style:none;display:flex;gap:6px}
+.cx-legend a{--c:#FFC107;display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;background:rgba(15,20,27,.88);backdrop-filter:blur(4px);border:1px solid rgba(227,185,100,.2);border-bottom:2px solid var(--c);border-radius:10px;padding:5px 10px}
+.cx-legend i{width:9px;height:9px;border-radius:50%;background:var(--c)}.cx-legend span{font-size:11px;color:#a3a3a3}.cx-legend b{font-size:16px;font-family:ui-monospace,Menlo,monospace}
+.cx-note{position:absolute;inset-inline:0;bottom:0;z-index:1000;margin:0;padding:6px 12px;font-size:11px;color:#c9c9c9;background:rgba(0,0,0,.6)}
+@media (max-width:800px){.cx-panel{left:8px;right:8px;top:auto;bottom:96px;width:auto;max-height:34%}.cx-tip{display:none}.cx-legend{left:8px;right:8px;transform:none;display:grid;grid-template-columns:repeat(4,1fr);bottom:30px}.cx-legend a{flex-direction:column;gap:2px;padding:4px 6px}.cx-legend span{font-size:9.5px;text-align:center}}
