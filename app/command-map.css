@@ -68,3 +68,46 @@
 .tc-strip .tc-ls{flex-direction:row;flex-wrap:wrap;gap:8px;flex:1 1 320px}
 .tc-strip .tc-ls li{padding:4px 12px;border:1px solid rgba(227,185,100,.22);border-radius:99px;background:rgba(255,255,255,.04);font-size:13px;line-height:1.7}
 .tc-strip .tc-l{border:0;padding:0}
+
+/* ===== Full-page command screen: the map IS the page; everything else is in the dock's dropdowns (components/CommandDock.tsx) ===== */
+.page.hm.hm-full{max-width:none;display:block}
+.hm-full>*{animation:none}
+.cr-full{padding:0;background:none;border-radius:0;gap:8px;height:clamp(480px,calc(100dvh - 120px),1500px)}
+.cr-full .cr-hero{flex:1;min-height:0;display:flex;padding:0;border-radius:14px}
+.cr-full .cr-scope-wrap{flex:1;min-height:0;width:100%;position:relative;gap:0;display:flex;flex-direction:column;align-items:stretch}
+.cr-full .cm-stage{flex:1;min-height:0;display:flex}
+.cr-full .cm{flex:1;height:auto;min-height:0;border-radius:14px}
+.cr-full .cr-note{flex:none;max-width:none;padding:6px 8px 4px;font-size:11px;line-height:1.4}
+.cr-full .cr-legend{position:absolute;left:10px;bottom:34px;z-index:2;width:auto;display:flex;gap:6px}
+.cr-full .cr-legend a{padding:6px 10px;border-radius:10px;column-gap:8px;background:rgba(15,20,27,.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.cr-full .cr-legend b{font-size:18px}.cr-full .cr-legend span{font-size:11px}
+.cr-full .cr-legend a::after{inset-inline:10px}
+
+/* dock: slim toolbar + one dropdown at a time, laid over the map */
+.cd{position:relative;z-index:30}
+.cd-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 12px;border-radius:14px;background:linear-gradient(180deg,#232323,#171717);border:1px solid rgba(227,185,100,.28);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.cd-title{display:flex;align-items:center;gap:8px;margin:0;font-size:19px;color:#F7F1DE}.cd-ico{color:#FFC107}
+.cd-date{color:#A3A3A3;font-size:12.5px}
+.cd-shadow{font-size:11.5px;font-weight:700;border:1px solid #3FB58A;color:#3FB58A;border-radius:99px;padding:2px 10px}
+.cd-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto}
+.cd-btn{--c:#E3B964;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(227,185,100,.3);background:rgba(255,255,255,.04);color:#F2F2F2;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.cd-btn:hover{background:rgba(227,185,100,.14)}
+.cd-btn.on{background:rgba(227,185,100,.2);border-color:#E3B964}
+.cd-btn.late{--c:#FF766C;border-color:rgba(255,118,108,.7)}.cd-btn.warn{--c:#E8A33D;border-color:rgba(232,163,61,.7)}
+.cd-btn:focus-visible{outline:2px solid #FFC107;outline-offset:2px}
+.cd-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--c);color:#111;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700}
+.cd-chev{transition:transform .15s}.cd-btn.on .cd-chev{transform:rotate(180deg)}
+.cd-panel{position:absolute;inset-inline-start:0;top:calc(100% + 6px);width:min(560px,100%);max-height:calc(100dvh - 210px);overflow:auto;padding:12px;border-radius:14px;background:rgba(23,23,23,.98);border:1px solid rgba(227,185,100,.3);box-shadow:0 18px 44px rgba(0,0,0,.6);color:#F2F2F2;display:flex;flex-direction:column;gap:12px}
+.cd-panel[hidden]{display:none}
+.cd-panel .tc{background:none;border:0;box-shadow:none;padding:0;margin:0}
+.cd-panel .hm-say,.cd-panel .hm-find{background:none;padding:0}
+.cd-sub-h{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;font-size:13px;color:#E3B964;letter-spacing:.12em}.cd-sub-h small{color:#A3A3A3;font-size:12px;letter-spacing:0;margin-inline-start:auto}
+@media (max-width:900px){
+  .cr-full{height:clamp(440px,calc(100dvh - 190px),1200px)}
+  .cd-tabs{margin-inline-start:0;width:100%}.cd-btn{flex:1 1 auto;justify-content:center;padding:0 10px;font-size:13px}
+  .cd-panel{position:fixed;inset-inline:10px;top:auto;width:auto;max-height:60dvh}
+  .cr-full .cr-legend{left:8px;right:8px;bottom:30px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+  .cr-full .cr-legend a{grid-template-columns:1fr;grid-template-rows:auto auto;padding:4px 6px;justify-items:center}
+  .cr-full .cr-legend i{display:none}.cr-full .cr-legend b{font-size:15px;justify-self:center}.cr-full .cr-legend span{font-size:9.5px;text-align:center}
+  .cr-full .cm-card{inset-block-end:64px}
+}

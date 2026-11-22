@@ -11,6 +11,7 @@ import "./home.css";
 import "./command.css";
 import "./command-map.css";
 import CommandMap from "@/components/CommandMap";
+import CommandDock, { type DockItem } from "@/components/CommandDock";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
@@ -68,59 +69,59 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
     return <li key={x.id}>{x.href ? <Link className="cr-lane" href={x.href}>{body}</Link> : <span className="cr-lane">{body}</span>}</li>;
   };
 
-  return (
-    <Shell data={d}>
-      <main className="page hm">
-        <section className="cr" aria-label={t("nav.home")} dir={ar ? "rtl" : "ltr"}>
-          <header className="cr-top">
-            <h1><span className="cr-title-ico" aria-hidden="true">✈</span>{t("nav.home")}</h1>
-            <span className="cr-date ltr">{g.date}</span>
-            {d.shadowMode && <span className="cr-badge shadow">{ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing"}</span>}
-          </header>
+  const todo = (
+    <>
+      {first
+        ? (
+          <div id="attention" className={`cr-next ${first.tone}`} aria-label={t("home.next.title")}>
+            <span className="cr-next-plane" aria-hidden="true"><svg viewBox="-12 -14 52 28" width="64" height="34"><path d="M-9 0c0-1 1-2 3-2.4l22-1.2c3-.2 6 1.2 7.4 3.6-1.4 2.4-4.4 3.8-7.4 3.6l-22-1.2c-2-.4-3-1.4-3-2.4zM3 -1.4L-4 -12h4l9 10.6zM3 1.4L-4 12h4l9-10.6z" fill="currentColor" /></svg></span>
+            <div className="cr-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
+            {first.href && <Link className="cr-go" href={first.href}>{first.action}</Link>}
+          </div>)
+        : <p className="tc-l calm">{t("home.reco.none")}</p>}
+      {rest.length > 0 && (
+        <div className="cd-sub" aria-label={t("home.then")}>
+          <h2 className="cd-sub-h">{ar ? "طابور المدرج" : "Runway queue"}<small>{t("home.then")}</small></h2>
+          <ul className="cr-lanes">{rest.slice(0, SHOW).map(lane)}</ul>
+          {rest.length > SHOW && (
+            <details className="cr-more">
+              <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
+              <ul className="cr-lanes">{rest.slice(SHOW).map(lane)}</ul>
+            </details>)}
+        </div>
+      )}
+    </>
+  );
 
-          <div className="cr-panel cr-scope-panel cr-hero">
-            <h2 className="cr-h">{ar ? "شاشة البرج" : "Tower scope"}<span className="cr-live">{ar ? "مباشر" : "LIVE"}</span></h2>
-            <div className="tc tc-strip" aria-live="polite">
-              <p className="tc-k"><span className="tc-wave" aria-hidden="true"><i /><i /><i /><i /></span>{ar ? "نداء البرج" : "Tower call"}</p>
-              <p className="tc-hi">{t("home.title", { greet: t(g.key) })}</p>
-              {d.noMembership
-                ? <p className="tc-l">{t("home.noMembership")}</p>
-                : sentences.length === 0 ? <p className="tc-l calm">{t("home.reco.none")}</p>
-                : <ul className="tc-ls">{sentences.map((x, i) => <li key={i}>{x}</li>)}</ul>}
-            </div>
-            <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
-          </div>
+  const call = (
+    <div className="tc tc-strip" aria-live="polite">
+      <p className="tc-k"><span className="tc-wave" aria-hidden="true"><i /><i /><i /><i /></span>{ar ? "نداء البرج" : "Tower call"}</p>
+      <p className="tc-hi">{t("home.title", { greet: t(g.key) })}</p>
+      {d.noMembership
+        ? <p className="tc-l">{t("home.noMembership")}</p>
+        : sentences.length === 0 ? <p className="tc-l calm">{t("home.reco.none")}</p>
+        : <ul className="tc-ls">{sentences.map((x, i) => <li key={i}>{x}</li>)}</ul>}
+    </div>
+  );
 
-          {first && (
-            <div id="attention" className={`cr-next ${first.tone}`} aria-label={t("home.next.title")}>
-              <span className="cr-next-plane" aria-hidden="true"><svg viewBox="-12 -14 52 28" width="64" height="34"><path d="M-9 0c0-1 1-2 3-2.4l22-1.2c3-.2 6 1.2 7.4 3.6-1.4 2.4-4.4 3.8-7.4 3.6l-22-1.2c-2-.4-3-1.4-3-2.4zM3 -1.4L-4 -12h4l9 10.6zM3 1.4L-4 12h4l9-10.6z" fill="currentColor" /></svg></span>
-              <div className="cr-next-text"><h2>{t("home.next.title")}</h2><p><bdi>{first.text}</bdi></p></div>
-              {first.href && <Link className="cr-go" href={first.href}>{first.action}</Link>}
-            </div>
-          )}
-
-          {rest.length > 0 && (
-            <div className="cr-panel cr-queue" aria-label={t("home.then")}>
-              <h2 className="cr-h">{ar ? "طابور المدرج" : "Runway queue"}<small className="cr-hint">{t("home.then")}</small></h2>
-              <ul className="cr-lanes">{rest.slice(0, SHOW).map(lane)}</ul>
-              {rest.length > SHOW && (
-                <details className="cr-more">
-                  <summary>{t("home.more", { n: rest.length - SHOW })}</summary>
-                  <ul className="cr-lanes">{rest.slice(SHOW).map(lane)}</ul>
-                </details>)}
-            </div>
-          )}
-        </section>
-
-        {!d.noMembership && (
-          <form action="/agent" method="get" className="hm-say" role="search" aria-label={t("home.say.aria")}>
-            <span className="hm-say-ico" aria-hidden="true"><ToneIcon name="agent" size={22} /></span>
-            <input name="say" maxLength={500} autoComplete="off" placeholder={t("home.say.ph")} aria-label={t("home.say.aria")} />
-            <button className="btn gold">{t("home.say.go")}</button>
-          </form>
-        )}
-
-        {!d.noMembership && (
+  const items: DockItem[] = [
+    { id: "todo", label: ar ? "المطلوب منك" : "Needs you", badge: stream.length, tone: first?.tone, panel: todo },
+    { id: "call", label: ar ? "نداء البرج" : "Tower call", badge: sentences.length, panel: call },
+  ];
+  if (!d.noMembership) {
+    items.push({
+      id: "agent", label: ar ? "اسأل الوكيل" : "Ask the agent",
+      panel: (
+        <form action="/agent" method="get" className="hm-say" role="search" aria-label={t("home.say.aria")}>
+          <span className="hm-say-ico" aria-hidden="true"><ToneIcon name="agent" size={22} /></span>
+          <input name="say" maxLength={500} autoComplete="off" placeholder={t("home.say.ph")} aria-label={t("home.say.aria")} />
+          <button className="btn gold">{t("home.say.go")}</button>
+        </form>),
+    });
+    items.push({
+      id: "lib", label: ar ? "المكتبة" : "Library",
+      panel: (
+        <>
           <div className="hm-find">
             <form action="/" method="get" role="search" aria-label={t("home.find.aria")}>
               <input name="q" defaultValue={q} className="ltr" autoComplete="off" placeholder={t("home.find.ph")} aria-label={t("home.find.aria")} />
@@ -128,9 +129,20 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
             </form>
             <Link href="/files" className="hm-docs">{t("lib.docs")} <small>{t("lib.docs.sub")}</small></Link>
           </div>
-        )}
+          {searching && <LibraryPanel data={lib} q={q} kind={kind} open={open} />}
+        </>),
+    });
+  }
 
-        {searching && <LibraryPanel data={lib} q={q} kind={kind} open={open} />}
+  return (
+    <Shell data={d}>
+      <main className="page hm hm-full">
+        <section className="cr cr-full" aria-label={t("nav.home")} dir={ar ? "rtl" : "ltr"}>
+          <CommandDock title={t("nav.home")} date={g.date} shadow={d.shadowMode ? (ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing") : undefined} items={items} defaultOpen={searching ? "lib" : undefined} />
+          <div className="cr-panel cr-scope-panel cr-hero">
+            <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+          </div>
+        </section>
       </main>
     </Shell>
   );
