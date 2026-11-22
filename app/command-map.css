@@ -61,3 +61,10 @@
 .cm-cl{cursor:pointer;outline:none}.cm-cl-n{font-size:12px;font-weight:700;font-family:ui-monospace,Menlo,monospace}
 .cm-cl:hover circle:first-child{opacity:.34}.cm-cl:focus-visible circle:nth-child(2){stroke:#fff}
 .cr-hero .cr-scope-wrap{align-items:stretch}.cm-stage{width:100%}
+
+/* tower call as a notification strip above the map (not over it) */
+.tc-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 12px;padding:10px 14px;background:linear-gradient(180deg,#1E1E1E,#141414);backdrop-filter:none}
+.tc-strip .tc-hi{margin:0;font-size:clamp(15px,1.5vw,19px)}
+.tc-strip .tc-ls{flex-direction:row;flex-wrap:wrap;gap:8px;flex:1 1 320px}
+.tc-strip .tc-ls li{padding:4px 12px;border:1px solid rgba(227,185,100,.22);border-radius:99px;background:rgba(255,255,255,.04);font-size:13px;line-height:1.7}
+.tc-strip .tc-l{border:0;padding:0}
