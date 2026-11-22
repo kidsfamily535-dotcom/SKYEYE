@@ -10,13 +10,13 @@ import { otpLoadReasons, otpOpenTurn, otpRecordEnd, otpRecordStart, otpSetInBloc
 // this wrapper only adds what staff can do: open the turn, set chocks-on, record a service end/start, state a delay reason.
 // Everything shown comes from otp_turn_state (via lib/otp.ts); nothing is guessed here.
 
-type Props = { otp: OtpState; rotationId: string; canAct: boolean; flightLabel: string; registration: string | null };
+type Props = { otp: OtpState; rotationId: string; canAct: boolean; flightLabel: string; registration: string | null; stage?: boolean; panelTop?: React.ReactNode; panelBottom?: React.ReactNode };
 type Res = { ok: true } | { ok: false; message: string };
 
 const hm = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 const nowUtc = () => new Date().toISOString().slice(0, 16);
 
-export default function OtpStand({ otp, rotationId, canAct, flightLabel, registration }: Props) {
+export default function OtpStand({ otp, rotationId, canAct, flightLabel, registration, stage, panelTop, panelBottom }: Props) {
   const { t, lang } = useT();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -82,7 +82,7 @@ export default function OtpStand({ otp, rotationId, canAct, flightLabel, registr
         {msg && <p role="status" className={`ap-msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</p>}
       </section>
     );
-    return <ApronStand otp={otp} lang={lang} tone="muted" head={head} idLabel={label} badge={demo} sel={null} onSel={() => {}} tag={tagOf} prePanel={pre} />;
+    return <ApronStand otp={otp} lang={lang} tone="muted" head={head} idLabel={label} badge={demo} sel={null} onSel={() => {}} tag={tagOf} prePanel={pre} stage={stage} panelTop={panelTop} panelBottom={panelBottom} />;
   }
 
   /* ---------- on the stand / left ---------- */
@@ -135,6 +135,6 @@ export default function OtpStand({ otp, rotationId, canAct, flightLabel, registr
     );
   };
 
-  return <ApronStand otp={otp} lang={lang} tone={tone} head={head} idLabel={label} badge={demo} sel={sel} onSel={setSel} tag={tagOf} stepPanel={panel} />;
+  return <ApronStand otp={otp} lang={lang} tone={tone} head={head} idLabel={label} badge={demo} sel={sel} onSel={setSel} tag={tagOf} stepPanel={panel} stage={stage} panelTop={panelTop} panelBottom={panelBottom} />;
 }
 

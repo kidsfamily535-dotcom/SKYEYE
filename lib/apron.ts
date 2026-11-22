@@ -40,7 +40,7 @@ const D = {
     std: "الإقلاع المخطط", dep: "إقلاع", now: "الآن", onTime: "في الوقت", min: "د",
     services: "الخدمات", delays: "تأخيرات الخدمات", noDelays: "لا تأخيرات حاليًا.", log: "سجل الوقفة", noLog: "لا أحداث مسجّلة بعد.",
     planned: "المخطط", actual: "الفعلي", expected: "المتوقع", started: "بدأت", reason: "السبب", noReason: "لم يُذكر سبب بعد.", fixed: "مصحَّح",
-    lateStart: "تأخر البدء", over: "تجاوزت المخطط", close: "إغلاق",
+    lateStart: "تأخر البدء", over: "تجاوزت المخطط", close: "إغلاق", zoomIn: "تكبير", zoomOut: "تصغير", zoomReset: "إعادة الضبط",
   },
   en: {
     terminal: "Terminal", stand: "Stand", taxiway: "Taxiway", road: "Service road", depot: "Equipment depot",
@@ -50,7 +50,7 @@ const D = {
     std: "Planned departure", dep: "Departure", now: "Now", onTime: "on time", min: "m",
     services: "Services", delays: "Service delays", noDelays: "No delays right now.", log: "Stand log", noLog: "No events recorded yet.",
     planned: "Planned", actual: "Actual", expected: "Expected", started: "Started", reason: "Reason", noReason: "No reason stated yet.", fixed: "corrected",
-    lateStart: "Late start", over: "Past plan", close: "Close",
+    lateStart: "Late start", over: "Past plan", close: "Close", zoomIn: "Zoom in", zoomOut: "Zoom out", zoomReset: "Reset view",
   },
 } as const;
 export type ApronKey = keyof (typeof D)["ar"];

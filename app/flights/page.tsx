@@ -23,6 +23,7 @@ import FlightsBoard from "@/components/FlightsBoard";
 import { toBoardRows } from "@/lib/flight-board";
 import ArrivalReply from "@/components/ArrivalReply";
 import OtpStand from "@/components/OtpStand";
+import BackLink from "@/components/BackLink";
 import OtpReel, { type ReelItem } from "@/components/OtpReel";
 import { getOtp } from "@/lib/otp";
 import { cardStatus } from "@/lib/flight-status";
@@ -92,14 +93,12 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const reelFlight: ReelItem[] = feed ? [...[...feed.done].reverse().map((x) => ({ ...x, done: true })), ...feed.waiting.map((x) => ({ ...x, done: false }))].map((x) => ({ id: x.id, at: x.at, tone: x.tone, title: x.title, detail: x.detail, href: x.href, done: x.done })) : [];
   const vh = (v: string) => `/flights?id=${f?.rotation_id}${tab === "done" ? "&tab=done" : ""}${v === "overview" ? "" : `&view=${v}`}`;
 
-  return (
-    <Shell data={d} module="flights">
-      <main className="page">
-        {!sp.id && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
-
-        {sp.id && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
-        {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
-        {sp.id && sel && f && c && <div className="detail ws">
+  const otpOn = d.access.modules === null || d.access.modules.includes("otp");
+  /** Full-page apron layout whenever the OTP scene can be drawn; otherwise the plain two-column file. */
+  const stage = otpOn && !!otp && !!f;
+  const fileView = () => {
+    if (!sel || !f || !c) return null;
+    const headNode = (
               <header className="fx-head card">
                 <div className="fx-head-top">
                   {sel.airline && <Logo url={sel.airline.logoUrl} code={sel.airline.code} name={sel.airline.name} size="md" />}
@@ -124,7 +123,9 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                   ? <ArrivalReply arrivalLeg={sel.arrivalLeg} text={headLine} canAct={sel.canAct} L={{ q: t("fx.d.arrived"), yes: t("fx.d.yes"), useNow: t("fx.d.useNow"), save: t("fl.tl.record"), back: t("fl.tl.back"), td: t("fx.d.td"), co: t("fx.d.co"), coHint: t("fx.d.coHint"), order: t("fx.d.order") }} />
                   : <div className={`fx-agent t-${status?.tone ?? "idle"}`}><i aria-hidden="true" /><p><span>{headLine}</span></p></div>}
               </header>
-              <div className="fx-grid"><div className="fx-main">
+    );
+    const mainNode = (
+      <>
               {!sel.canAct && <p role="alert" className="err">{t("fl.noEmp")}</p>}
 
               <FlightTypeSuggestions items={sel.typeSuggestions} canAct={sel.canAct} />
@@ -140,17 +141,19 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <RqmDrafts drafts={sel.rqms} canAct={sel.canAct} />
               </div>}
 
-              {/* الأرض: كارت الوقفة (OTP stand) دايماً، وكتلة زمن الوقفة بعد وصول الطائرة فقط */}
-              {(d.access.modules === null || d.access.modules.includes("otp")) && ((otp && f) || f.ata) && <div id="sec-otp" className="fsec">
-                {otp && f && <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null} />}
-                {(feed || f.ata) && <details className="card fold fx-otpmore" open={focus === "delay"}><summary>{lang === "ar" ? "تفاصيل الوقفة وتسجيل التأخير" : "Stand details & delay log"}</summary>
+      </>
+    );
+    const otpMore = (
+      <>
+        {(feed || f.ata) && <details className="card fold fx-otpmore" open={focus === "delay"}><summary>{lang === "ar" ? "تفاصيل الوقفة وتسجيل التأخير" : "Stand details & delay log"}</summary>
                 {feed && <OtpReel rotationId={String(f.rotation_id)} arrivalLeg={sel.arrivalLeg} flight={reelFlight} steps={sel.steps} />}
                 {f.ata && <OtpBlock t={t} o={{ ata: f.ata ? String(f.ata) : null, atd: f.atd ? String(f.atd) : null, std: f.std ? String(f.std) : null, expectedStd: c.expected_std ? String(c.expected_std) : null, plannedGroundMin: c.planned_ground_minutes ? Number(c.planned_ground_minutes) : null, now: nowMs }}
                   delayAction={<details className="otp-delay" open={focus === "delay"}><summary className="btn sm gold">{t("fl.otp.logDelay")}</summary><DelayForm flightId={sel.departureLeg} steps={sel.steps} codes={sel.delayCodes} statements={sel.statements} canAct={sel.canAct} /></details>} />}
                 </details>}
-              </div>}
-
-              </div><aside className="fx-side">
+      </>
+    );
+    const sideNode = (
+      <>
               {/* القصة: اللي جاي ثم اللي حصل، عمودياً */}
               {feed && <div className="card" id="sec-timeline"><h2>{t("fl.tl.title")}<Hint>{t("fl.tl.hint")}</Hint></h2>
                 {feed.waiting.length === 0 && feed.done.length === 0 && <p className="muted">{t("fl.feed.none")}</p>}
@@ -197,8 +200,37 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
                 <ol className="vt plain">{audit.map((x) => <li key={x.id}><i className={`dot ${x.tone}`} /><div><b><bdi>{x.title}</bdi></b><small className="muted"><span className="ltr">{fmtUtc(x.at)}</span>{x.detail ? <> · <bdi>{x.detail}</bdi></> : null}</small></div></li>)}</ol>
               </details>}
               </div>
-              </aside></div>
-        </div>}
+      </>
+    );
+    if (stage && otp) {
+      return (
+        <div className="fs">
+          <OtpStand otp={otp} rotationId={String(f.rotation_id)} canAct={sel.canAct} flightLabel={`${f.flight_in ?? "—"} / ${f.flight_out ?? "—"}`} registration={f.registration ?? null}
+            stage panelTop={<><BackLink href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.back")}</BackLink>{headNode}{mainNode}</>} panelBottom={<>{otpMore}{sideNode}</>} />
+        </div>
+      );
+    }
+    return (
+      <div className="detail ws">
+        {headNode}
+        <div className="fx-grid"><div className="fx-main">
+          {mainNode}
+          {otpOn && f.ata && <div id="sec-otp" className="fsec">{otpMore}</div>}
+        </div><aside className="fx-side">
+          {sideNode}
+        </aside></div>
+      </div>
+    );
+  };
+
+  return (
+    <Shell data={d} module="flights">
+      <main className="page">
+        {!sp.id && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
+
+        {sp.id && !(sel && stage) && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
+        {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
+        {sp.id && fileView()}
       </main>
     </Shell>
   );

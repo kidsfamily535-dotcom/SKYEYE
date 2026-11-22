@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { geoDistance, geoInterpolate, geoMercator, geoPath } from "d3-geo";
 import { feature, mesh } from "topojson-client";
@@ -63,6 +64,7 @@ const RINGS: { k: keyof RadarCounts; c: string }[] = [{ k: "onGround", c: "#FFC1
 
 export default function CommandMap({ counts, flights, lang, labels, call }: { counts: RadarCounts; flights: RadarFlight[]; lang: "ar" | "en"; labels: Record<keyof RadarCounts, string>; call?: React.ReactNode }) {
   const T = TXT[lang];
+  const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const measured = useRef(false);
@@ -71,7 +73,6 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
   const [land, setLand] = useState<{ fill: string; borders: string } | null>(null);
   const [view, setView] = useState<View>({ k: 5, tx: 0, ty: 0 });
   const [now, setNow] = useState<number | null>(null);
-  const [sel, setSel] = useState<string | null>(null);
   const [hide, setHide] = useState<Record<Kind, boolean>>({ ground: false, inbound: false, late: false });
   const fitted = useRef(false);
   const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null);
@@ -155,7 +156,9 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
     if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
     if (d.moved) setView((v) => ({ ...v, tx: d.tx + dx * sc, ty: d.ty + dy * sc }));
   };
-  const onUp = () => { const d = drag.current; drag.current = null; if (d && !d.moved) setSel(null); };
+  const onUp = () => { drag.current = null; };
+  /** Standing on a flight (click / tap / Enter) opens its flight page. */
+  const openFlight = (id: string) => router.push(`/flights?id=${encodeURIComponent(id)}`);
 
   // Screen position of every drawn aircraft: projected point, then a small fan-out so parked aircraft and not-yet-departed ones don't sit on top of each other.
   // Screen position of every drawn aircraft. A crowded airport (more than 14 aircraft parked or piled at it) collapses into one count bubble
@@ -181,7 +184,6 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
     return { vis, planes, clusters };
   }, [items, hide, view]);
 
-  const selItem = sel ? items.find((i) => i.f.id === sel) ?? null : null;
   const kindText = (i: Item) => (i.f.kind === "ground" ? T.ground : i.f.kind === "inbound" ? T.inbound : i.f.landed ? T.lateGround : T.lateAir);
   const aria = `${T.aria}: ${T.ground} ${counts.onGround ?? "—"}، ${T.inbound} ${counts.inbound ?? "—"}، ${T.late} ${counts.delayed ?? "—"}`;
   const cnt = (k: Kind) => items.filter((i) => i.f.kind === k).length;
@@ -196,7 +198,7 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
             {land && <><path d={land.fill} className="cm-land" /><path d={land.borders} className="cm-borders" vectorEffect="non-scaling-stroke" /></>}
             {placed.vis.filter((i) => i.route && !i.pre).map((i) => {
               const d = pathGen({ type: "LineString", coordinates: i.route as [number, number][] }) ?? "";
-              return <path key={`r-${i.f.id}`} d={d} className={`cm-route${sel === i.f.id ? " on" : ""}`} style={{ stroke: COLOR[i.f.kind] }} vectorEffect="non-scaling-stroke" />;
+              return <path key={`r-${i.f.id}`} d={d} className={`cm-route${hov === i.f.id ? " on" : ""}`} style={{ stroke: COLOR[i.f.kind] }} vectorEffect="non-scaling-stroke" />;
             })}
           </g>
 
@@ -209,13 +211,13 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
             return <g key={a.code} className="cm-ap" transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}><circle r="3" /><text x={up ? 0 : 6} y={up ? up : 3.2} textAnchor={up ? "middle" : "start"}>{a.code}</text></g>;
           })}
 
-          {[...placed.planes].sort((a, b) => Number(sel === a.i.f.id) - Number(sel === b.i.f.id)).map(({ i, x, y }) => {
+          {[...placed.planes].sort((a, b) => Number(hov === a.i.f.id) - Number(hov === b.i.f.id)).map(({ i, x, y }) => {
             if (x < -20 || x > size.w + 20 || y < -20 || y > size.h + 20) return null;
-            const c = COLOR[i.f.kind]; const on = sel === i.f.id; const label = on || hov === i.f.id || view.k >= 10;
+            const c = COLOR[i.f.kind]; const on = hov === i.f.id; const label = on || view.k >= 10;
             return (
               <g key={i.f.id} className={`cm-pl${on ? " on" : ""}${i.est ? " est" : ""}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={`${i.f.no} ${kindText(i)}`}
-                onPointerDown={(e) => e.stopPropagation()} onPointerEnter={() => setHov(i.f.id)} onPointerLeave={() => setHov(null)} onClick={(e) => { e.stopPropagation(); setSel(on ? null : i.f.id); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(on ? null : i.f.id); } }}>
+                onPointerDown={(e) => e.stopPropagation()} onPointerEnter={() => setHov(i.f.id)} onPointerLeave={() => setHov(null)} onClick={(e) => { e.stopPropagation(); openFlight(i.f.id); }} onFocus={() => setHov(i.f.id)} onBlur={() => setHov(null)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFlight(i.f.id); } }}>
                 <circle r="13" fill="transparent" />
                 <circle r="9" fill={c} opacity=".14" />
                 {on && <circle r="12" fill="none" stroke="#fff" strokeWidth="1.2" />}
@@ -248,19 +250,6 @@ export default function CommandMap({ counts, flights, lang, labels, call }: { co
         </div>
         {!land && <p className="cm-loading">{T.loading}</p>}
 
-        {selItem && (
-          <aside className="cm-card" dir={lang === "ar" ? "rtl" : "ltr"} style={{ ["--c" as string]: COLOR[selItem.f.kind] }}>
-            <button type="button" className="cm-x" aria-label={T.close} onClick={() => setSel(null)}>×</button>
-            <p className="cm-card-h"><b className="ltr">{selItem.f.no}</b><span>{kindText(selItem)}</span></p>
-            <p className="cm-card-r ltr">{[selItem.f.origin, selItem.f.station].filter(Boolean).join(" → ")}{selItem.f.reg ? ` · ${selItem.f.reg}` : ""}</p>
-            <dl className="cm-times ltr">
-              {selItem.f.landed ? <div><dt>{T.ata}</dt><dd>{hm(selItem.f.ata)}</dd></div> : <><div><dt>{T.sta}</dt><dd>{hm(selItem.f.sta)}</dd></div><div><dt>{T.eta}</dt><dd>{hm(selItem.f.eta)}</dd></div></>}
-              {selItem.f.landed && <div><dt>{T.std}</dt><dd>{hm(selItem.f.std)}</dd></div>}
-            </dl>
-            <p className="cm-card-n">{selItem.est ? (selItem.pre ? T.preDep : T.est) : T.parked}</p>
-            <Link className="cm-go" href={`/flights?id=${selItem.f.id}`}>{T.open}</Link>
-          </aside>
-        )}
       </div>
       {call && <div className="cm-call">{call}</div>}
       </div>

@@ -135,3 +135,38 @@
   .ap-g{--lw:96px}.ap-g-name b{font-size:11.5px}
 }
 @media (prefers-reduced-motion:reduce){.ap *{animation:none!important;transition:none!important}}
+
+/* ===== Stage layout (flight page of SKYEYE): the apron map IS the page, one side panel of collapsible cards, as in the ground-radar reference ===== */
+.fs{height:clamp(520px,calc(100dvh - 120px),1500px)}
+.ap.ap-stage{display:block;position:relative;height:100%;border-radius:14px;overflow:hidden;background:var(--ap-map);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.ap-stage .ap-hero{position:absolute;inset:0;border-radius:0;box-shadow:none;padding-left:min(480px,44%)}
+.ap-stage .ap-map{width:100%;height:100%;aspect-ratio:auto}
+.ap-stage .ap-over{padding-left:calc(min(480px,44%) + 14px)}
+.ap-stage .ap-id{display:none}
+.ap-stage .ap-id:has(.ap-demo){display:flex}.ap-stage .ap-id .ltr:first-child{display:none}
+.ap-panel{position:absolute;left:10px;top:10px;bottom:10px;width:min(460px,42%);overflow:auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;z-index:2}
+.ap-panel>*{flex:none}
+.ap-zc{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:2;pointer-events:auto}
+.ap-zc button{width:44px;height:44px;border-radius:50%;border:0;background:var(--ap-bar);color:var(--ap-ink);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.ap-zc svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2}
+.ap-fold>summary{list-style:none;cursor:pointer}.ap-fold>summary::-webkit-details-marker{display:none}
+.ap-fold .ap-chev{width:22px;height:22px;margin-inline-start:auto;fill:none;stroke:var(--ap-mut);stroke-width:2;transition:transform .15s}
+.ap-fold:not([open]) .ap-chev{transform:rotate(180deg)}
+/* what the flight page puts into the panel keeps the same flat graphite cards */
+.ap-panel .card{background:var(--ap-bar);border:0;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);-webkit-backdrop-filter:none;backdrop-filter:none;padding:12px 14px;color:var(--ap-ink)}
+.ap-panel .fx-head{gap:10px}
+.ap-panel .fx-fn{font-size:22px}.ap-panel .fx-head-route{font-size:15px}.ap-panel .fx-head-route b{font-size:18px}.ap-panel .fx-head .fx-t b{font-size:21px}
+.ap-panel .fx-head-top{flex-wrap:wrap;gap:10px}
+.ap-panel .card h2{font-size:15px}
+.ap-panel .fold>summary{color:var(--ap-ink)}
+.ap-panel .back{color:var(--ap-y);min-height:36px}
+.ap-panel .fx-more{display:flex;flex-direction:column;gap:10px}
+@media (max-width:800px){
+  .fs{height:auto}
+  .ap.ap-stage{height:auto;overflow:visible;background:none;box-shadow:none;display:flex;flex-direction:column;gap:10px}
+  .ap-stage .ap-hero{position:relative;inset:auto;height:min(46dvh,360px);padding-left:0;border-radius:12px}
+  .ap-stage .ap-over{padding-left:14px}
+  .ap-panel{position:static;width:auto;overflow:visible}
+  .ap-zc{top:auto;bottom:10px;right:10px;transform:none;flex-direction:row}
+  .ap-zc button{width:38px;height:38px}
+}

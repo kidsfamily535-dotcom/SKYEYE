@@ -35,6 +35,11 @@ export type ApronProps = {
   prePanel?: ReactNode;
   showDelays?: boolean;
   showLog?: boolean;
+  /** Full-page layout (flight page of SKYEYE): the map fills the stage and every section sits in one side panel as a collapsible card. */
+  stage?: boolean;
+  /** Stage only: what goes at the top / bottom of the side panel around the scene sections. */
+  panelTop?: ReactNode;
+  panelBottom?: ReactNode;
 };
 
 const hm = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
@@ -44,8 +49,14 @@ const own = (s: OtpStep) => (s.own_delay_min ?? 0) + (s.start_delay_min ?? 0);
 const isLate = (s: OtpStep) => s.step_state === "overdue_unconfirmed" || ((s.step_state === "in_window" || s.step_state === "done_late") && (s.late_vs_plan_min ?? 0) >= 3);
 const running = (s: OtpStep) => s.step_state === "in_window" || s.step_state === "overdue_unconfirmed";
 
-export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge, sel, onSel, tag, stepPanel, prePanel, showDelays = true, showLog = true }: ApronProps) {
+export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge, sel, onSel, tag, stepPanel, prePanel, showDelays = true, showLog = true, stage = false, panelTop, panelBottom }: ApronProps) {
   const T = apronText(lang);
+  const [zoom, setZoom] = useState(1);
+  const zz = (k: number) => setZoom((z) => Math.max(1, Math.min(3.5, +(z * k).toFixed(3))));
+  /** One scene section: a plain card normally, a collapsible card (open by default) in the stage panel. */
+  const sec = (title: string, badge: ReactNode, body: ReactNode) => stage
+    ? <details className="ap-sec ap-fold" open><summary className="ap-h"><b>{title}</b>{badge}<svg className="ap-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg></summary>{body}</details>
+    : <section className="ap-sec" aria-label={title}><h3 className="ap-h">{title}{badge}</h3>{body}</section>;
   const dl = (n: number) => <><bdi className="ltr">+{n}</bdi> <span className="ap-u">{T("min")}</span></>;
   const router = useRouter();
   const [nowMs, setNowMs] = useState<number | null>(null);
@@ -97,7 +108,7 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
   });
 
   const map = (
-    <svg className="ap-map" viewBox={`0 0 ${MAP_W} ${MAP_H}`} role="img" aria-label={T("mapAria")} preserveAspectRatio="xMidYMid meet">
+    <svg className="ap-map" viewBox={`${Math.max(0, Math.min(MAP_W - MAP_W / zoom, CX - MAP_W / zoom / 2)).toFixed(1)} ${Math.max(0, Math.min(MAP_H - MAP_H / zoom, CY - MAP_H / zoom / 2)).toFixed(1)} ${(MAP_W / zoom).toFixed(1)} ${(MAP_H / zoom).toFixed(1)}`} role="img" aria-label={T("mapAria")} preserveAspectRatio="xMidYMid meet">
       <defs>
         <filter id="ap-nz" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves={2} seed={4} /><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 -.1" /></filter>
       </defs>
@@ -154,9 +165,7 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
     const over = expDep !== null && planDep !== null && expDep - planDep >= 60000;
     const overMin = over ? Math.round(((expDep as number) - (planDep as number)) / 60000) : 0;
     const delayTxt = (s: OtpStep): ReactNode => { const m = s.late_vs_plan_min; if (s.step_state === "upcoming" || m === null) return null; return m >= 3 ? dl(m) : T("onTime"); };
-    gantt = (
-      <section className="ap-sec" aria-label={T("gantt")}>
-        <h3 className="ap-h">{T("gantt")}</h3>
+    gantt = sec(T("gantt"), null, <>
         <div className="ap-g ltr" role="img" aria-label={T("ganttAria")}>
           <div className="ap-g-axis">{ticks.map((v, k) => <i key={k} style={{ left: pc(v) }}>{hmMs(v)}</i>)}
             {phase === "stand" && nowMs !== null && <b className="ap-g-plane" style={{ left: pc(nowMs) }}><svg viewBox="-40 -40 80 80" width="24" height="24" aria-hidden="true"><path d={PLANE} transform="rotate(90)" fill="#FFC107" stroke="#000" strokeWidth={4} /></svg></b>}</div>
@@ -188,14 +197,11 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
           </div>
         </div>
         <p className="ap-legend">{T("legend")} · {calm ? T("legendCalm") : T("legendBad")}</p>
-      </section>
-    );
+    </>);
   }
 
   /* ---------------- service cards ---------------- */
-  const cards = ok && phase !== "approach" && gsteps.length > 0 && (
-    <section className="ap-sec" aria-label={T("services")}>
-      <h3 className="ap-h">{T("services")}<small className="ap-n ltr">{gsteps.length}</small></h3>
+  const cards = ok && phase !== "approach" && gsteps.length > 0 && sec(T("services"), <small className="ap-n ltr">{gsteps.length}</small>, <>
       <ol className="ap-cards">
         {gsteps.map((s, n) => {
           const late = isLate(s);
@@ -228,14 +234,11 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
           );
         })}
       </ol>
-    </section>
-  );
+    </>);
 
   /* ---------------- delays + log ---------------- */
   const lateNow = steps.filter((s) => s.step_code !== "ground_start" && (isLate(s) || s.step_state === "done_late"));
-  const delaysBox = ok && showDelays && phase === "stand" && (
-    <section className="ap-sec" aria-label={T("delays")}>
-      <h3 className="ap-h">{T("delays")}</h3>
+  const delaysBox = ok && showDelays && phase === "stand" && sec(T("delays"), null, <>
       {lateNow.length === 0 ? <p className="ap-none">{T("noDelays")}</p> : (
         <ul className="ap-list">
           {lateNow.map((s) => { const d = delayOf(s.step_code); const m = s.step_state === "done_late" ? own(s) : s.late_vs_plan_min ?? 0; return (
@@ -243,13 +246,10 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
           ); })}
         </ul>
       )}
-    </section>
-  );
+    </>);
 
   const events = ok ? [...ok.events].sort((a, b) => +new Date(b.occurred_at) - +new Date(a.occurred_at)).slice(0, 8) : [];
-  const logBox = ok && showLog && phase !== "approach" && (
-    <section className="ap-sec" aria-label={T("log")}>
-      <h3 className="ap-h">{T("log")}</h3>
+  const logBox = ok && showLog && phase !== "approach" && sec(T("log"), null, <>
       {events.length === 0 ? <p className="ap-none">{T("noLog")}</p> : (
         <ul className="ap-list plain">
           {events.map((e, i) => (
@@ -257,17 +257,46 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
           ))}
         </ul>
       )}
-    </section>
+    </>);
+
+  const over = (
+    <div className="ap-over">
+      <div className="ap-head" aria-live="polite">{head}</div>
+      <div className="ap-id"><span className="ltr">{idLabel}</span>{badge}</div>
+    </div>
   );
+
+  if (stage) {
+    return (
+      <div className={`ap ap-stage tone-${tone}${calm ? " calm" : ""} ph-${phase}`} dir={lang === "ar" ? "rtl" : "ltr"}>
+        <div className="ap-hero">
+          {map}
+          {over}
+          <div className="ap-zc">
+            <button type="button" aria-label={T("zoomIn")} title={T("zoomIn")} onClick={() => zz(1.4)}><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></button>
+            <button type="button" aria-label={T("zoomOut")} title={T("zoomOut")} onClick={() => zz(1 / 1.4)}><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button>
+            <button type="button" aria-label={T("zoomReset")} title={T("zoomReset")} onClick={() => setZoom(1)}><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button>
+          </div>
+        </div>
+        <aside className="ap-panel">
+          {panelTop}
+          {prePanel}
+          {gantt}
+          {cards}
+          {delaysBox}
+          {logBox}
+          <p className="ap-note">{T("mapNote")}</p>
+          {panelBottom}
+        </aside>
+      </div>
+    );
+  }
 
   return (
     <div className={`ap tone-${tone}${calm ? " calm" : ""} ph-${phase}`} dir={lang === "ar" ? "rtl" : "ltr"}>
       <div className="ap-hero">
         {map}
-        <div className="ap-over">
-          <div className="ap-head" aria-live="polite">{head}</div>
-          <div className="ap-id"><span className="ltr">{idLabel}</span>{badge}</div>
-        </div>
+        {over}
       </div>
       <p className="ap-note">{T("mapNote")}</p>
       {prePanel}
