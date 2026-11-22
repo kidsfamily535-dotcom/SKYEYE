@@ -35,7 +35,7 @@ export default async function EyeFlightsPage({ searchParams }: { searchParams: P
   byTurn.forEach((fs, id) => {
     const a = fs.find((x) => x.direction === "arrival"), d = fs.find((x) => x.direction === "departure");
     const inBlock = (a ?? d)?.in_block_at ?? null, depMs = d ? Date.parse(d.scheduled_at) : null, arrMs = a ? Date.parse(a.scheduled_at) : null;
-    const phase = inBlock && (depMs === null || nowMs < depMs + 20 * 60000) ? "ground" : !inBlock && arrMs !== null && arrMs >= nowMs - 30 * 60000 && arrMs <= nowMs + 60 * 60000 ? "approach" : null;
+    const phase = inBlock && (depMs === null || nowMs < depMs + 20 * 60000) ? "ground" : !inBlock && arrMs !== null && arrMs >= nowMs - 30 * 60000 && arrMs <= nowMs + 60 * 60000 ? "approach" : !inBlock && arrMs !== null && arrMs > nowMs + 60 * 60000 && arrMs <= nowMs + 6 * 3600000 ? "later" : null;
     if (phase) radar.push({ id, reg: (a ?? d)?.registration ?? null, arrNo: a?.flight_number ?? null, depNo: d?.flight_number ?? null, arrAt: a?.scheduled_at ?? null, depAt: d?.scheduled_at ?? null, inBlock, station: stations.length > 1 ? nameOf.get((a ?? d)!.station_id) ?? null : null, phase });
   });
   radar.sort((x, y) => (x.depAt ?? x.arrAt ?? "").localeCompare(y.depAt ?? y.arrAt ?? ""));
