@@ -95,7 +95,7 @@ export default function FlightsBoard({ rows, L, lang, now0, tab, q0, importHref,
         <i aria-hidden="true">{arrow}</i>
         <span className="fx-t"><small>{r.atd ? L.depDid : L.depWill}</small><b className="ltr">{hm(r.dep)}</b></span>
       </span>
-      <span className="fx-line">{flightLine({ code: r.code, sta: r.sta, eta: r.eta, arr: r.arr, dep: r.dep, atd: r.atd, dueType: r.dueType, dueNow: r.dueNow }, now, lang, L)}</span>
+      <span className="fx-line">{flightLine({ code: r.code, sta: r.sta, eta: r.eta, arr: r.arr, dep: r.dep, atd: r.atd, dueType: r.dueType, dueNow: r.dueNow }, now, lang, L, true)}</span>
       <Otp r={r} />
     </Link>
   );
@@ -115,13 +115,11 @@ export default function FlightsBoard({ rows, L, lang, now0, tab, q0, importHref,
   return (
     <div className="fx">
       <header className="fx-hero">
-        <div><h1>{L.title}</h1><p>{L.subtitle}</p></div>
-        <div className="fx-ctl">
-          <Link className="btn gold" href={importHref}>{L.importBtn}</Link>
-          <Link className="btn" href="/agent">{L.askAgent}</Link>
-        </div>
+        <h1>{L.title}</h1>
+        <Link className="btn gold" href={importHref}>{L.importBtn}</Link>
       </header>
 
+      <div className="fx-tools">
       <div className="fx-bar">
         <input type="search" className="fb-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={L.search} aria-label={L.search} />
         <div className="fb-seg" role="group" aria-label={L.tabAria}>
@@ -144,6 +142,7 @@ export default function FlightsBoard({ rows, L, lang, now0, tab, q0, importHref,
         </details>
         {anyFilter && <button type="button" className="fb-link" onClick={reset}>{L.clear}</button>}
       </div>}
+      </div>
 
       {base.length === 0 && <section className="card"><p className="muted">{rows.length === 0 ? (tab === "active" ? L.noneActive : L.noneDone) : L.noneMatch}</p></section>}
       {calm && <p className="fx-calm" role="status"><i aria-hidden="true" />{L.calm}</p>}

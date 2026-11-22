@@ -15,8 +15,8 @@ const hm = (v: number | null) => (v === null ? "—" : new Date(v).toISOString()
 export type LineInput = { code: string; sta: number | null; eta: number | null; arr: number | null; dep: number | null; atd: number | null; dueType?: string | null; dueNow?: boolean };
 
 /** ONE sentence that says where the flight stands. Replaces the status + reason + level badges. Nothing is guessed: only recorded or scheduled times are used. */
-export function flightLine(r: LineInput, now: number, lang: Lang, S: LineLabels): string {
-  const d = (m: number) => durText(m, lang);
+export function flightLine(r: LineInput, now: number, lang: Lang, S: LineLabels, compact = false): string {
+  const d = (m: number) => durText(m, lang, compact);
   let s: string;
   switch (r.code) {
     case "cancelled": s = S.sCancelled; break;

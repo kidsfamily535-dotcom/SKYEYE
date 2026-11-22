@@ -111,3 +111,9 @@
   .cr-full .cr-legend i{display:none}.cr-full .cr-legend b{font-size:15px;justify-self:center}.cr-full .cr-legend span{font-size:9.5px;text-align:center}
   .cr-full .cm-card{inset-block-end:64px}
 }
+
+/* same language as the flights board (app/flights/flights.css): 10px corners, dot + mono figure, 5px colour stripe, big flight number */
+.cm-chips button{border-radius:10px;min-height:36px;padding:0 12px;border-color:rgba(227,185,100,.25)}
+.cm-card{border-radius:14px;border-inline-start-width:5px;background:linear-gradient(180deg,#1E2228,#14181D);width:min(260px,calc(100% - 20px))}
+.cm-card-h b{font-size:23px;letter-spacing:.02em}
+.cm-times dd{font-size:21px}

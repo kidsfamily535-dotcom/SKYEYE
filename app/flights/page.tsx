@@ -57,7 +57,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
   const board = sp.id ? [] : toBoardRows(all, tab, t);
   const cc = sel && (view === "movement" || view === "docs") ? await getCommandCenter(d.company.id, sel.arrivalLeg) : null;
   const L = {
-    title: t("fl.title"), subtitle: t("fl.subtitle"), importBtn: t("fl.import.btn"), askAgent: t("fl.askAgent"), search: t("fl.search.ph"),
+    title: t("fl.title"), importBtn: t("fl.import.btn"), search: t("fl.search.ph"),
     tabActive: t("fl.tab.active"), tabDone: t("fl.tab.done"), kAll: t("fl.b.kAll"), kAttn: t("fl.grp.attn"), kLate: t("fl.sum.late"), kGround: t("fl.cs.onGround"), kSoon: t("fl.sum.soon"), kOk: t("fl.sum.ok"),
     noneActive: t("fl.none.active"), noneDone: t("fl.none.done"), noneMatch: t("fl.none.match"),
     kAria: t("fl.b.kAria"), tabAria: t("fl.b.tabAria"), viewAria: t("fl.b.viewAria"), vNow: t("fx.view.now"), vList: t("fl.b.vList"),

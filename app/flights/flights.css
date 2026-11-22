@@ -111,3 +111,21 @@
   .fx-head{padding:16px}.fx-fn{font-size:25px}.fx-head-route{font-size:18px}.fx-head-route b{font-size:21px}.fx-head .fx-t b{font-size:25px}
 }
 @media (prefers-reduced-motion:no-preference){.fx-card,.fx-pill{transition:border-color .15s,background .15s,transform .15s}.fx-card:hover{transform:translateY(-1px)}}
+
+/* ===== Board in the tower-map language: graphite panels, gold hairline, the radar's colours (red = late, amber = on the ground, blue = inbound, green = fine) ===== */
+.fx{--late:#FF766C;--warn:#FFC107;--info:#8FB8FF;--ok:#3FB58A;gap:12px}
+.fx .fx-hero{padding:0;flex-wrap:nowrap}
+.fx .fx-hero h1{font-size:24px}
+.fx-tools{display:flex;flex-direction:column;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#232323,#171717);border:1px solid rgba(227,185,100,.22);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.fx-tools .fb-q{min-width:200px}
+.fx .fx-pill{min-height:36px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.04);border-color:rgba(227,185,100,.25)}
+.fx .fx-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pc,#E3B964)}
+.fx .fx-pill.k-late{--pc:var(--late)}.fx .fx-pill.k-ground{--pc:#FFC107}.fx .fx-pill.k-soon{--pc:var(--info)}.fx .fx-pill.k-ok{--pc:var(--ok)}
+.fx .fx-pill b{color:#F7F1DE;font-family:ui-monospace,Menlo,monospace}
+.fx .fx-pill.on{background:rgba(227,185,100,.2);border-color:#E3B964}
+.fx .fx-card{padding:12px 16px;border-radius:14px;border:1px solid rgba(227,185,100,.14);border-inline-start:5px solid var(--c);background:linear-gradient(180deg,#1E2228,#14181D);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.fx .fx-card.attn{background:linear-gradient(180deg,#1E2228,#14181D);border-color:color-mix(in srgb,var(--c) 45%,transparent)}
+.fx .fx-card:hover,.fx .fx-card:focus-visible{background:linear-gradient(180deg,#252A31,#191D23)}
+.fx .fx-line{font-size:14px}
+.fx .fx-gh{font-size:15px;letter-spacing:.06em}
+.fx .fx-stale{border-radius:14px;background:linear-gradient(180deg,#232323,#171717)}
