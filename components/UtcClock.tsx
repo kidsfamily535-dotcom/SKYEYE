@@ -11,5 +11,5 @@ export default function UtcClock() {
     const id = setInterval(tick, 15000);
     return () => clearInterval(id);
   }, []);
-  return (<span className="chip ltr" aria-label={tr("clock.aria")}>{t} UTC</span>);
+  return (<span className="chip ltr clock" aria-label={tr("clock.aria")}>{t} UTC</span>);
 }

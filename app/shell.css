@@ -1,0 +1,49 @@
+/* Light shell: icon rail on wide screens, quiet instrument strip in the header. Loaded last, so it wins over the older themes. */
+
+/* ---- header: clock, bell, language, avatar menu. No pills, no boxes. ---- */
+html body .top{min-height:44px;gap:4px;flex-wrap:nowrap}
+html body .top .chip.clock{background:none;border:0;min-height:36px;padding:0 8px;font-family:ui-monospace,Menlo,monospace;font-size:14px;letter-spacing:.04em;color:#E9E9E9}
+html body .top .chip.shadow{min-height:28px;padding:0 10px;font-size:12px;flex:none}
+html body .top form .chip{min-height:34px;font-size:13px}
+html body .top .bell{width:38px;height:38px;border:0;background:transparent;border-radius:10px;color:#D6D6D6}
+html body .top .bell:hover{background:rgba(255,255,255,.07);color:#fff}
+html body .top .bell .badge{top:2px;inset-inline-start:auto;inset-inline-end:0;min-width:18px;height:18px;padding:0 4px;font-size:11px;font-weight:700;background:#FFC107;color:#111}
+html body .top .btn.ghost.sm{min-height:34px;padding:0 10px;font-size:13px;color:#C9C9C9}
+.userm>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;min-height:40px;padding:3px 8px 3px 4px;padding-inline:4px 8px;border-radius:99px;color:#E9E9E9}
+.userm>summary::-webkit-details-marker{display:none}
+.userm>summary:hover,.userm[open]>summary{background:rgba(255,255,255,.07)}
+.userm .av{width:32px;height:32px;font-size:14px}
+.userm .un{font-size:13px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userm .menu-list{min-width:200px;padding:8px}
+.um-id{display:flex;flex-direction:column;gap:2px;padding:6px 8px 10px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:6px}
+.um-id small{color:#A3A3A3;font-size:12px}
+.userm .menu-list form{margin:0}
+@media (max-width:900px){.userm .un{display:none}.userm>summary{padding:2px}html body .top{flex-wrap:wrap}}
+
+/* ---- wide screens: slim icon rail ---- */
+@media (min-width:901px){
+  html body .app{grid-template-columns:88px minmax(0,1fr)}
+  html body .app .side{padding:16px 8px;gap:16px;align-items:center;position:sticky;top:0;height:100vh;overflow-y:auto}
+  html body .side .brand{flex-direction:column;gap:8px;align-items:center;text-align:center}
+  html body .side .brand>div{order:-1}
+  html body .side .brand strong{justify-content:center;letter-spacing:0}
+  html body .side .brand-t,html body .side .brand small{display:none}
+  html body .side .brand-plane{width:30px;height:30px}
+  html body .side .logo{min-width:52px;max-width:72px;height:30px;padding:0 6px;border-radius:8px;font-size:11px;overflow:hidden;white-space:nowrap}
+  html body .side nav{flex:1;width:100%;gap:4px}
+  html body .side .nav{position:relative;flex-direction:column;justify-content:center;gap:5px;min-height:62px;padding:8px 4px;border-radius:12px;text-align:center;font-size:11.5px;line-height:1.25;color:#B9C0CC}
+  html body .side .nav svg{width:22px;height:22px;color:#B9C0CC}
+  html body .side .nav:hover:not(.on){background:rgba(255,255,255,.06);color:#fff}
+  html body .side .nav.on{background:rgba(255,193,7,.12);color:#FFC107;font-weight:700}
+  html body .side .nav.on svg{color:#FFC107}
+  html body .side .nav.on::before{content:"";position:absolute;inset-block:14px;inset-inline-start:-8px;width:3px;border-radius:3px;background:#FFC107}
+  html body .side .nav[href="/settings"]{margin-top:auto}
+}
+
+/* ---- phones: bottom bar keeps its layout; just lighter colours for the active tab ---- */
+@media (max-width:900px){
+  html body .side .nav{color:#B9C0CC}
+  html body .side .nav svg{color:#B9C0CC}
+  html body .side .nav.on{background:rgba(255,193,7,.14);color:#FFC107}
+  html body .side .nav.on svg{color:#FFC107}
+}

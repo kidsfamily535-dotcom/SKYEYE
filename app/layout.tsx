@@ -3,6 +3,7 @@ import "./globals.css";
 import "./radar-theme.css";
 import "./ground-theme.css";
 import "./apron.css";
+import "./shell.css";
 import { getT } from "@/lib/lang";
 import { dirOf } from "@/lib/i18n";
 import { I18nProvider } from "@/components/I18n";
