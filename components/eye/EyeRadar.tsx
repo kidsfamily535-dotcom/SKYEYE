@@ -44,20 +44,19 @@ export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: R
 
   const { aircraft, fit } = useMemo(() => {
     const ac: MapAc[] = [], fitPts: [number, number][] = [];
-    const slot = (i: number, row0: number): [number, number] => [((i % 5) - 2) * 74, row0 + Math.floor(i / 5) * 38];
-    ground.forEach((t, i) => ac.push({ id: t.id, label: label(t), col: isLate(t) ? C.late : C.ground, heading: 0, hollow: false, off: slot(i, 44) }));
-    let lastKm = -1e9, landed = 0;
+    ground.forEach((t, i) => ac.push({ id: t.id, label: label(t), sub: t.reg ?? "", col: isLate(t) ? C.late : C.ground, heading: 0, hollow: false, grp: "down" }));
+    let lastKm = -1e9;
     approach.forEach((t) => {
       const min = (tm(t) - nowMs) / 60000;
-      if (min < 0) { ac.push({ id: t.id, label: label(t), col: C.late, heading: 90, hollow: false, off: slot(landed++, -78 - 0) }); return; }
+      if (min < 0) { ac.push({ id: t.id, label: label(t), sub: t.reg ?? "", col: C.late, heading: 90, hollow: false, grp: "up" }); return; }
       let km = 6 + Math.min(min, 60) * 2.2;
       if (km - lastKm < 16) km = lastKm + 16;
       lastKm = km;
       const ll = dest(airport.lat, airport.lon, APPROACH_FROM, km);
-      ac.push({ id: t.id, label: label(t), col: C.approach, heading: (APPROACH_FROM + 180) % 360, hollow: false, ll });
+      ac.push({ id: t.id, label: label(t), sub: t.reg ?? "", col: C.approach, heading: (APPROACH_FROM + 180) % 360, hollow: false, ll });
       fitPts.push(ll);
     });
-    later.forEach((t, i) => { const h = Math.min(Math.max((tm(t) - nowMs) / 3600000, 1), 6); ac.push({ id: t.id, label: label(t), col: C.later, heading: 110, hollow: true, ll: dest(airport.lat, airport.lon, APPROACH_FROM - 25 + (i % 5) * 14, 150 + h * 22) }); });
+    later.forEach((t, i) => { const h = Math.min(Math.max((tm(t) - nowMs) / 3600000, 1), 6); ac.push({ id: t.id, label: label(t), sub: t.reg ?? "", col: C.later, heading: 110, hollow: true, ll: dest(airport.lat, airport.lon, APPROACH_FROM - 25 + (i % 5) * 14, 150 + h * 22) }); });
     return { aircraft: ac, fit: fitPts };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turns, nowMs, airport.code]);

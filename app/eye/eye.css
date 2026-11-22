@@ -166,3 +166,11 @@ a.eye-rd-card{text-decoration:none;cursor:pointer}a.eye-rd-card:hover{outline:1.
 html[dir=ltr] .eye-rd-sel select,.ltr .eye-rd-sel select{background-position:right 12px center;padding:10px 34px 10px 14px}
 .eye-rd-sel select:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .eye-rd-list{flex:1;min-height:0;overflow:auto}
+
+.eye-cl-w{background:none;border:0}
+.eye-cl{width:42px;height:42px;border-radius:50%;border:3px solid #FFC107;background:rgba(15,15,15,.92);display:grid;place-items:center;color:#fff;box-shadow:0 0 0 4px rgba(255,193,7,.18),0 2px 8px rgba(0,0,0,.6);cursor:pointer}
+.eye-cl b{font:800 15px/1 system-ui,sans-serif}.eye-cl-w.on .eye-cl{box-shadow:0 0 0 4px #fff}
+.eye-pop-w .leaflet-popup-content-wrapper{background:#1f1f1f;color:#fff;border-radius:10px}.eye-pop-w .leaflet-popup-tip{background:#1f1f1f}.eye-pop-w a.leaflet-popup-close-button{color:#ccc}
+.eye-pop{display:flex;flex-direction:column;gap:6px;min-width:150px;max-height:240px;overflow:auto}
+.eye-pop-i{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#2c2c2c;color:#fff;border:0;border-radius:8px;padding:8px 10px;cursor:pointer;font-family:inherit;direction:ltr}
+.eye-pop-i:hover{outline:1.5px solid #FFC107}.eye-pop-i small{color:#a3a3a3}
