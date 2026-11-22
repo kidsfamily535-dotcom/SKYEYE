@@ -117,3 +117,5 @@
 .cm-card{border-radius:14px;border-inline-start-width:5px;background:linear-gradient(180deg,#1E2228,#14181D);width:min(260px,calc(100% - 20px))}
 .cm-card-h b{font-size:23px;letter-spacing:.02em}
 .cm-times dd{font-size:21px}
+.cd-btn.gold{background:#FFC107;border-color:#FFC107;color:#111;text-decoration:none}.cd-btn.gold:hover{background:#FFD24A}
+a.cd-btn{text-decoration:none}

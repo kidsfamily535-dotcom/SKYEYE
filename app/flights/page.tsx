@@ -15,6 +15,11 @@ import OtpBlock from "@/components/OtpBlock";
 import DelayForm from "@/components/DelayForm";
 import "./flights.css";
 import "./radar.css";
+import "../home.css";
+import "../command.css";
+import "../command-map.css";
+import CommandMap from "@/components/CommandMap";
+import { getCockpit } from "@/lib/cockpit";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
 import Hint from "@/components/Hint";
@@ -46,16 +51,19 @@ function FeedRow({ x, wait, t }: { x: FeedItem; wait?: boolean; t: TFn }) {
   );
 }
 
-export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; sel?: string; tab?: string; view?: string; q?: string; day?: string; compose?: string }> }) {
+export default async function FlightsPage({ searchParams }: { searchParams: Promise<{ id?: string; sel?: string; tab?: string; view?: string; q?: string; day?: string; compose?: string; list?: string }> }) {
   const sp = await searchParams;
+  /** The board page IS the tower radar. The old list stays one press away (and keeps the completed tab, search and day links). */
+  const asList = sp.list === "1" || sp.tab === "done" || !!sp.day || !!sp.q;
   const { t, lang } = await getT();
   const tab = sp.tab === "done" ? "done" : "active";
   const view = sp.view === "movement" || sp.view === "docs" ? sp.view : "overview";
   /** Old deep links (?view=handling|timeline|messages|delay) now open the matching section of the single flight file. */
   const focus = sp.view === "handling" || sp.view === "timeline" ? "handling" : sp.view === "messages" ? "messages" : sp.view === "delay" ? "delay" : null;
   const d = await getCommandData();
-  const [all, sel] = await Promise.all([sp.id ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
-  const board = sp.id ? [] : toBoardRows(all, tab, t);
+  const [all, sel] = await Promise.all([sp.id || !asList ? Promise.resolve([]) : getFlightList(tab, d.company.id), sp.id ? getFlight(sp.id, d.company.id) : Promise.resolve(null)]);
+  const board = sp.id || !asList ? [] : toBoardRows(all, tab, t);
+  const radar = !sp.id && !asList ? await getCockpit() : null;
   const cc = sel && (view === "movement" || view === "docs") ? await getCommandCenter(d.company.id, sel.arrivalLeg) : null;
   const L = {
     title: t("fl.title"), importBtn: t("fl.import.btn"), search: t("fl.search.ph"),
@@ -225,8 +233,24 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
 
   return (
     <Shell data={d} module="flights">
-      <main className="page">
-        {!sp.id && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights" doneHref="/flights?tab=done" />}
+      <main className={radar ? "page hm hm-full" : "page"}>
+        {!sp.id && asList && <FlightsBoard rows={board} L={L} lang={lang} now0={Date.now()} tab={tab} q0={sp.q ?? ""} importHref="/flights/import" activeHref="/flights?list=1" doneHref="/flights?tab=done" />}
+        {radar && (
+          <section className="cr cr-full" aria-label={t("fl.title")} dir={lang === "ar" ? "rtl" : "ltr"}>
+            <div className="cd">
+              <div className="cd-bar">
+                <h1 className="cd-title"><span className="cd-ico" aria-hidden="true">✈</span>{t("fl.title")}</h1>
+                <div className="cd-tabs">
+                  <Link className="cd-btn" href="/flights?list=1">{lang === "ar" ? "عرض كقائمة" : "List view"}</Link>
+                  <Link className="cd-btn gold" href="/flights/import">{t("fl.import.btn")}</Link>
+                </div>
+              </div>
+            </div>
+            <div className="cr-panel cr-scope-panel cr-hero">
+              <CommandMap counts={radar.radar} flights={radar.radarFlights} lang={lang === "ar" ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+            </div>
+          </section>
+        )}
 
         {sp.id && !(sel && stage) && <Link className="back" href={tab === "done" ? "/flights?tab=done" : "/flights"}>‹ {t("fl.all")}</Link>}
         {sp.id && !sel && <section className="card"><p className="muted">{t("fl.notFound")}</p></section>}
