@@ -120,3 +120,8 @@ button.eye-rd-card{cursor:pointer}.eye-rd-card.on{outline:1.5px solid #FFC107}
 .eye-rd-sel{border:1px solid #FFC107}
 .eye-rd-open{margin-top:6px;align-self:flex-start;background:#FFC107;color:#111;font-weight:700;border-radius:8px;padding:5px 12px;text-decoration:none}
 @media (max-width:800px){.eye-rd{grid-template-columns:1fr}.eye-rd-panel{max-height:none}}
+
+/* Airline flight page: full-width radar stage (the same stage layout staff use) */
+.eye-main:has(.fs){width:min(1600px,100%);padding:12px 12px 24px}
+.ap-panel .eye-bar{background:#1F1F1F;border-radius:10px;padding:10px 14px;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.ap-panel .eye-back{color:#FFC107}

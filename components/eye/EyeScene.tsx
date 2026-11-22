@@ -13,7 +13,7 @@ type Ok = Extract<OtpState, { status: "ok" }>;
 const hm = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 const fill = (s: string, n: number) => s.replace("{n}", String(n));
 
-export default function EyeScene({ otp, flightLabel, registration }: { otp: Ok; flightLabel: string; registration: string | null }) {
+export default function EyeScene({ otp, flightLabel, registration, panelTop }: { otp: Ok; flightLabel: string; registration: string | null; panelTop?: React.ReactNode }) {
   const { lang } = useT();
   const t = eyeText(lang);
   const [sel, setSel] = useState<string | null>(null);
@@ -68,8 +68,7 @@ export default function EyeScene({ otp, flightLabel, registration }: { otp: Ok; 
 
   return (
     <>
-      <ApronStand otp={otp} lang={lang} tone={tone} calm head={head} idLabel={label} sel={sel} onSel={setSel} tag={tagOf} showDelays={false} showLog={!finished} />
-      {finished && log}
+      <ApronStand otp={otp} lang={lang} tone={tone} calm head={head} idLabel={label} sel={sel} onSel={setSel} tag={tagOf} showDelays={false} showLog={!finished} stage panelTop={panelTop} panelBottom={finished ? log : undefined} />
     </>
   );
 }

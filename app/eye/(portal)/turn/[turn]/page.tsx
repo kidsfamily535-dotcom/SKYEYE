@@ -31,15 +31,18 @@ export default async function EyeTurnPage({ params, searchParams }: { params: Pr
   const label = [tn.flight_in, tn.flight_out].filter(Boolean).join(" / ") || "—";
   const dir = sp.d === "arrival" || sp.d === "departure" ? sp.d : null;
 
+  const bar = (
+    <div className="eye-bar">
+      <Link className="eye-back" href={back}>{t("back")}</Link>
+      <span className="eye-pill">{t("viewOnly")}</span>
+      {dir && <span className="eye-pill dir">{t(dir)}</span>}
+      {stationName && <span className="muted eye-st">{t("station")}: {stationName}</span>}
+    </div>
+  );
+
   return (
-    <div className="eye-page">
-      <div className="eye-bar">
-        <Link className="eye-back" href={back}>{t("back")}</Link>
-        <span className="eye-pill">{t("viewOnly")}</span>
-        {dir && <span className="eye-pill dir">{t(dir)}</span>}
-        {stationName && <span className="muted eye-st">{t("station")}: {stationName}</span>}
-      </div>
-      <EyeScene otp={otp} flightLabel={label} registration={tn.registration} />
+    <div className="fs">
+      <EyeScene otp={otp} flightLabel={label} registration={tn.registration} panelTop={bar} />
     </div>
   );
 }
