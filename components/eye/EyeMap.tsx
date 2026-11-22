@@ -21,8 +21,9 @@ export default function EyeMap({ rings, center, airportLabel, aircraft, hov, onH
 
   useEffect(() => {
     if (!el.current) return;
-    const m = L.map(el.current, { center, zoom: 9, zoomControl: true, attributionControl: false, worldCopyJump: true });
+    const m = L.map(el.current, { center, zoom: 9, zoomControl: false, attributionControl: false, worldCopyJump: true });
     L.control.attribution({ prefix: false }).addTo(m);
+    L.control.zoom({ position: "topright" }).addTo(m);
     // Esri dark-gray basemap: needs no API key. Labels come from the reference layer on top.
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, attribution: "Tiles © Esri — Esri, HERE, Garmin, OpenStreetMap contributors" }).addTo(m);
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(m);

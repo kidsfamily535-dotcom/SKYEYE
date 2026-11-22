@@ -150,3 +150,15 @@ a.eye-rd-card{text-decoration:none;cursor:pointer}a.eye-rd-card:hover{outline:1.
 @media (prefers-reduced-motion:reduce){.eye-sweep-i{animation:none}}
 .eye-ring-l{background:none;border:0;color:#FFC107;opacity:.85;font:700 11px/14px system-ui,sans-serif;text-align:center;text-shadow:0 0 4px #000,0 0 4px #000;direction:ltr}
 .leaflet-container .leaflet-control-attribution{background:rgba(0,0,0,.55);color:#bbb;font-size:10px}.leaflet-control-attribution a{color:#ddd}
+
+/* Full-page radar: the map fills everything under the header; flights are an overlay list; picking one opens its stand page. */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.eye-main:has(.eye-rd){width:100%;padding:0}
+.eye-main:has(.eye-rd) .eye-page{gap:0;height:calc(100dvh - 72px);min-height:520px}
+.eye-main:has(.eye-rd) .eye-filter,.eye-main:has(.eye-rd) .eye-note{margin:0;padding:6px 12px}
+.eye-rd{position:relative;display:block;flex:1;min-height:0;margin:0}
+.eye-rd-map{height:100%;border-radius:0;box-shadow:none}
+.eye-rd-panel{position:absolute;left:12px;top:12px;bottom:44px;width:300px;max-height:none;z-index:1100;background:rgba(18,18,18,.82);backdrop-filter:blur(6px);border-radius:12px;padding:8px}
+.eye-rd-ap{inset-inline-start:auto;left:50%;transform:translateX(-50%);justify-content:center;max-width:70%}
+.eye-rd-tip{inset-inline-end:auto;inset-block-start:auto;right:12px;bottom:44px}
+@media (max-width:800px){.eye-rd-panel{left:8px;right:8px;top:auto;bottom:40px;width:auto;max-height:34%}.eye-rd-tip{display:none}.eye-rd-ap{top:8px;max-width:92%}}
