@@ -5,13 +5,14 @@ import type { EyeFlight } from "@/lib/eye/types";
 import FlightRow from "@/components/eye/FlightRow";
 import EyeEmpty from "@/components/eye/EyeEmpty";
 import EyeRadar, { type RadarTurn } from "@/components/eye/EyeRadar";
+import { AIRPORT_GEO } from "@/lib/airport-geo";
 
 export const dynamic = "force-dynamic";
 
 const dayKey = (iso: string) => iso.slice(0, 10);
 const dayLabel = (k: string, lang: string) => new Date(`${k}T00:00:00Z`).toLocaleDateString(lang === "ar" ? "ar-EG-u-nu-latn" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
-export default async function EyeFlightsPage({ searchParams }: { searchParams: Promise<{ ws?: string; st?: string }> }) {
+export default async function EyeFlightsPage({ searchParams }: { searchParams: Promise<{ ws?: string; st?: string; ap?: string }> }) {
   const sp = await searchParams;
   const { t, lang } = await eyeT();
   const list = await myWorkspaces();
@@ -39,6 +40,11 @@ export default async function EyeFlightsPage({ searchParams }: { searchParams: P
     if (phase) radar.push({ id, reg: (a ?? d)?.registration ?? null, arrNo: a?.flight_number ?? null, depNo: d?.flight_number ?? null, arrAt: a?.scheduled_at ?? null, depAt: d?.scheduled_at ?? null, inBlock, station: stations.length > 1 ? nameOf.get((a ?? d)!.station_id) ?? null : null, phase });
   });
   radar.sort((x, y) => (x.depAt ?? x.arrAt ?? "").localeCompare(y.depAt ?? y.arrAt ?? ""));
+  const stText = (station ? stations.filter((s) => s.station_id === station) : stations).map((s) => s.name).join(" ").toUpperCase();
+  const guess = Object.entries(AIRPORT_GEO).find(([c, g]) => new RegExp(`\\b${c}\\b`).test(stText) || stText.includes(g.name.toUpperCase()))?.[0];
+  const apParam = sp.ap?.toUpperCase();
+  const apCode = apParam && AIRPORT_GEO[apParam] ? apParam : guess ?? "CAI";
+  const airport = { code: apCode, ...AIRPORT_GEO[apCode] };
   const warn = stations.filter((s) => s.coverage !== "covered");
   const row = (f: EyeFlight) => <FlightRow key={`${f.turn_id}-${f.direction}`} f={f} ws={ws.workspace_id} t={t} stationName={stations.length > 1 ? nameOf.get(f.station_id) ?? null : null} />;
 
@@ -64,7 +70,7 @@ export default async function EyeFlightsPage({ searchParams }: { searchParams: P
 
       {!fl.ok ? <p className="eye-note err" role="alert">{t("listErr")}</p> : (
         <>
-          <EyeRadar turns={radar} ws={ws.workspace_id} lang={lang === "ar" ? "ar" : "en"} nowMs={nowMs} />
+          <EyeRadar turns={radar} ws={ws.workspace_id} lang={lang === "ar" ? "ar" : "en"} nowMs={nowMs} airport={airport} />
           {upcoming.length === 0 ? <EyeEmpty title={t("emptyTitle")} body={t("emptyBody")} /> : days.map((d) => (
             <section key={d} className="eye-day">
               <h2>{dayLabel(d, lang)}<small className="ltr">{upcoming.filter((f) => dayKey(f.scheduled_at) === d).length}</small></h2>
