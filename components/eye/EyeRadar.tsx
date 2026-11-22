@@ -14,9 +14,10 @@ const EyeMap = dynamic(() => import("./EyeMap"), { ssr: false, loading: () => <d
 // (on stand = around the airport pin, approaching = on the approach line at a distance from its planned arrival time, later today = further out).
 const C = { ground: "#FFC107", late: "#E8A33D", approach: "#8FB8FF", later: "#B5B5B5" };
 const CHIPS = ["CAI", "HBE", "SSH", "HRG", "LXR", "ASW"];
+const AR_NAME: Record<string, string> = { CAI: "القاهرة", HBE: "برج العرب", SSH: "شرم الشيخ", HRG: "الغردقة", LXR: "الأقصر", ASW: "أسوان" };
 const T = {
-  ar: { title: "خريطة الرحلات", note: "الأماكن على الخريطة مبنية على مواعيد الرحلات وليست تتبعًا حيًا للطيارات. اضغط على أي طيارة أو رحلة لفتح الوقفة.", ok: "على الموعد", late: "بعد الموعد المخطط", onStand: "على الوقفة من", dep: "الإقلاع المخطط", arr: "الوصول المخطط", hint: "اضغط لفتح الوقفة", none: "مفيش رحلات على الأرض أو قريبة دلوقتي.", utc: "UTC", st: { ground: "على الأرض", approach: "في الاقتراب", later: "لاحقًا اليوم" } as Record<string, string>, airport: "المطار" },
-  en: { title: "Flights map", note: "Positions on the map come from the flight schedule, not live aircraft tracking. Click any aircraft or flight to open its stand.", ok: "On time", late: "Past planned time", onStand: "On stand since", dep: "Planned departure", arr: "Planned arrival", hint: "Click to open the stand", none: "No flights on the ground or close right now.", utc: "UTC", st: { ground: "On the ground", approach: "Approaching", later: "Later today" } as Record<string, string>, airport: "Airport" },
+  ar: { title: "خريطة الرحلات", note: "الأماكن على الخريطة مبنية على مواعيد الرحلات وليست تتبعًا حيًا للطيارات. اضغط على أي طيارة أو رحلة لفتح الوقفة.", ok: "على الموعد", late: "بعد الموعد المخطط", onStand: "على الوقفة من", dep: "الإقلاع المخطط", arr: "الوصول المخطط", hint: "اضغط لفتح الوقفة", none: "مفيش رحلات على الأرض أو قريبة دلوقتي.", utc: "UTC", st: { ground: "على الأرض", approach: "في الاقتراب", later: "لاحقًا اليوم" } as Record<string, string>, airport: "المحطة / المطار" },
+  en: { title: "Flights map", note: "Positions on the map come from the flight schedule, not live aircraft tracking. Click any aircraft or flight to open its stand.", ok: "On time", late: "Past planned time", onStand: "On stand since", dep: "Planned departure", arr: "Planned arrival", hint: "Click to open the stand", none: "No flights on the ground or close right now.", utc: "UTC", st: { ground: "On the ground", approach: "Approaching", later: "Later today" } as Record<string, string>, airport: "Station / airport" },
 };
 const hm = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
 const dest = (lat: number, lon: number, brg: number, km: number): [number, number] => {
@@ -67,9 +68,6 @@ export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: R
   return (
     <section className="eye-rd" aria-label={x.title}>
       <div className="eye-rd-map">
-        <nav className="eye-rd-ap" aria-label={x.airport}>
-          {CHIPS.map((c) => <Link key={c} href={apHref(c)} className={`chip-link${c === airport.code ? " on" : ""}`}>{c}</Link>)}
-        </nav>
         <EyeMap rings={RINGS} center={center} airportLabel={`${airport.name} (${airport.code})`} aircraft={aircraft} hov={hov} onHover={setHov} onOpen={(id) => { const t = turns.find((q) => q.id === id); if (t) router.push(href(t)); }} fit={fit} />
         {cur && (
           <div className="eye-rd-tip" role="status">
@@ -84,6 +82,13 @@ export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: R
         <p className="eye-rd-note">{turns.length === 0 ? `${x.none} ` : ""}{x.note}</p>
       </div>
       <aside className="eye-rd-panel">
+        <label className="eye-rd-sel">
+          <span>{x.airport}</span>
+          <select value={airport.code} onChange={(e) => router.push(apHref(e.target.value))} aria-label={x.airport}>
+            {[...new Set([airport.code, ...CHIPS])].map((c) => <option key={c} value={c}>{lang === "ar" ? AR_NAME[c] ?? c : c} — {c}</option>)}
+          </select>
+        </label>
+        <div className="eye-rd-list">
         {groups.map(([k, l, col]) => l.length > 0 && (
           <div key={k}>
             <h3 className="eye-rd-h"><i style={{ background: col }} />{x.st[k]} <small>{l.length}</small></h3>
@@ -95,6 +100,7 @@ export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: R
             ))}
           </div>
         ))}
+        </div>
       </aside>
     </section>
   );
