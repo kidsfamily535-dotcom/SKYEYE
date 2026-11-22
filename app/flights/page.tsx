@@ -18,7 +18,7 @@ import "./radar.css";
 import "../home.css";
 import "../command.css";
 import "../command-map.css";
-import CommandMap from "@/components/CommandMap";
+import CommandRadar from "@/components/CommandRadar";
 import { getCockpit } from "@/lib/cockpit";
 import { getCommandData } from "@/lib/data";
 import { fmtUtc } from "@/lib/format";
@@ -247,7 +247,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Prom
               </div>
             </div>
             <div className="cr-panel cr-scope-panel cr-hero">
-              <CommandMap counts={radar.radar} flights={radar.radarFlights} lang={lang === "ar" ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+              <CommandRadar counts={radar.radar} flights={radar.radarFlights} lang={lang === "ar" ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
             </div>
           </section>
         )}

@@ -1,4 +1,4 @@
-.admin .adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.admin .adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:20px}
 .admin .adm-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .admin .adm-head h2{margin:0}
 .admin .adm-link{text-decoration:none;color:inherit;display:block}

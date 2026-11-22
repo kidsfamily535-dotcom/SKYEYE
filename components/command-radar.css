@@ -36,3 +36,23 @@
   .cx-legend{left:8px;right:8px;transform:none;max-width:none;display:grid;grid-template-columns:repeat(4,1fr);bottom:28px}
   .cx-note{font-size:10px;padding:4px 8px}
 }
+
+/* ---- phone fixes ---- */
+/* keep leaflet's own z-indexes (zoom buttons etc.) below the dock dropdowns that open over the map */
+.cx{isolation:isolate}
+/* the map is not RTL even on Arabic pages: otherwise the airport name tooltip is clipped on the left */
+.cx-map .eye-lf{direction:ltr}
+.eye-apt{direction:ltr;unicode-bidi:plaintext;white-space:nowrap;max-width:none}
+@media (max-width:800px){
+  /* the page scrolls; the map gets a fixed comfortable height and everything else sits under it in normal flow */
+  .cr-full{height:auto}
+  .cr-full .cr-hero{display:block;flex:none}
+  .cx{display:block;height:auto}
+  .cx-map{display:block;flex:none;height:450px;min-height:0;overflow:visible;border-radius:14px 14px 0 0}
+  .cx-map .eye-lf{flex:none;height:450px;border-radius:14px 14px 0 0;overflow:hidden}
+  .cx-legend,.cx-note{position:static;transform:none;inset:auto}
+  .cx-legend{margin:0;padding:8px;background:#171717;max-width:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+  .cx-note{background:#171717;color:#c9c9c9;padding:2px 10px 10px}
+  .cx-panel{height:auto;max-height:none;overflow:visible;border-radius:0 0 14px 14px}
+  .cx-list{overflow:visible;flex:none}
+}

@@ -1,43 +1,6 @@
-/* Tower map (components/CommandMap.tsx). Dark, flat, readable: land and borders only, aircraft and airports on top. */
-.cm-stage{position:relative}
-.cm{position:relative;width:100%;height:clamp(400px,60vh,620px);border-radius:12px;overflow:hidden;background:#0E141B;border:1px solid rgba(227,185,100,.3);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 40px rgba(0,0,0,.55)}
-.cm-svg{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
-.cm-svg:active{cursor:grabbing}
-.cm-sea{fill:#0E141B}
-.cm-land{fill:#1C2631;stroke:none}
-.cm-borders{fill:none;stroke:#32414F;stroke-width:.7;stroke-linejoin:round}
-.cm-route{fill:none;stroke-width:1;stroke-dasharray:3 4;opacity:.35}
-.cm-route.on{opacity:.95;stroke-width:1.6;stroke-dasharray:none}
-.cm-ap circle{fill:#0E141B;stroke:#E8E2D0;stroke-width:1.3}
-.cm-ap text{fill:#CFC8B4;font-size:9px;font-weight:700;font-family:ui-monospace,Menlo,monospace;paint-order:stroke;stroke:#0E141B;stroke-width:2.5px;stroke-linejoin:round;pointer-events:none}
-.cm-pl{cursor:pointer;outline:none}
-.cm-pl path{filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
-.cm-pl.est path{opacity:.92}
-.cm-pl:focus-visible circle:nth-child(3){stroke:#fff;stroke-width:1.2}
-.cm-pl:hover circle:nth-child(2){opacity:.3}
-.cm-tag{fill:#F2F2F2;font-size:9.5px;font-weight:700;font-family:ui-monospace,Menlo,monospace;paint-order:stroke;stroke:#0B0F14;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
-.cm-chips{position:absolute;inset-block-start:8px;inset-inline-start:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 64px)}
-.cm-chips button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px;border-radius:99px;border:1px solid rgba(255,255,255,.14);background:rgba(15,20,27,.88);color:#F2F2F2;font:inherit;font-size:12px;cursor:pointer}
-.cm-chips button i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-.cm-chips button b{font-family:ui-monospace,Menlo,monospace;font-size:12px}
-.cm-chips button.off{opacity:.45}.cm-chips button.off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
-.cm-chips button:focus-visible,.cm-zoom button:focus-visible,.cm-go:focus-visible,.cm-x:focus-visible{outline:2px solid #FFC107;outline-offset:2px}
-.cm-zoom{position:absolute;inset-block-start:8px;inset-inline-end:8px;display:flex;flex-direction:column;gap:4px}
-.cm-zoom button{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(15,20,27,.88);color:#F2F2F2;font-size:18px;line-height:1;cursor:pointer}
-.cm-zoom button:hover,.cm-chips button:hover{background:rgba(35,43,54,.95)}
-.cm-loading{position:absolute;inset:auto 0 12px 0;margin:0;text-align:center;font-size:12px;color:#8A8A8A}
-.cm-card{position:absolute;right:10px;left:auto;inset-block-end:10px;width:min(236px,calc(100% - 20px));background:rgba(20,25,32,.96);border:1px solid rgba(255,255,255,.12);border-inline-start:3px solid var(--c);border-radius:10px;padding:8px 10px 10px;color:#F2F2F2;box-shadow:0 8px 24px rgba(0,0,0,.55)}
-.cm-x{position:absolute;inset-block-start:4px;inset-inline-end:6px;width:30px;height:30px;border:0;background:none;color:#A3A3A3;font-size:20px;cursor:pointer}
-.cm-card-h{display:flex;align-items:baseline;gap:10px;margin:0;padding-inline-end:26px}.cm-card-h b{font-size:17px}.cm-card-h span{font-size:12px;font-weight:700;color:var(--c)}
-.cm-card-r{margin:2px 0 0;font-size:13px;color:#CFCFCF;text-align:start}
-.cm-times{display:flex;gap:16px;margin:8px 0 0}.cm-times div{display:flex;flex-direction:column}.cm-times dt{font-size:10.5px;color:#8A8A8A}.cm-times dd{margin:0;font-size:15px;font-weight:700;font-family:ui-monospace,Menlo,monospace}
-.cm-card-n{margin:6px 0 0;font-size:11px;line-height:1.5;color:#A3A3A3}
-.cm-go{display:inline-flex;align-items:center;min-height:34px;margin-top:6px;padding:0 14px;border-radius:8px;background:#FFC107;color:#111;font-weight:700;font-size:13px;text-decoration:none}
-@media (max-width:640px){.cm-chips button{min-height:28px;padding:0 8px;font-size:11.5px}.cm-card{width:calc(100% - 20px)}}
-@media (prefers-reduced-motion:reduce){.cm *{transition:none!important;animation:none!important}}
+/* Command screen layout + tower call + dock. The radar itself is components/CommandRadar.tsx (command-radar.css). */
 
 /* ---- tower call: a short radio transmission laid over the map ---- */
-.cm-call{position:absolute;left:12px;bottom:12px;width:min(370px,44%);pointer-events:none}
 .tc{pointer-events:auto;background:rgba(14,20,27,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(227,185,100,.32);border-radius:12px;padding:10px 14px 12px;color:#F2F2F2;box-shadow:0 8px 26px rgba(0,0,0,.5)}
 .tc-k{display:flex;align-items:center;gap:8px;margin:0;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#E3B964}
 .tc-wave{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
@@ -53,14 +16,10 @@
 .tc .hm-n:hover{background:#F7E7B8;color:#111}
 .cr-hero .cr-legend{grid-template-columns:repeat(4,1fr)}
 @media (max-width:900px){
-  .cm-call{position:static;width:auto;margin-top:10px}
   .cr-hero .cr-legend{grid-template-columns:1fr 1fr}
-  .cm{height:clamp(360px,62vh,460px)}
 }
 @media (prefers-reduced-motion:reduce){.tc-wave i{animation:none}}
-.cm-cl{cursor:pointer;outline:none}.cm-cl-n{font-size:12px;font-weight:700;font-family:ui-monospace,Menlo,monospace}
-.cm-cl:hover circle:first-child{opacity:.34}.cm-cl:focus-visible circle:nth-child(2){stroke:#fff}
-.cr-hero .cr-scope-wrap{align-items:stretch}.cm-stage{width:100%}
+.cr-hero .cr-scope-wrap{align-items:stretch}
 
 /* tower call as a notification strip above the map (not over it) */
 .tc-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 12px;padding:10px 14px;background:linear-gradient(180deg,#1E1E1E,#141414);backdrop-filter:none}
@@ -75,8 +34,6 @@
 .cr-full{padding:0;background:none;border-radius:0;gap:8px;height:clamp(480px,calc(100dvh - 120px),1500px)}
 .cr-full .cr-hero{flex:1;min-height:0;display:flex;padding:0;border-radius:14px}
 .cr-full .cr-scope-wrap{flex:1;min-height:0;width:100%;position:relative;gap:0;display:flex;flex-direction:column;align-items:stretch}
-.cr-full .cm-stage{flex:1;min-height:0;display:flex}
-.cr-full .cm{flex:1;height:auto;min-height:0;border-radius:14px}
 .cr-full .cr-note{flex:none;max-width:none;padding:6px 8px 4px;font-size:11px;line-height:1.4}
 .cr-full .cr-legend{position:absolute;left:10px;bottom:34px;z-index:2;width:auto;display:flex;gap:6px}
 .cr-full .cr-legend a{padding:6px 10px;border-radius:10px;column-gap:8px;background:rgba(15,20,27,.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
@@ -109,13 +66,8 @@
   .cr-full .cr-legend{left:8px;right:8px;bottom:30px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
   .cr-full .cr-legend a{grid-template-columns:1fr;grid-template-rows:auto auto;padding:4px 6px;justify-items:center}
   .cr-full .cr-legend i{display:none}.cr-full .cr-legend b{font-size:15px;justify-self:center}.cr-full .cr-legend span{font-size:9.5px;text-align:center}
-  .cr-full .cm-card{inset-block-end:64px}
 }
 
 /* same language as the flights board (app/flights/flights.css): 10px corners, dot + mono figure, 5px colour stripe, big flight number */
-.cm-chips button{border-radius:10px;min-height:36px;padding:0 12px;border-color:rgba(227,185,100,.25)}
-.cm-card{border-radius:14px;border-inline-start-width:5px;background:linear-gradient(180deg,#1E2228,#14181D);width:min(260px,calc(100% - 20px))}
-.cm-card-h b{font-size:23px;letter-spacing:.02em}
-.cm-times dd{font-size:21px}
 .cd-btn.gold{background:#FFC107;border-color:#FFC107;color:#111;text-decoration:none}.cd-btn.gold:hover{background:#FFD24A}
 a.cd-btn{text-decoration:none}

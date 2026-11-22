@@ -15,7 +15,7 @@ const planeIcon = (a: MapAc) => L.divIcon({
 });
 const clusterIcon = (n: number, col: string) => L.divIcon({ className: "eye-cl-w", iconSize: [42, 42], iconAnchor: [21, 21], html: `<div class="eye-cl" style="border-color:${col}"><b>${n}</b></div>` });
 
-const COLS = 5, DX = 74, DY = 38, MERGE_PX = 46;
+const COLS = 5, DX = 74, DY = 38, MERGE_PX = 46; // COLS is the maximum per row: the real count is reduced to what fits across the visible map
 type Cl = { items: MapAc[]; px: L.Point; ll: L.LatLng };
 
 // Real map. Aircraft are drawn one by one while they fit on screen; the ones that would overlap are merged into a numbered bubble
@@ -56,9 +56,10 @@ export default function EyeMap({ rings, center, airportLabel, aircraft, hov, onH
     (["down", "up"] as const).forEach((grp) => {
       const items = list.filter((a) => a.grp === grp); if (!items.length) return;
       const avail = grp === "down" ? size.y - pin.y - 44 - 36 : pin.y - 48 - 24;
-      const cap = Math.max(0, Math.floor(avail / DY)) * COLS;
+      const cols = Math.max(1, Math.min(COLS, Math.floor((2 * Math.min(pin.x, size.x - pin.x) - 24) / DX)));
+      const cap = Math.max(0, Math.floor(avail / DY)) * cols;
       const at = (dx: number, dy: number) => m.layerPointToLatLng(pinLP.add(L.point(dx, dy)));
-      if (items.length <= cap) items.forEach((a, i) => { const col = i % COLS, row = Math.floor(i / COLS); single(a, at((col - (Math.min(items.length, COLS) - 1) / 2) * DX, grp === "down" ? 44 + row * DY : -48 - row * DY)); });
+      if (items.length <= cap) items.forEach((a, i) => { const col = i % cols, row = Math.floor(i / cols); single(a, at((col - (Math.min(items.length, cols) - 1) / 2) * DX, grp === "down" ? 44 + row * DY : -48 - row * DY)); });
       else bubble(items, at(0, grp === "down" ? 44 : -48), false);
     });
     // everything else: merge by screen distance
