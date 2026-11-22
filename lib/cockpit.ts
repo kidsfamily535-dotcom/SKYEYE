@@ -2,9 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import type { Decision, RadarCounts } from "@/lib/data";
 import { getT } from "@/lib/lang";
 
+/** One flight as the tower map draws it. Positions are never stored: the map derives them from the airports and the recorded or scheduled times. */
+export type RadarFlight = {
+  id: string; no: string; reg: string | null; origin: string | null; station: string | null; destination: string | null;
+  /** ground = ATA recorded and no ATD; inbound = not landed yet and still on time; late = past its scheduled time with nothing recorded. */
+  kind: "ground" | "inbound" | "late"; landed: boolean;
+  sta: string | null; eta: string | null; ata: string | null; std: string | null;
+};
+
 export type Cockpit = {
   todayFlights: number | null; onGround: number | null; delayed: number | null;
   radar: RadarCounts;
+  radarFlights: RadarFlight[];
   flightDecisions: Decision[];
   memory: { activeFlights: number | null; pendingEmails: number | null; openTasks: number | null; awaiting: number | null; lastShift: { name: string; acknowledged: boolean; at: string } | null };
 };
@@ -17,13 +26,13 @@ export async function getCockpit(): Promise<Cockpit> {
   const { t: tr } = await getT();
   const now = Date.now(); const today = new Date(now).toISOString().slice(0, 10);
   const [fl, tasks, awaiting, emails, shift] = await Promise.all([
-    sb.from("v_flight_file").select("rotation_id, flight_in, flight_out, date_in, date_out, sta, std, eta, ata, atd, status").limit(500),
+    sb.from("v_flight_file").select("rotation_id, flight_in, flight_out, date_in, date_out, registration, origin, station, destination, sta, std, eta, ata, atd, status").limit(500),
     sb.from("request_files").select("id", { count: "exact", head: true }).is("closed_at", null),
     sb.from("turnaround_checkins").select("id", { count: "exact", head: true }).in("status", ["asked", "late"]),
     sb.from("email_triage").select("id", { count: "exact", head: true }).eq("status", "new"),
     sb.from("shift_reports").select("shift_name, status, acknowledged_at, generated_at").order("generated_at", { ascending: false }).limit(1),
   ]);
-  type R = { rotation_id: string; flight_in: string | null; flight_out: string | null; date_in: string | null; date_out: string | null; sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string };
+  type R = { rotation_id: string; registration: string | null; origin: string | null; station: string | null; destination: string | null; flight_in: string | null; flight_out: string | null; date_in: string | null; date_out: string | null; sta: string | null; std: string | null; eta: string | null; ata: string | null; atd: string | null; status: string };
   const rows = ((fl.data ?? []) as R[]).filter((r) => r.status !== "cancelled");
   const t = (x: string | null) => (x ? +new Date(x) : null);
 
@@ -39,10 +48,19 @@ export async function getCockpit(): Promise<Cockpit> {
     return { id: `fl-${r.rotation_id}`, tone: "late", href: `/flights?id=${r.rotation_id}`, action: tr("cockpit.open"),
       text: `${label}: ${r.ata ? tr("cockpit.lateDep") : tr("cockpit.lateArr")}` };
   });
+  const lateIds = new Set(late.map((r) => r.rotation_id));
+  const radarFlights: RadarFlight[] = [...onGround, ...inbound.filter((r) => !lateIds.has(r.rotation_id))]
+    .concat(late.filter((r) => !onGround.includes(r)))
+    .map((r) => ({
+      id: r.rotation_id, no: (r.ata ? r.flight_in ?? r.flight_out : r.flight_in ?? r.flight_out) ?? "—", reg: r.registration, origin: r.origin, station: r.station, destination: r.destination,
+      kind: lateIds.has(r.rotation_id) ? "late" : r.ata ? "ground" : "inbound", landed: !!r.ata,
+      sta: r.sta, eta: r.eta, ata: r.ata, std: r.std,
+    }));
   const ls = shift.data?.[0];
   return {
     todayFlights, onGround: onGround.length, delayed: late.length,
     radar: { onGround: onGround.length, inbound: inbound.length, delayed: late.length, awaitingMsg: null },
+    radarFlights,
     flightDecisions,
     memory: { activeFlights: live.length, pendingEmails: emails.count ?? 0, openTasks: tasks.count ?? 0, awaiting: awaiting.count ?? 0,
       lastShift: ls ? { name: ls.shift_name, acknowledged: !!ls.acknowledged_at, at: ls.acknowledged_at ?? ls.generated_at } : null },

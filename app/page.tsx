@@ -9,7 +9,8 @@ import LibraryPanel from "@/components/LibraryPanel";
 import { getLibrary, isLibKind } from "@/lib/library";
 import "./home.css";
 import "./command.css";
-import CommandScope from "@/components/CommandScope";
+import "./command-map.css";
+import CommandMap from "@/components/CommandMap";
 import { getCommandData, type Decision } from "@/lib/data";
 import { getCockpit } from "@/lib/cockpit";
 import { getT } from "@/lib/lang";
@@ -80,7 +81,7 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
           <div className="cr-grid">
             <div className="cr-panel cr-scope-panel">
               <h2 className="cr-h">{ar ? "شاشة البرج" : "Tower scope"}<span className="cr-live">{ar ? "مباشر" : "LIVE"}</span></h2>
-              <CommandScope counts={c.radar} ar={ar} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
+              <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
             </div>
 
             <div className="cr-panel cr-call">

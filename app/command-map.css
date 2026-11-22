@@ -1,0 +1,36 @@
+/* Tower map (components/CommandMap.tsx). Dark, flat, readable: land and borders only, aircraft and airports on top. */
+.cm{position:relative;width:100%;aspect-ratio:640/460;border-radius:12px;overflow:hidden;background:#0E141B;border:1px solid rgba(227,185,100,.3);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 40px rgba(0,0,0,.55)}
+.cm-svg{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+.cm-svg:active{cursor:grabbing}
+.cm-sea{fill:#0E141B}
+.cm-land{fill:#1C2631;stroke:none}
+.cm-borders{fill:none;stroke:#32414F;stroke-width:.7;stroke-linejoin:round}
+.cm-route{fill:none;stroke-width:1;stroke-dasharray:3 4;opacity:.35}
+.cm-route.on{opacity:.95;stroke-width:1.6;stroke-dasharray:none}
+.cm-ap circle{fill:#0E141B;stroke:#E8E2D0;stroke-width:1.3}
+.cm-ap text{fill:#CFC8B4;font-size:9px;font-weight:700;font-family:ui-monospace,Menlo,monospace;paint-order:stroke;stroke:#0E141B;stroke-width:2.5px;stroke-linejoin:round;pointer-events:none}
+.cm-pl{cursor:pointer;outline:none}
+.cm-pl path{filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+.cm-pl.est path{opacity:.92}
+.cm-pl:focus-visible circle:nth-child(3){stroke:#fff;stroke-width:1.2}
+.cm-pl:hover circle:nth-child(2){opacity:.3}
+.cm-tag{fill:#F2F2F2;font-size:9.5px;font-weight:700;font-family:ui-monospace,Menlo,monospace;paint-order:stroke;stroke:#0B0F14;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.cm-chips{position:absolute;inset-block-start:8px;inset-inline-start:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 64px)}
+.cm-chips button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px;border-radius:99px;border:1px solid rgba(255,255,255,.14);background:rgba(15,20,27,.88);color:#F2F2F2;font:inherit;font-size:12px;cursor:pointer}
+.cm-chips button i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.cm-chips button b{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.cm-chips button.off{opacity:.45}.cm-chips button.off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
+.cm-chips button:focus-visible,.cm-zoom button:focus-visible,.cm-go:focus-visible,.cm-x:focus-visible{outline:2px solid #FFC107;outline-offset:2px}
+.cm-zoom{position:absolute;inset-block-start:8px;inset-inline-end:8px;display:flex;flex-direction:column;gap:4px}
+.cm-zoom button{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(15,20,27,.88);color:#F2F2F2;font-size:18px;line-height:1;cursor:pointer}
+.cm-zoom button:hover,.cm-chips button:hover{background:rgba(35,43,54,.95)}
+.cm-loading{position:absolute;inset:auto 0 12px 0;margin:0;text-align:center;font-size:12px;color:#8A8A8A}
+.cm-card{position:absolute;inset-inline-start:10px;inset-block-end:10px;width:min(236px,calc(100% - 20px));background:rgba(20,25,32,.96);border:1px solid rgba(255,255,255,.12);border-inline-start:3px solid var(--c);border-radius:10px;padding:8px 10px 10px;color:#F2F2F2;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.cm-x{position:absolute;inset-block-start:4px;inset-inline-end:6px;width:30px;height:30px;border:0;background:none;color:#A3A3A3;font-size:20px;cursor:pointer}
+.cm-card-h{display:flex;align-items:baseline;gap:10px;margin:0;padding-inline-end:26px}.cm-card-h b{font-size:17px}.cm-card-h span{font-size:12px;font-weight:700;color:var(--c)}
+.cm-card-r{margin:2px 0 0;font-size:13px;color:#CFCFCF;text-align:start}
+.cm-times{display:flex;gap:16px;margin:8px 0 0}.cm-times div{display:flex;flex-direction:column}.cm-times dt{font-size:10.5px;color:#8A8A8A}.cm-times dd{margin:0;font-size:15px;font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.cm-card-n{margin:6px 0 0;font-size:11px;line-height:1.5;color:#A3A3A3}
+.cm-go{display:inline-flex;align-items:center;min-height:34px;margin-top:6px;padding:0 14px;border-radius:8px;background:#FFC107;color:#111;font-weight:700;font-size:13px;text-decoration:none}
+@media (max-width:640px){.cm{aspect-ratio:4/4.2}.cm-chips button{min-height:28px;padding:0 8px;font-size:11.5px}.cm-card{width:calc(100% - 20px)}}
+@media (prefers-reduced-motion:reduce){.cm *{transition:none!important;animation:none!important}}
