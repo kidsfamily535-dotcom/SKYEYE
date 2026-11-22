@@ -108,7 +108,6 @@
 /* Airline radar (home) — every class carries the eye- prefix */
 .eye-rd{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;margin-bottom:18px}
 .eye-rd-map{position:relative;background:#1b1d20;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.3)}
-.eye-rd-map svg{display:block;width:100%;height:auto}
 .eye-main:has(.eye-rd){width:min(1200px,100%)}.eye-main:has(.eye-rd) .eye-day,.eye-main:has(.eye-rd) .eye-earlier{max-width:760px;width:100%;margin-inline:auto}
 .eye-rd-h i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px}
 .eye-rd-note{margin:0;padding:6px 12px;font-size:11px;color:#c9c9c9;background:rgba(0,0,0,.25)}
@@ -144,3 +143,10 @@ a.eye-rd-card{text-decoration:none;cursor:pointer}a.eye-rd-card:hover{outline:1.
 .eye-apt{background:rgba(10,10,10,.88);border:1px solid #FFC107;color:#fff;font-weight:700}.eye-apt:before{display:none}
 .leaflet-container{font-family:inherit}
 @media (max-width:800px){.eye-rd-map{height:480px}}
+
+.eye-sweep{background:none;border:0;pointer-events:none}
+.eye-sweep-i{width:600px;height:600px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,193,7,0) 0deg,rgba(255,193,7,.0) 250deg,rgba(255,193,7,.30) 358deg,rgba(255,193,7,0) 360deg);-webkit-mask:radial-gradient(circle,#000 0,#000 62%,transparent 71%);mask:radial-gradient(circle,#000 0,#000 62%,transparent 71%);animation:eye-sw 9s linear infinite}
+@keyframes eye-sw{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.eye-sweep-i{animation:none}}
+.eye-ring-l{background:none;border:0;color:#FFC107;opacity:.85;font:700 11px/14px system-ui,sans-serif;text-align:center;text-shadow:0 0 4px #000,0 0 4px #000;direction:ltr}
+.leaflet-container .leaflet-control-attribution{background:rgba(0,0,0,.55);color:#bbb;font-size:10px}.leaflet-control-attribution a{color:#ddd}

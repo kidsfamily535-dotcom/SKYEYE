@@ -25,6 +25,7 @@ const dest = (lat: number, lon: number, brg: number, km: number): [number, numbe
   const l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
   return [(p2 * 180) / Math.PI, ((((l2 * 180) / Math.PI) + 540) % 360) - 180];
 };
+const RINGS = [15, 30, 45, 60].map((m) => ({ km: 6 + m * 2.2, label: `${m}′` }));
 const APPROACH_FROM = 300; // bearing the approach line comes from (schematic)
 
 export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: RadarTurn[]; ws: string; lang: "ar" | "en"; nowMs: number; airport: RadarAirport }) {
@@ -69,7 +70,7 @@ export default function EyeRadar({ turns, ws, lang, nowMs, airport }: { turns: R
         <nav className="eye-rd-ap" aria-label={x.airport}>
           {CHIPS.map((c) => <Link key={c} href={apHref(c)} className={`chip-link${c === airport.code ? " on" : ""}`}>{c}</Link>)}
         </nav>
-        <EyeMap center={center} airportLabel={`${airport.name} (${airport.code})`} aircraft={aircraft} hov={hov} onHover={setHov} onOpen={(id) => { const t = turns.find((q) => q.id === id); if (t) router.push(href(t)); }} fit={fit} />
+        <EyeMap rings={RINGS} center={center} airportLabel={`${airport.name} (${airport.code})`} aircraft={aircraft} hov={hov} onHover={setHov} onOpen={(id) => { const t = turns.find((q) => q.id === id); if (t) router.push(href(t)); }} fit={fit} />
         {cur && (
           <div className="eye-rd-tip" role="status">
             <span className="eye-rd-r1"><b className="ltr">{cur.arrNo ?? "—"} / {cur.depNo ?? "—"}</b>{cur.reg && <span className="eye-rd-pill ltr">{cur.reg}</span>}</span>
