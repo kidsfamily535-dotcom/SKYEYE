@@ -68,7 +68,7 @@ export default function EyeScene({ otp, flightLabel, registration, panelTop }: {
 
   return (
     <>
-      <ApronStand otp={otp} lang={lang} tone={tone} calm head={head} idLabel={label} sel={sel} onSel={setSel} tag={tagOf} showDelays={false} showLog={!finished} stage panelTop={panelTop} panelBottom={finished ? log : undefined} />
+      <ApronStand otp={otp} lang={lang} tone={tone} calm head={head} idLabel={label} sel={sel} onSel={setSel} tag={tagOf} showDelays={false} showLog={!finished} stage lane panelTop={panelTop} panelBottom={finished ? log : undefined} />
     </>
   );
 }

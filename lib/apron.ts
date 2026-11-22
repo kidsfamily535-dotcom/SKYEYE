@@ -28,6 +28,18 @@ const VEH: Record<string, { kind: VehKind; dx: number; dy: number }> = {
 };
 export const vehOf = (code: string) => (code.startsWith("boarding") ? VEH.boarding : VEH[code] ?? null);
 
+/** Airline lane view: the aircraft lies along the runway line (nose left), so the vehicles stand above and below it instead. */
+const VEH_LANE: Record<string, { kind: VehKind; dx: number; dy: number }> = {
+  deboard: { kind: "bus", dx: -50, dy: -50 },
+  boarding: { kind: "bus", dx: -50, dy: -50 },
+  cleaning: { kind: "clean", dx: -14, dy: -52 },
+  bags_unload: { kind: "bags", dx: 24, dy: -50 },
+  bags_load: { kind: "bags", dx: 24, dy: -50 },
+  fuel: { kind: "fuel", dx: -6, dy: 48 },
+  catering: { kind: "cater", dx: 62, dy: 30 },
+};
+export const vehOfLane = (code: string) => (code.startsWith("boarding") ? VEH_LANE.boarding : VEH_LANE[code] ?? null);
+
 const GANTT: Record<string, string> = { deboard: "#4C8DFF", boarding: "#4C8DFF", bags_unload: "#B18CFF", bags_load: "#B18CFF", cleaning: "#35C2C2", catering: "#FF8A5B", fuel: "#E9E9E9", doors_closed: "#8A97A6", off_block: "#8A97A6" };
 export const colorOf = (code: string) => (code.startsWith("boarding") ? GANTT.boarding : GANTT[code] ?? "#A3A3A3");
 

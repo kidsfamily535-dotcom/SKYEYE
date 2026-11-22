@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Lang } from "@/lib/i18n";
 import type { OtpDelay, OtpState, OtpStep } from "@/lib/otp";
 import { LAYOUT, FALLBACK } from "@/lib/otp-layout";
-import { BOX, CX, CY, MAP_H, MAP_W, PLANE, TAXI_Y, VEH_COLOR, apronText, colorOf, vehOf } from "@/lib/apron";
+import { BOX, CX, CY, MAP_H, MAP_W, PLANE, TAXI_Y, VEH_COLOR, apronText, colorOf, vehOf, vehOfLane } from "@/lib/apron";
 
 // The apron scene: the aircraft is watched on the ground the way it is watched in the air.
 // One component for both products: SKYEYE staff (recording controls come in through `stepPanel` / `prePanel`)
@@ -40,6 +40,8 @@ export type ApronProps = {
   /** Stage only: what goes at the top / bottom of the side panel around the scene sections. */
   panelTop?: ReactNode;
   panelBottom?: ReactNode;
+  /** Airline Eye: the aircraft lies horizontally on the runway line (nose left) instead of nose-up in a stand box. */
+  lane?: boolean;
 };
 
 const hm = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(11, 16) : "—");
@@ -49,7 +51,10 @@ const own = (s: OtpStep) => (s.own_delay_min ?? 0) + (s.start_delay_min ?? 0);
 const isLate = (s: OtpStep) => s.step_state === "overdue_unconfirmed" || ((s.step_state === "in_window" || s.step_state === "done_late") && (s.late_vs_plan_min ?? 0) >= 3);
 const running = (s: OtpStep) => s.step_state === "in_window" || s.step_state === "overdue_unconfirmed";
 
-export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge, sel, onSel, tag, stepPanel, prePanel, showDelays = true, showLog = true, stage = false, panelTop, panelBottom }: ApronProps) {
+export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge, sel, onSel, tag, stepPanel, prePanel, showDelays = true, showLog = true, stage = false, panelTop, panelBottom, lane = false }: ApronProps) {
+  const ty = lane ? 188 : TAXI_Y;
+  const box = lane ? { x: CX - 112, y: ty - 74, w: 224, h: 148 } : BOX;
+  const cy0 = lane ? ty : CY;
   const T = apronText(lang);
   const [zoom, setZoom] = useState(1);
   const zz = (k: number) => setZoom((z) => Math.max(1, Math.min(3.5, +(z * k).toFixed(3))));
@@ -91,14 +96,14 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
 
   /* ---------------- the map ---------------- */
   const vehicles = steps.map((s) => {
-    const v = vehOf(s.step_code);
+    const v = lane ? vehOfLane(s.step_code) : vehOf(s.step_code);
     if (!v) return null;
     const active = running(s);
     const picked = sel === s.step_code;
     if (!active && !picked) return null;
     const late = isLate(s);
     return (
-      <g key={s.step_code} className={`ap-veh${active ? " run" : " ghost"}${late ? " late" : ""}${picked ? " sel" : ""}`} transform={`translate(${CX + v.dx} ${CY + v.dy})`} onClick={() => onSel(picked ? null : s.step_code)} role="button" tabIndex={0} aria-label={nm(s)}
+      <g key={s.step_code} className={`ap-veh${active ? " run" : " ghost"}${late ? " late" : ""}${picked ? " sel" : ""}`} transform={`translate(${CX + v.dx} ${cy0 + v.dy})`} onClick={() => onSel(picked ? null : s.step_code)} role="button" tabIndex={0} aria-label={nm(s)}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSel(picked ? null : s.step_code); }}>
         <title>{nm(s)}</title>
         <rect x={-10} y={-6.5} width={20} height={13} rx={3} fill={VEH_COLOR[v.kind]} />
@@ -108,7 +113,7 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
   });
 
   const map = (
-    <svg className="ap-map" viewBox={`${Math.max(0, Math.min(MAP_W - MAP_W / zoom, CX - MAP_W / zoom / 2)).toFixed(1)} ${Math.max(0, Math.min(MAP_H - MAP_H / zoom, CY - MAP_H / zoom / 2)).toFixed(1)} ${(MAP_W / zoom).toFixed(1)} ${(MAP_H / zoom).toFixed(1)}`} role="img" aria-label={T("mapAria")} preserveAspectRatio="xMidYMid meet">
+    <svg className="ap-map" viewBox={`${Math.max(0, Math.min(MAP_W - MAP_W / zoom, CX - MAP_W / zoom / 2)).toFixed(1)} ${Math.max(0, Math.min(MAP_H - MAP_H / zoom, cy0 - MAP_H / zoom / 2)).toFixed(1)} ${(MAP_W / zoom).toFixed(1)} ${(MAP_H / zoom).toFixed(1)}`} role="img" aria-label={T("mapAria")} preserveAspectRatio="xMidYMid meet">
       <defs>
         <filter id="ap-nz" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves={2} seed={4} /><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 -.1" /></filter>
       </defs>
@@ -117,32 +122,32 @@ export default function ApronStand({ otp, lang, tone, calm, head, idLabel, badge
       <rect x={8} y={8} width={MAP_W - 16} height={252} rx={6} fill="var(--ap-apron)" opacity={0.92} />
       <rect x={22} y={12} width={MAP_W - 44} height={32} rx={4} fill="var(--ap-tx)" />
       <text x={CX} y={33} textAnchor="middle" className="ap-ml">{T("terminal")}</text>
-      <line x1={CX} y1={44} x2={CX} y2={BOX.y + 24} stroke="var(--ap-tx)" strokeWidth={4} />
-      <rect x={-20} y={TAXI_Y - 9} width={MAP_W + 40} height={18} fill="var(--ap-tx)" />
-      <line x1={-20} y1={TAXI_Y} x2={MAP_W + 20} y2={TAXI_Y} stroke="#E5B800" strokeWidth={1.2} strokeDasharray="10 8" />
-      <text x={14} y={TAXI_Y - 12} textAnchor="start" className="ap-ml sm">{T("taxiway")}</text>
+      <line x1={CX} y1={44} x2={CX} y2={box.y + 24} stroke="var(--ap-tx)" strokeWidth={4} />
+      <rect x={-20} y={ty - 9} width={MAP_W + 40} height={18} fill="var(--ap-tx)" />
+      <line x1={-20} y1={ty} x2={MAP_W + 20} y2={ty} stroke="#E5B800" strokeWidth={1.2} strokeDasharray="10 8" />
+      <text x={14} y={ty - 12} textAnchor="start" className="ap-ml sm">{T("taxiway")}</text>
       <path d={`M54 ${MAP_H - 18}V300H${MAP_W - 14}`} fill="none" stroke="var(--ap-tx)" strokeWidth={8} strokeLinejoin="round" />
       <text x={MAP_W - 10} y={296} textAnchor="end" className="ap-ml sm">{T("road")}</text>
       <rect x={12} y={MAP_H - 30} width={86} height={22} rx={4} fill="var(--ap-tx)" />
       <text x={55} y={MAP_H - 15} textAnchor="middle" className="ap-ml sm">{T("depot")}</text>
 
-      <rect className={`ap-box${phase === "stand" ? " on" : ""}`} x={BOX.x} y={BOX.y} width={BOX.w} height={BOX.h} rx={5} style={{ stroke: boxColor }} />
-      <text x={CX} y={BOX.y - 6} textAnchor="middle" className="ap-ml">{T("stand")}</text>
+      <rect className={`ap-box${phase === "stand" ? " on" : ""}`} x={box.x} y={box.y} width={box.w} height={box.h} rx={5} style={{ stroke: boxColor }} />
+      <text x={CX} y={box.y - 6} textAnchor="middle" className="ap-ml">{T("stand")}</text>
 
       {phase === "approach" && (
         <g>
-          <path d={`M${MAP_W + 20} ${TAXI_Y}H${CX}V${BOX.y + BOX.h + 4}`} className="ap-path" />
-          <g transform={`translate(${MAP_W - 84} ${TAXI_Y}) rotate(-90) scale(1.15)`}><path d={PLANE} className="ap-plane ghost" /></g>
-          <text x={MAP_W - 84} y={TAXI_Y - 34} textAnchor="middle" className="ap-ml"><tspan>{T("inbound")}</tspan><tspan dx={6} className="ltr">{hm(sta)}</tspan></text>
+          <path d={`M${MAP_W + 20} ${ty}H${CX}${lane ? "" : `V${box.y + box.h + 4}`}`} className="ap-path" />
+          <g transform={`translate(${MAP_W - 84} ${ty}) rotate(-90) scale(1.15)`}><path d={PLANE} className="ap-plane ghost" /></g>
+          <text x={MAP_W - 84} y={ty - 34} textAnchor="middle" className="ap-ml"><tspan>{T("inbound")}</tspan><tspan dx={6} className="ltr">{hm(sta)}</tspan></text>
         </g>
       )}
       {phase === "stand" && (
-        <g transform={`translate(${CX} ${CY})`}><g className="ap-land"><g transform="scale(1.6)"><path d={PLANE} className={`ap-plane${tone === "late" ? " late" : ""}`} /></g></g></g>
+        <g transform={`translate(${CX} ${cy0})`}><g className="ap-land"><g transform={lane ? "rotate(-90) scale(1.45)" : "scale(1.6)"}><path d={PLANE} className={`ap-plane${tone === "late" ? " late" : ""}`} /></g></g></g>
       )}
       {phase === "left" && (
         <g>
-          <g transform={`translate(112 ${TAXI_Y}) rotate(-90) scale(.95)`}><path d={PLANE} className="ap-plane gone" /></g>
-          <text x={112} y={TAXI_Y - 30} textAnchor="middle" className="ap-ml">{T("left")}</text>
+          <g transform={`translate(112 ${ty}) rotate(-90) scale(.95)`}><path d={PLANE} className="ap-plane gone" /></g>
+          <text x={112} y={ty - 30} textAnchor="middle" className="ap-ml">{T("left")}</text>
         </g>
       )}
       {phase === "stand" && vehicles}
