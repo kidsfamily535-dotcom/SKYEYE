@@ -21,3 +21,18 @@
 .cx-legend i{width:9px;height:9px;border-radius:50%;background:var(--c)}.cx-legend span{font-size:11px;color:#a3a3a3}.cx-legend b{font-size:16px;font-family:ui-monospace,Menlo,monospace}
 .cx-note{position:absolute;inset-inline:0;bottom:0;z-index:1000;margin:0;padding:6px 12px;font-size:11px;color:#c9c9c9;background:rgba(0,0,0,.6)}
 @media (max-width:800px){.cx-panel{left:8px;right:8px;top:auto;bottom:96px;width:auto;max-height:34%}.cx-tip{display:none}.cx-legend{left:8px;right:8px;transform:none;display:grid;grid-template-columns:repeat(4,1fr);bottom:30px}.cx-legend a{flex-direction:column;gap:2px;padding:4px 6px}.cx-legend span{font-size:9.5px;text-align:center}}
+
+/* Layout: side column on wide screens, bottom sheet under the map on phones (same as the airline portal). Overrides the floating panel above. */
+.cx{overflow:hidden;border-radius:14px;flex-direction:row}
+.cx-map{flex:1;min-width:0;border-radius:0}
+.cx-panel{position:static;inset:auto;width:320px;flex:none;max-height:none;border-radius:0;background:#171717;backdrop-filter:none;padding:10px;border-inline-start:1px solid rgba(255,255,255,.08)}
+.cx-sel select{font-size:16px}
+.cx-legend{flex-wrap:wrap;justify-content:center;max-width:94%}
+@media (max-width:1000px){.cx-tip{display:none}}
+@media (max-width:800px){
+  .cx{flex-direction:column}
+  .cx-map{flex:1 1 auto;min-height:240px}
+  .cx-panel{width:auto;flex:none;height:min(42%,320px);border-inline-start:0;border-top:1px solid rgba(255,255,255,.1)}
+  .cx-legend{left:8px;right:8px;transform:none;max-width:none;display:grid;grid-template-columns:repeat(4,1fr);bottom:28px}
+  .cx-note{font-size:10px;padding:4px 8px}
+}
