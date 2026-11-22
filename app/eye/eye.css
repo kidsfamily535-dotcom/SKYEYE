@@ -104,3 +104,19 @@
 .eye-actlist small{flex:none;opacity:.6;font-size:12px}
 .eye-card .btn{min-height:40px}
 @media (max-width:720px){.eye-formgrid{grid-template-columns:1fr}.eye-nav{margin-inline-start:6px}.eye-card{border-radius:22px;padding-inline:14px}}
+
+/* Airline radar (home) — every class carries the eye- prefix */
+.eye-rd{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;margin-bottom:18px}
+.eye-rd-map{background:#46443F;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.eye-rd-map svg{display:block;width:100%;height:auto}
+.eye-rd-note{margin:0;padding:6px 12px;font-size:11px;color:#c9c9c9;background:rgba(0,0,0,.25)}
+.eye-rd-panel{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow:auto}
+.eye-rd-h{margin:4px 2px;font-size:14px}.eye-rd-h small{background:#FFC107;color:#111;border-radius:4px;padding:0 6px;margin-inline-start:6px}
+.eye-rd-card{display:flex;flex-direction:column;gap:3px;width:100%;text-align:start;background:#1f1f1f;color:inherit;border:0;border-radius:10px;padding:10px 12px;margin-bottom:6px;font:inherit}
+button.eye-rd-card{cursor:pointer}.eye-rd-card.on{outline:1.5px solid #FFC107}
+.eye-rd-r1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.eye-rd-r1 b{font-size:16px}
+.eye-rd-pill{font-size:11px;font-weight:700;background:#4A4A4A;border-radius:4px;padding:0 6px}.eye-rd-pill.k{background:#3FB58A;color:#111}.eye-rd-pill.w{background:#E8A33D;color:#111}
+.eye-rd-s2{font-size:13px;color:#a3a3a3}
+.eye-rd-sel{border:1px solid #FFC107}
+.eye-rd-open{margin-top:6px;align-self:flex-start;background:#FFC107;color:#111;font-weight:700;border-radius:8px;padding:5px 12px;text-decoration:none}
+@media (max-width:800px){.eye-rd{grid-template-columns:1fr}.eye-rd-panel{max-height:none}}
