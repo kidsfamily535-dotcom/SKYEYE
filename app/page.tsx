@@ -78,19 +78,19 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
             {d.shadowMode && <span className="cr-badge shadow">{ar ? "تجريبي · لا يرسل شيئًا" : "Shadow · sends nothing"}</span>}
           </header>
 
-          <div className="cr-grid">
-            <div className="cr-panel cr-scope-panel">
-              <h2 className="cr-h">{ar ? "شاشة البرج" : "Tower scope"}<span className="cr-live">{ar ? "مباشر" : "LIVE"}</span></h2>
-              <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }} />
-            </div>
-
-            <div className="cr-panel cr-call">
-              <h2 className="cr-h">{ar ? "نداء البرج" : "Tower call"}</h2>
-              <p className="cr-greet">{t("home.title", { greet: t(g.key) })}</p>
-              {d.noMembership
-                ? <p className="cr-line">{t("home.noMembership")}</p>
-                : <ul className="cr-lines" aria-live="polite">{sentences.length === 0 ? <li className="cr-line calm"><i />{t("home.reco.none")}</li> : sentences.map((x, i) => <li key={i} className="cr-line"><i />{x}</li>)}</ul>}
-            </div>
+          <div className="cr-panel cr-scope-panel cr-hero">
+            <h2 className="cr-h">{ar ? "شاشة البرج" : "Tower scope"}<span className="cr-live">{ar ? "مباشر" : "LIVE"}</span></h2>
+            <CommandMap counts={c.radar} flights={c.radarFlights} lang={ar ? "ar" : "en"} labels={{ onGround: t("radar.onGround"), inbound: t("radar.inbound"), delayed: t("radar.delayed"), awaitingMsg: t("radar.awaitingMsg") }}
+              call={
+                <div className="tc" aria-live="polite">
+                  <p className="tc-k"><span className="tc-wave" aria-hidden="true"><i /><i /><i /><i /></span>{ar ? "نداء البرج" : "Tower call"}</p>
+                  <p className="tc-hi">{t("home.title", { greet: t(g.key) })}</p>
+                  {d.noMembership
+                    ? <p className="tc-l">{t("home.noMembership")}</p>
+                    : sentences.length === 0 ? <p className="tc-l calm">{t("home.reco.none")}</p>
+                    : <ul className="tc-ls">{sentences.map((x, i) => <li key={i}>{x}</li>)}</ul>}
+                </div>
+              } />
           </div>
 
           {first && (

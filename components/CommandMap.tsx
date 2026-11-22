@@ -14,11 +14,11 @@ import { geoOf } from "@/lib/airport-geo";
 //  - flights whose airports have no coordinates, or that have no arrival time, are left off and counted in the note.
 // Read only: it draws what the cockpit already knows and never writes anything.
 
-const W = 640, H = 460, PAD = 56, MAX_DRAW = 160;
+const BW = 640, BH = 460, PAD = 70, MAX_DRAW = 160; // BW x BH is the world at zoom 1; the drawing itself is in real screen pixels
 const COLOR = { ground: "#FFC107", inbound: "#8FB8FF", late: "#FF766C" } as const;
 type Kind = RadarFlight["kind"];
 const PLANE = "M0 -6.5L1.3 -2.2L6 1L6 2.4L1.3 1L1 4.6L2.6 5.8L2.6 7L0 6.4L-2.6 7L-2.6 5.8L-1 4.6L-1.3 1L-6 2.4L-6 1L-1.3 -2.2Z";
-const base = geoMercator().scale(W / (2 * Math.PI)).translate([W / 2, H / 2]);
+const base = geoMercator().scale(BW / (2 * Math.PI)).translate([BW / 2, BH / 2]);
 const pathGen = geoPath(base);
 const TXT = {
   ar: { ground: "على الأرض", inbound: "قادمة", late: "متأخرة", lateGround: "متأخرة عن الإقلاع", lateAir: "متأخرة عن الوصول", open: "فتح الرحلة", close: "إغلاق", zoomIn: "تكبير", zoomOut: "تصغير", fit: "ملاءمة كل الرحلات",
@@ -56,14 +56,18 @@ function place(f: RadarFlight, now: number): Item | null {
   const [lon, lat] = at(p);
   const [x1, y1] = base(at(p)) ?? [0, 0]; const [x2, y2] = base(at(Math.min(1, p + 0.02))) ?? [0, 0];
   const head = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI + 90;
-  return { f, lon, lat, key: raw <= 0 ? `pre-${f.origin!.toUpperCase()}` : null, head, route: [a, b], est: true, pre: raw <= 0 };
+  return { f, lon, lat, key: raw <= 0 ? `pre-${f.origin!.toUpperCase()}` : raw >= 0.97 ? f.station!.toUpperCase() : null, head, route: [a, b], est: true, pre: raw <= 0 };
 }
 
 const RINGS: { k: keyof RadarCounts; c: string }[] = [{ k: "onGround", c: "#FFC107" }, { k: "inbound", c: "#8FB8FF" }, { k: "delayed", c: "#FF766C" }, { k: "awaitingMsg", c: "#3FB58A" }];
 
-export default function CommandMap({ counts, flights, lang, labels }: { counts: RadarCounts; flights: RadarFlight[]; lang: "ar" | "en"; labels: Record<keyof RadarCounts, string> }) {
+export default function CommandMap({ counts, flights, lang, labels, call }: { counts: RadarCounts; flights: RadarFlight[]; lang: "ar" | "en"; labels: Record<keyof RadarCounts, string>; call?: React.ReactNode }) {
   const T = TXT[lang];
   const svgRef = useRef<SVGSVGElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const measured = useRef(false);
+  const [size, setSize] = useState({ w: 640, h: 400 });
+  const [hov, setHov] = useState<string | null>(null);
   const [land, setLand] = useState<{ fill: string; borders: string } | null>(null);
   const [view, setView] = useState<View>({ k: 5, tx: 0, ty: 0 });
   const [now, setNow] = useState<number | null>(null);
@@ -88,6 +92,15 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
     return () => { alive = false; clearTimeout(later); };
   }, []);
 
+  // The drawing is in real pixels: measure the box and follow it when it resizes.
+  useEffect(() => {
+    const el = boxRef.current; if (!el) return;
+    const read = () => { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) { measured.current = true; setSize({ w: Math.round(r.width), h: Math.round(r.height) }); } };
+    read();
+    const ro = new ResizeObserver(read); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => { setNow(Date.now()); const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, []);
 
   const items = useMemo(() => {
@@ -107,20 +120,20 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
 
   const fit = useCallback(() => {
     const pts: [number, number][] = [...airports.map((a) => a.xy), ...items.map((i) => base([i.lon, i.lat]) as [number, number])];
-    if (pts.length === 0) { const c = base([30, 28]) as [number, number]; setView({ k: 5, tx: W / 2 - c[0] * 5, ty: H / 2 - c[1] * 5 }); return; }
+    if (pts.length === 0) { const c = base([30, 28]) as [number, number]; setView({ k: 5, tx: size.w / 2 - c[0] * 5, ty: size.h / 2 - c[1] * 5 }); return; }
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
     const bw = Math.max(x1 - x0, 14), bh = Math.max(y1 - y0, 10);
-    const k = clamp(Math.min((W - 2 * PAD) / bw, (H - 2 * PAD) / bh), 1.2, 40);
+    const k = clamp(Math.min((size.w - 2 * PAD) / bw, (size.h - 2 * PAD) / bh), 1.2, 40);
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    setView({ k, tx: W / 2 - cx * k, ty: H / 2 - cy * k });
-  }, [airports, items]);
+    setView({ k, tx: size.w / 2 - cx * k, ty: size.h / 2 - cy * k });
+  }, [airports, items, size]);
 
-  useEffect(() => { if (!fitted.current && now !== null) { fit(); fitted.current = true; } }, [fit, now]);
+  useEffect(() => { if (!fitted.current && now !== null && measured.current) { fit(); fitted.current = true; } }, [fit, now, size]);
 
-  const zoomAt = useCallback((factor: number, cx = W / 2, cy = H / 2) => {
+  const zoomAt = useCallback((factor: number, cx = size.w / 2, cy = size.h / 2) => {
     setView((v) => { const k = clamp(v.k * factor, 1, 90); const r = k / v.k; return { k, tx: cx - (cx - v.tx) * r, ty: cy - (cy - v.ty) * r }; });
-  }, []);
+  }, [size]);
 
   // The wheel needs a non-passive listener to stop the page from scrolling while the map zooms.
   useEffect(() => {
@@ -128,7 +141,7 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = el.getBoundingClientRect();
-      zoomAt(Math.exp(-e.deltaY * 0.0016), ((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H);
+      zoomAt(Math.exp(-e.deltaY * 0.0016), ((e.clientX - r.left) / r.width) * size.w, ((e.clientY - r.top) / r.height) * size.h);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -137,7 +150,7 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
   const onDown = (e: React.PointerEvent<SVGSVGElement>) => { drag.current = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty, moved: false }; e.currentTarget.setPointerCapture(e.pointerId); };
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const d = drag.current; if (!d) return;
-    const r = e.currentTarget.getBoundingClientRect(); const sc = W / r.width;
+    const r = e.currentTarget.getBoundingClientRect(); const sc = size.w / r.width;
     const dx = (e.clientX - d.x), dy = (e.clientY - d.y);
     if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
     if (d.moved) setView((v) => ({ ...v, tx: d.tx + dx * sc, ty: d.ty + dy * sc }));
@@ -145,14 +158,27 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
   const onUp = () => { const d = drag.current; drag.current = null; if (d && !d.moved) setSel(null); };
 
   // Screen position of every drawn aircraft: projected point, then a small fan-out so parked aircraft and not-yet-departed ones don't sit on top of each other.
+  // Screen position of every drawn aircraft. A crowded airport (more than 14 aircraft parked or piled at it) collapses into one count bubble
+  // until you zoom in; below that the aircraft fan out around the airport so none sits on top of another.
   const placed = useMemo(() => {
+    const vis = items.filter((i) => !hide[i.f.kind]);
+    const groups = new Map<string, Item[]>();
+    for (const i of vis) if (i.key) { const g = groups.get(i.key); if (g) g.push(i); else groups.set(i.key, [i]); }
+    const collapsed = new Set<string>();
+    const clusters: { key: string; n: number; x: number; y: number; late: boolean; ground: boolean }[] = [];
+    if (view.k < 8) for (const [key, list] of groups) if (list.length > 14) {
+      collapsed.add(key);
+      const [bx, by] = base([list[0].lon, list[0].lat]) as [number, number];
+      clusters.push({ key, n: list.length, x: bx * view.k + view.tx, y: by * view.k + view.ty, late: list.some((i) => i.f.kind === "late"), ground: list.some((i) => i.f.kind === "ground") });
+    }
     const idx = new Map<string, number>();
-    return items.filter((i) => !hide[i.f.kind]).map((i) => {
+    const planes = vis.filter((i) => !(i.key && collapsed.has(i.key))).map((i) => {
       const [bx, by] = base([i.lon, i.lat]) as [number, number];
       let ox = 0, oy = 0;
       if (i.key) { const n = idx.get(i.key) ?? 0; idx.set(i.key, n + 1); const r = 7.5 * Math.sqrt(n + (n === 0 ? 0 : 0.6)) * clamp(Math.sqrt(view.k / 3), 1, 2.6); const a = n * 2.399; ox = r * Math.cos(a); oy = r * Math.sin(a); }
       return { i, x: bx * view.k + view.tx + ox, y: by * view.k + view.ty + oy };
     });
+    return { vis, planes, clusters };
   }, [items, hide, view]);
 
   const selItem = sel ? items.find((i) => i.f.id === sel) ?? null : null;
@@ -162,12 +188,13 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
 
   return (
     <div className="cr-scope-wrap">
-      <div className="cm" dir="ltr">
-        <svg ref={svgRef} className="cm-svg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={aria} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-          <rect width={W} height={H} className="cm-sea" />
+      <div className="cm-stage">
+      <div className="cm" dir="ltr" ref={boxRef}>
+        <svg ref={svgRef} className="cm-svg" viewBox={`0 0 ${size.w} ${size.h}`} role="group" aria-label={aria} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+          <rect width={size.w} height={size.h} className="cm-sea" />
           <g transform={`translate(${view.tx} ${view.ty}) scale(${view.k})`}>
             {land && <><path d={land.fill} className="cm-land" /><path d={land.borders} className="cm-borders" vectorEffect="non-scaling-stroke" /></>}
-            {placed.filter((p) => p.i.route && !p.i.pre).map(({ i }) => {
+            {placed.vis.filter((i) => i.route && !i.pre).map((i) => {
               const d = pathGen({ type: "LineString", coordinates: i.route as [number, number][] }) ?? "";
               return <path key={`r-${i.f.id}`} d={d} className={`cm-route${sel === i.f.id ? " on" : ""}`} style={{ stroke: COLOR[i.f.kind] }} vectorEffect="non-scaling-stroke" />;
             })}
@@ -175,19 +202,19 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
 
           {airports.map((a) => {
             const x = a.xy[0] * view.k + view.tx, y = a.xy[1] * view.k + view.ty;
-            if (x < -20 || x > W + 20 || y < -20 || y > H + 20) return null;
+            if (x < -20 || x > size.w + 20 || y < -20 || y > size.h + 20) return null;
             // An airport with parked aircraft around it keeps its code above the cluster.
-            const parked = items.filter((i) => i.key === a.code && !hide[i.f.kind]).length;
-            const up = parked > 0 ? -(7.5 * Math.sqrt(parked) * clamp(Math.sqrt(view.k / 3), 1, 2.6) + 12) : 0;
+            const parked = placed.vis.filter((i) => i.key === a.code).length;
+            const up = placed.clusters.some((c) => c.key === a.code) ? -26 : parked > 0 ? -(7.5 * Math.sqrt(parked) * clamp(Math.sqrt(view.k / 3), 1, 2.6) + 12) : 0;
             return <g key={a.code} className="cm-ap" transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}><circle r="3" /><text x={up ? 0 : 6} y={up ? up : 3.2} textAnchor={up ? "middle" : "start"}>{a.code}</text></g>;
           })}
 
-          {placed.map(({ i, x, y }) => {
-            if (x < -20 || x > W + 20 || y < -20 || y > H + 20) return null;
-            const c = COLOR[i.f.kind]; const on = sel === i.f.id; const label = on || view.k >= 5;
+          {[...placed.planes].sort((a, b) => Number(sel === a.i.f.id) - Number(sel === b.i.f.id)).map(({ i, x, y }) => {
+            if (x < -20 || x > size.w + 20 || y < -20 || y > size.h + 20) return null;
+            const c = COLOR[i.f.kind]; const on = sel === i.f.id; const label = on || hov === i.f.id || view.k >= 10;
             return (
               <g key={i.f.id} className={`cm-pl${on ? " on" : ""}${i.est ? " est" : ""}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={`${i.f.no} ${kindText(i)}`}
-                onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setSel(on ? null : i.f.id); }}
+                onPointerDown={(e) => e.stopPropagation()} onPointerEnter={() => setHov(i.f.id)} onPointerLeave={() => setHov(null)} onClick={(e) => { e.stopPropagation(); setSel(on ? null : i.f.id); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(on ? null : i.f.id); } }}>
                 <circle r="13" fill="transparent" />
                 <circle r="9" fill={c} opacity=".14" />
@@ -196,6 +223,16 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
                 {label && <text x="11" y="-7" className="cm-tag"><tspan>{i.f.no}</tspan></text>}
               </g>
             );
+          })}
+          {placed.clusters.map((c) => {
+            const col = c.late ? COLOR.late : c.ground ? COLOR.ground : COLOR.inbound;
+            return (
+              <g key={`c-${c.key}`} className="cm-cl" transform={`translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})`} role="button" tabIndex={0} aria-label={`${c.key}: ${c.n}`}
+                onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAt(2.4, c.x, c.y); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); zoomAt(2.4, c.x, c.y); } }}>
+                <circle r="21" fill={col} opacity=".18" /><circle r="14" fill="#0E141B" stroke={col} strokeWidth="1.8" />
+                <text y="4" textAnchor="middle" className="cm-cl-n" fill={col}>{c.n}</text>
+              </g>);
           })}
         </svg>
 
@@ -224,6 +261,8 @@ export default function CommandMap({ counts, flights, lang, labels }: { counts: 
             <Link className="cm-go" href={`/flights?id=${selItem.f.id}`}>{T.open}</Link>
           </aside>
         )}
+      </div>
+      {call && <div className="cm-call">{call}</div>}
       </div>
       <ul className="cr-legend">
         {RINGS.map((x) => (
